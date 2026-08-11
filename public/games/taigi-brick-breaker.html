@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>臺羅聲韻打磚王：鹿港篇</title>
+<style>
+  :root{
+    --bg-deep:#04060f;
+    --cyan:#22e2f0;
+    --orange:#ff9d2e;
+    --green:#3ddc84;
+    --red:#ff5f6d;
+    --purple:#b98bff;
+    --gold:#ffd166;
+    --text:#e7f6ff;
+    --text-dim:#7f93b0;
+    --font-ui: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-mono: "Consolas", "Courier New", monospace;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; height:100%; background:#000; font-family:var(--font-ui); color:var(--text); overscroll-behavior:none; }
+  #app{ width:100%; height:100%; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 50% 0%, #0b1230 0%, #04060f 60%, #000 100%); }
+  .stage{ position:relative; width:100%; max-width:1280px; aspect-ratio:16/9; max-height:100vh;
+    background:var(--bg-deep); overflow:hidden; border-radius:8px; box-shadow:0 0 60px rgba(34,226,240,0.15);
+    touch-action:none; user-select:none; }
+  @media (max-width:760px){ .stage{ max-height:none; aspect-ratio:9/16; } }
+
+  .screen{ position:absolute; inset:0; display:none; }
+  .screen.active{ display:flex; }
+  button{ font-family:var(--font-ui); cursor:pointer; border:none; outline:none; }
+  .btn{ background:linear-gradient(180deg,#123246,#0a1c2b); border:2px solid var(--cyan); color:var(--cyan);
+    padding:10px 22px; border-radius:999px; font-weight:700; font-size:15px; box-shadow:0 0 12px rgba(34,226,240,0.25);
+    transition:transform .12s ease; white-space:nowrap; }
+  .btn:active{ transform:scale(0.94); }
+  .btn.primary{ background:linear-gradient(180deg,#ff9d2e,#c8730f); border-color:#ffb85c; color:#1b0e00; box-shadow:0 0 18px rgba(255,157,46,0.4);}
+  .btn.small{ padding:8px 14px; font-size:14px; }
+  .scrollbox{ overflow-y:auto; scrollbar-width:thin; }
+
+  /* 首頁 */
+  #home-screen{ flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px;
+    background: radial-gradient(circle at 20% 20%, rgba(34,226,240,0.08), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255,157,46,0.08), transparent 40%), var(--bg-deep); }
+  .home-title{ font-size:clamp(22px,4.2vw,38px); font-weight:900; letter-spacing:2px; color:var(--cyan);
+    text-shadow:0 0 18px rgba(34,226,240,0.6); margin:0; }
+  .home-sub{ color:var(--orange); font-weight:700; letter-spacing:2px; font-size:clamp(12px,2vw,15px); margin:0;}
+  .home-desc{ max-width:560px; color:var(--text-dim); font-size:13px; line-height:1.7;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.2); border-radius:14px; padding:16px 20px;
+    text-align:left; max-height:38vh; overflow-y:auto; }
+  .home-desc b{ color:var(--text); }
+  .home-desc ul{ margin:6px 0; padding-left:18px; }
+
+  /* 遊戲畫面：三欄式版面 */
+  #game-screen{ position:absolute; inset:0; padding:8px; }
+  .game-layout{ display:flex; gap:8px; width:100%; height:100%; font-family:var(--font-mono); }
+  .panel{ background:rgba(4,10,25,0.85); border:1px solid rgba(34,226,240,0.45); border-radius:12px;
+    box-shadow:0 0 14px rgba(34,226,240,0.12); }
+
+  .main-col{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .top-bar{ display:flex; gap:8px; align-items:stretch; }
+  .stat-box{ display:flex; gap:12px; padding:8px 14px; align-items:center; flex:none; }
+  .stat-cell{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .stat-lbl{ font-size:12px; color:var(--text-dim); letter-spacing:1px; }
+  .stat-val{ font-weight:900; font-size:clamp(16px,2.4vw,22px); }
+  .stat-val.gold{ color:var(--gold); }
+  .stat-val.cyan{ color:var(--cyan); }
+  .hearts{ letter-spacing:1px; font-size:13px; }
+  .combo-tag{ color:var(--orange); font-weight:900; font-size:13px; }
+
+  .task-banner{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:8px 14px; position:relative; }
+  .task-label{ font-size:14px; color:var(--gold); font-weight:900; flex:none; }
+  .task-banner .prompt{ flex:1; min-width:0; font-size:clamp(16px,2.2vw,21px); font-weight:800; color:#fff; }
+  .icon-btn{ width:30px; height:30px; border-radius:50%; background:rgba(34,226,240,0.08);
+    border:1px solid rgba(34,226,240,0.5); color:var(--cyan); font-size:14px; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
+  .icon-btn.round-lg{ position:relative; }
+  .icon-btn-label{ display:none; }
+
+  .sub-bar{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--cyan);
+    background:rgba(255,255,255,0.03); border-radius:8px; padding:4px 12px; }
+  .sub-bar .sub-dim{ color:var(--text-dim); }
+
+  .body-row{ flex:1; min-height:0; display:flex; gap:8px; }
+  .items-panel{ width:min(24vw,185px); flex:none; padding:8px; overflow-y:auto; }
+  .items-title{ text-align:center; font-size:14px; color:var(--cyan); letter-spacing:2px; font-weight:900; margin-bottom:6px; }
+  .item-card{ display:flex; align-items:center; gap:8px; padding:9px 10px; margin-bottom:8px; border-radius:10px;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,157,46,0.35); cursor:pointer; font-size:13px; color:var(--text); }
+  .item-card:active{ transform:scale(0.96); }
+  .item-card.disabled{ opacity:0.35; cursor:not-allowed; }
+  .item-card .item-emoji{ font-size:21px; flex:none; }
+  .item-card .item-label{ flex:1; }
+  .item-card .item-count{ font-weight:900; color:var(--orange); flex:none; }
+
+  .canvas-wrap{ position:relative; flex:1; min-width:0; border-radius:10px; overflow:hidden; border:1px solid rgba(34,226,240,0.25); }
+  canvas#gameCanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  .bottom-bar{ display:flex; justify-content:space-around; font-size:12px; color:var(--text-dim);
+    background:rgba(255,255,255,0.02); border-radius:8px; padding:4px 8px; }
+
+  .side-panel{ width:min(28vw,270px); flex:none; padding:12px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; }
+  .mascot-box{ text-align:center; background:rgba(255,157,46,0.06); border-radius:10px; padding:10px 6px; }
+  .mascot-emoji-big{ font-size:36px; }
+  .mascot-caption{ font-size:13px; color:var(--orange); font-weight:900; margin-top:2px; }
+  .side-title{ text-align:center; color:var(--cyan); font-weight:900; font-size:18px; line-height:1.4; }
+  .side-sub{ color:var(--orange); font-size:14px; font-weight:700; }
+  .objectives-title{ font-size:14px; color:var(--gold); font-weight:900; letter-spacing:1px; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; }
+  .objectives-list{ list-style:none; margin:0; padding:0; font-size:13.5px; color:var(--text); line-height:1.9; }
+  .side-btns{ display:flex; flex-direction:column; gap:6px; }
+  .side-btns .btn{ width:100%; text-align:center; }
+  .controls-title{ font-size:14px; color:var(--gold); font-weight:900; letter-spacing:1px; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; }
+  .controls-list{ font-size:13px; color:var(--text-dim); line-height:2.1; }
+  kbd{ display:inline-block; background:rgba(34,226,240,0.12); border:1px solid rgba(34,226,240,0.5); border-radius:4px;
+    padding:2px 8px; color:var(--cyan); font-family:var(--font-mono); font-size:13px; margin-right:3px; }
+
+  @media (max-width:820px){
+    .items-panel, .side-panel{ display:none; }
+    .top-bar{ flex-direction:column; }
+  }
+
+  .feedback-toast{ position:absolute; top:60%; left:50%; transform:translate(-50%,-50%) scale(0.9);
+    background:rgba(4,10,25,0.93); border:2px solid var(--cyan); border-radius:16px; padding:14px 22px; text-align:center;
+    min-width:220px; max-width:70vw; opacity:0; transition:opacity .18s ease, transform .18s ease; pointer-events:none; z-index:20; }
+  .feedback-toast.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .feedback-toast.correct{ border-color:var(--green); box-shadow:0 0 26px rgba(61,220,132,0.5); }
+  .feedback-toast.wrong{ border-color:var(--red); box-shadow:0 0 26px rgba(255,95,109,0.5); }
+  .ft-title{ font-size:19px; font-weight:900; }
+  .feedback-toast.correct .ft-title{ color:var(--green); }
+  .feedback-toast.wrong .ft-title{ color:var(--red); }
+  .ft-body{ font-size:13px; color:var(--text); margin-top:6px; }
+  .ft-tailo{ font-family:var(--font-mono); color:var(--orange); font-size:15px; margin-top:2px; }
+  .ft-audio{ font-size:11px; color:var(--text-dim); margin-top:6px; }
+
+  .dict-panel{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(4,10,25,0.95);
+    border:2px solid var(--orange); border-radius:16px; padding:14px 20px; text-align:center; z-index:25; display:none; min-width:220px;
+    box-shadow:0 0 24px rgba(255,157,46,.45); }
+  .dict-panel.show{ display:block; }
+  .dict-panel .row{ display:flex; justify-content:space-between; gap:14px; font-size:13px; margin:4px 0; }
+  .dict-panel .row span:first-child{ color:var(--text-dim); }
+  .dict-panel .row span:last-child{ color:#fff; font-weight:700; }
+
+  .pause-overlay{ position:absolute; inset:0; background:rgba(0,0,0,0.72); z-index:30; display:none;
+    align-items:center; justify-content:center; flex-direction:column; gap:14px; text-align:center; padding:20px; }
+  .pause-overlay.show{ display:flex; }
+  .pause-overlay h2{ color:var(--cyan); letter-spacing:4px; margin:0; }
+  .serve-hint{ position:absolute; bottom:8%; left:50%; transform:translateX(-50%); color:var(--text-dim);
+    font-size:12px; z-index:8; pointer-events:none; background:rgba(4,10,25,0.6); padding:4px 10px; border-radius:8px; }
+
+  /* 遊戲說明頁 */
+  #help-screen{ background:var(--bg-deep); padding:16px; }
+  .help-wrap{ width:100%; display:flex; flex-direction:column; gap:12px; align-items:stretch; }
+  .help-header{ text-align:center; }
+  .help-header h1{ color:#fff; margin:0; font-size:clamp(20px,3.4vw,30px); text-shadow:0 0 14px rgba(34,226,240,0.5); }
+  .help-header p{ color:var(--orange); margin:2px 0 0; font-size:15px; font-weight:700; letter-spacing:2px; }
+  .help-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  @media (max-width:820px){ .help-grid{ grid-template-columns:repeat(2,1fr); } }
+  .help-card{ background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.3); border-radius:12px; padding:10px 12px; position:relative; }
+  .help-card.wide{ grid-column:span 2; }
+  @media (max-width:820px){ .help-card.wide{ grid-column:span 2; } }
+  .help-num{ position:absolute; top:-9px; left:-9px; width:22px; height:22px; border-radius:50%; background:var(--cyan);
+    color:#04121a; font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 8px rgba(34,226,240,0.6); }
+  .help-card-title{ font-weight:900; color:var(--gold); font-size:15px; margin-bottom:6px; }
+  .help-card ul{ margin:0; padding-left:16px; font-size:13px; color:var(--text-dim); line-height:1.6; }
+  .help-card ul.two-col{ columns:2; column-gap:14px; list-style:none; padding-left:0; }
+  .help-rules{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center; font-size:14px; color:var(--text-dim); }
+  .help-rules .pill{ background:rgba(34,226,240,0.1); border:1px solid rgba(34,226,240,0.4); color:var(--cyan);
+    border-radius:999px; padding:4px 12px; font-weight:700; }
+  .help-footer{ text-align:center; color:var(--gold); font-size:15px; margin:0; }
+
+  /* 結算畫面 */
+  #result-screen{ flex-direction:column; align-items:center; padding:20px; gap:14px; overflow-y:auto; background:var(--bg-deep); }
+  #result-screen h2{ letter-spacing:3px; margin:4px 0 0; }
+  #result-screen h2.success{ color:var(--green); }
+  #result-screen h2.fail{ color:var(--red); }
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:760px; }
+  @media (max-width:600px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat-card{ background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.25); border-radius:12px; padding:10px; text-align:center; }
+  .stat-card .k{ font-size:10px; color:var(--text-dim); }
+  .stat-card .v{ font-size:17px; font-weight:900; color:var(--cyan); margin-top:2px; }
+  .review-wrap{ width:100%; max-width:900px; max-height:32vh; overflow:auto; border:1px solid rgba(34,226,240,0.25); border-radius:12px; }
+  table.review{ width:100%; border-collapse:collapse; font-size:12px; }
+  table.review th, table.review td{ padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:left; white-space:nowrap; }
+  table.review th{ position:sticky; top:0; background:#0a1024; color:var(--cyan); }
+  table.review td.ok{ color:var(--green); font-weight:700; }
+  table.review td.no{ color:var(--red); font-weight:700; }
+  .result-btns{ display:flex; gap:12px; margin-top:6px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="stage" id="stage">
+
+    <!-- 首頁 -->
+    <div class="screen active" id="home-screen">
+      <div style="font-size:44px;">🧱</div>
+      <h1 class="home-title">臺羅聲韻打磚王</h1>
+      <p class="home-sub">鹿港篇・聽華語、打台語，十題挑戰學會鹿港話！</p>
+      <div class="home-desc scrollbox">
+        <b>玩法說明：</b>系統用<b>華語</b>出題（畫面文字＋語音），操控下方擋板接球，把球打向顯示<b>台語漢字＋臺羅拼音</b>的正確詞磚。
+        <ul>
+          <li>撞到<b>錯誤</b>詞磚：磚塊不會破，扣20分、中斷連擊，並短暫提示正確答案，<b>不會扣生命</b></li>
+          <li>球掉出畫面下方：扣1顆生命，重新發球</li>
+          <li>每局隨機抽 10 題（6題單字／2題詞組／2題句子），全部完成或生命歸零即結算</li>
+          <li>桌機：滑鼠移動或方向鍵←→控制擋板，Space 發球／暫停，R 重播題目，M 靜音</li>
+          <li>手機／平板：手指拖曳擋板，點擊按鈕發球</li>
+        </ul>
+      </div>
+      <button class="btn primary" id="btnStart" style="font-size:18px;padding:14px 40px;">開始遊戲</button>
+    </div>
+
+    <!-- 遊戲畫面：三欄式版面（左道具欄／中間遊戲區／右側資訊欄），依參考圖設計 -->
+    <div class="screen" id="game-screen">
+      <div class="game-layout">
+
+        <div class="main-col">
+          <div class="top-bar">
+            <div class="stat-box panel">
+              <div class="stat-cell"><span class="stat-lbl">得分</span><span class="stat-val gold" id="scoreVal">000000</span></div>
+              <div class="stat-cell"><span class="stat-lbl">關卡</span><span class="stat-val cyan" id="levelVal">01</span></div>
+              <div class="stat-cell"><span class="stat-lbl">生命</span><span class="hearts" id="livesVal">❤❤❤</span></div>
+              <div class="stat-cell"><span class="stat-lbl">連擊</span><span class="combo-tag" id="comboVal">x1</span></div>
+            </div>
+            <div class="task-banner panel">
+              <div class="task-label">🔊 華語任務：</div>
+              <div class="prompt" id="promptText">請找出「麵茶」的台語說法。</div>
+              <button class="icon-btn round-lg" id="btnReplayPrompt" title="華語重播 (R)">↻<span class="icon-btn-label">華語重播</span></button>
+            </div>
+          </div>
+          <div class="sub-bar">
+            <span id="progressLabel">第 1／10 題</span>
+            <span class="sub-dim">本局由 50 個單字／詞組／句子中隨機抽取 10 題</span>
+          </div>
+
+          <div class="body-row">
+            <div class="items-panel panel scrollbox">
+              <div class="items-title">道 具</div>
+              <div id="itemList"></div>
+            </div>
+
+            <div class="canvas-wrap" id="canvasWrap">
+              <canvas id="gameCanvas"></canvas>
+              <div class="serve-hint" id="serveHint">點擊畫面或按 Space 發球</div>
+
+              <div class="feedback-toast" id="feedbackToast">
+                <div class="ft-title" id="ftTitle">答對了！</div>
+                <div class="ft-body" id="ftBody">麵茶的台語是</div>
+                <div class="ft-tailo" id="ftTailo">mī-tê</div>
+                <div class="ft-audio" id="ftAudio"></div>
+              </div>
+
+              <div class="dict-panel" id="dictPanel">
+                <div class="row"><span>華語</span><span id="dictMandarin">－</span></div>
+                <div class="row"><span>台語漢字</span><span id="dictHanji">－</span></div>
+                <div class="row"><span>臺羅拼音</span><span id="dictTailo">－</span></div>
+              </div>
+
+              <div class="pause-overlay" id="pauseOverlay">
+                <h2>已暫停</h2>
+                <button class="btn primary" id="btnResume">繼續遊戲</button>
+                <button class="btn" id="btnQuitToHome">返回首頁</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-bar">
+            <span>每局共10題</span><span>每題詞磚位置隨機變換</span><span>從50個單字或句子中抽選</span>
+          </div>
+        </div>
+
+        <div class="side-panel panel">
+          <div class="mascot-box">
+            <div class="mascot-emoji-big">🦌🏮</div>
+            <div class="mascot-caption">鹿港老街</div>
+          </div>
+          <div class="side-title">臺羅聲韻打磚王<br><span class="side-sub">鹿港篇</span></div>
+          <div class="objectives-title">學習目標</div>
+          <ul class="objectives-list">
+            <li>⭐ 打對正確詞磚</li>
+            <li>⭐ 建立華語與台語連結</li>
+            <li>⭐ 練習臺羅辨識</li>
+            <li>⭐ 完成十題挑戰</li>
+            <li>⭐ 挑戰高分排行</li>
+          </ul>
+          <div class="side-btns">
+            <button class="btn small" id="btnPauseMini">⏸ 暫停</button>
+            <button class="btn small" id="btnSound">🔊 音效開關</button>
+            <button class="btn small" id="btnHelp">❓ 遊戲說明</button>
+          </div>
+          <div class="controls-title">操作說明</div>
+          <div class="controls-list">
+            <div><kbd>←</kbd><kbd>→</kbd> 移動擋板</div>
+            <div><kbd>Space</kbd> 暫停／繼續</div>
+            <div><kbd>R</kbd> 華語重播</div>
+            <div><kbd>M</kbd> 音效開關</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 遊戲說明頁（依參考圖2） -->
+    <div class="screen" id="help-screen">
+      <div class="help-wrap scrollbox">
+        <div class="help-header">
+          <h1>遊戲說明</h1>
+          <p>臺羅聲韻打磚王－鹿港篇</p>
+        </div>
+        <div class="help-grid">
+          <div class="help-card">
+            <div class="help-num">1</div>
+            <div class="help-card-title">🎯 遊戲目標</div>
+            <ul><li>根據華語題目，打破正確的台語答案磚塊。</li><li>每局共 10 題。</li><li>系統會從 50 個單字／詞組／句子中隨機抽題。</li><li>每一題的磚塊位置都不一樣。</li></ul>
+          </div>
+          <div class="help-card">
+            <div class="help-num">2</div>
+            <div class="help-card-title">💬 題目顯示方式</div>
+            <ul><li>上方會顯示華語題目，例如：「麵茶」。</li><li>玩家要找出對應的台語答案。</li><li>正解磚塊內容為：台語漢字＋臺羅拼音。</li></ul>
+          </div>
+          <div class="help-card">
+            <div class="help-num">3</div>
+            <div class="help-card-title">🏓 基本玩法</div>
+            <ul><li>左右移動擋板，反彈光球。</li><li>用光球擊中正確答案磚塊得分。</li><li>打到錯誤答案會扣分或中斷連擊。</li><li>清除本題正解後，自動進入下一題。</li></ul>
+          </div>
+          <div class="help-card">
+            <div class="help-num">4</div>
+            <div class="help-card-title">🧱 題目配置</div>
+            <ul><li>每題會出現多個詞彙磚塊。</li><li>除正確答案外，其餘為干擾選項。</li><li>可能混入：近音詞、生活詞彙、情境詞組。</li><li>詞彙數量比舊版更多，增加辨識挑戰。</li></ul>
+          </div>
+          <div class="help-card">
+            <div class="help-num">5</div>
+            <div class="help-card-title">🏆 分數與挑戰</div>
+            <ul><li>答對得分，連續答對可累積連擊。</li><li>生命歸零或10題結束後進行結算。</li><li>挑戰高分、正確率與最快通關速度。</li></ul>
+          </div>
+          <div class="help-card">
+            <div class="help-num">6</div>
+            <div class="help-card-title">🕹️ 操作方式</div>
+            <div class="controls-list">
+              <div><kbd>←</kbd><kbd>→</kbd> 移動擋板</div>
+              <div><kbd>Space</kbd> 暫停／繼續</div>
+              <div><kbd>R</kbd> 華語重播</div>
+              <div><kbd>M</kbd> 音效開關</div>
+            </div>
+          </div>
+          <div class="help-card wide">
+            <div class="help-num">7</div>
+            <div class="help-card-title">🎁 道具說明</div>
+            <ul class="two-col">
+              <li>🔁 華語重播：再聽一次題目</li>
+              <li>📡 臺羅雷達：短暫提示正解</li>
+              <li>📖 辭典護盾：顯示詞義輔助</li>
+              <li>📏 加長擋板：增加接球範圍</li>
+              <li>🐢 慢速球：降低反應壓力</li>
+              <li>💣 排除炸彈：移除3個錯誤詞磚</li>
+              <li>⚪ 多重球：加速清除障礙</li>
+              <li>💗 額外生命：增加1顆生命</li>
+            </ul>
+          </div>
+        </div>
+        <div class="help-rules">
+          <span>本版核心規則</span>
+          <span class="pill">1 題目是華語</span>
+          <span class="pill">2 答案是台語＋發音</span>
+          <span class="pill">3 每局10題</span>
+          <span class="pill">4 50題庫隨機抽選</span>
+        </div>
+        <p class="help-footer">多聽、多看、多練習，成為臺語小高手！</p>
+        <button class="btn primary" id="btnCloseHelp" style="align-self:center;">Esc 返回遊戲</button>
+      </div>
+    </div>
+
+    <!-- 結算畫面 -->
+    <div class="screen" id="result-screen">
+      <h2 id="resultTitle">挑戰成功！</h2>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="review-wrap scrollbox">
+        <table class="review">
+          <thead><tr><th>華語題目</th><th>你打中的答案</th><th>正確台語漢字</th><th>正確臺羅拼音</th><th>是否答對</th><th>學習提示</th></tr></thead>
+          <tbody id="reviewBody"></tbody>
+        </table>
+      </div>
+      <div class="result-btns">
+        <button class="btn primary" id="btnRetry">再玩一次</button>
+        <button class="btn" id="btnHome">返回首頁</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ======================================================================
+   一、題庫（單字／詞組／句子三種類型，可持續擴充到 50 題）
+   句子類型不標示臺羅（避免自行編造未經驗證的整句羅馬拼音），
+   僅顯示台語漢字，正確發音以音檔／語音為準。
+   ====================================================================== */
+const WORD_BANK = [
+  ['麵茶','mī-tê'], ['牛舌餅','gû-tsi̍h-piánn'], ['圓仔湯','înn-á-thng'], ['麻粩','muâ-láu'],
+  ['芋丸','ōo-uân'], ['肉包','bah-pau'], ['粉粿','hún-kué'], ['秫米糋','tsu̍t-bí-tsìnn'],
+  ['李仔攕','lí-á-tshiám'], ['糕仔餅','ko-á-piánn'], ['三輪車','sann-lián-tshia'], ['齒抿仔','khí-bín-á'],
+  ['齒膏','khí-ko'], ['葵扇','khuê-sìnn'], ['跋桮','pua̍h-pue'], ['鹿港','Lo̍k-káng'], ['老街','lāu-kue'],
+  ['麵線糊','mī-suànn-kôo'], ['拜拜','pài-pài'], ['旗袍','kî-phâu'], ['全家福','tsuân-ka-hok'],
+  ['等路','tán-lōo'], ['高鐵','ko-thih'], ['阿公','a-kong'], ['考試','khó-tshì'], ['豆花','tāu-hue'],
+  ['肉圓','bah-uân'], ['割包','kuah-pau'], ['菜脯','tshài-póo'], ['冰品','ping-phín'],
+  ['傳統美食','thuân-thóng bí-si̍t'],
+];
+const WORD_MANDARIN = {
+  '麵茶':'麵茶','牛舌餅':'牛舌餅','圓仔湯':'湯圓','麻粩':'麻粩','芋丸':'芋丸','肉包':'肉包','粉粿':'粉粿',
+  '秫米糋':'糯米炸','李仔攕':'糖葫蘆','糕仔餅':'糕餅','三輪車':'三輪車','齒抿仔':'牙刷','齒膏':'牙膏','葵扇':'扇子',
+  '跋桮':'擲筊','鹿港':'鹿港','老街':'老街','麵線糊':'麵線糊','拜拜':'拜拜','旗袍':'旗袍','全家福':'全家福','等路':'伴手禮',
+  '高鐵':'高鐵','阿公':'阿公','考試':'考試','豆花':'豆花','肉圓':'肉圓','割包':'割包','菜脯':'菜脯','冰品':'冰品',
+  '傳統美食':'傳統美食',
+};
+
+const PHRASE_BANK = [
+  { hanji:'鹿港老街', tailo:'Lo̍k-káng lāu-kue', mandarin:'鹿港老街' },
+  { hanji:'在地小吃', tailo:'tsāi-tē sió-tsia̍h', mandarin:'在地小吃' },
+  { hanji:'鹿港麵線糊', tailo:'Lo̍k-káng mī-suànn-kôo', mandarin:'鹿港麵線糊' },
+  { hanji:'麵茶冰', tailo:'mī-tê-ping', mandarin:'麵茶冰' },
+];
+
+// 句子題：第一組使用規格書提供、完整標註臺羅的句子；其餘沿用已建立過的情境句
+// （只顯示漢字，不自行編造未經驗證的整句臺羅，正確發音以語音／音檔為準）。
+const SENTENCE_SETS = [
+  {
+    mandarin:'我們坐三輪車逛鹿港老街',
+    correct:{ hanji:'咱坐三輪車踅鹿港老街。', tailo:'Lán tsē sann-lián-tshia se̍h Lo̍k-káng lāu-kue.' },
+    distractors:[
+      { hanji:'咱去食麵茶佮麻粩。', tailo:'Lán khì tsia̍h mī-tê kah muâ-láu.' },
+      { hanji:'咱坐高鐵轉去臺北。', tailo:'Lán tsē ko-thih tńg-khì Tâi-pak.' },
+      { hanji:'咱去廟內拜拜。', tailo:'Lán khì biō-lāi pài-pài.' },
+    ],
+  },
+  {
+    mandarin:'我想吃糯米炸和湯圓',
+    correct:{ hanji:'我想欲食秫米糋佮圓仔湯', tailo:null },
+    distractors:[
+      { hanji:'咱會使食李仔攕、坐三輪車踅老街', tailo:null },
+      { hanji:'我想欲去拜拜，祈求我考試順利', tailo:null },
+      { hanji:'恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊', tailo:null },
+    ],
+  },
+  {
+    mandarin:'我們可以吃糖葫蘆、坐三輪車逛老街',
+    correct:{ hanji:'咱會使食李仔攕、坐三輪車踅老街', tailo:null },
+    distractors:[
+      { hanji:'我想欲食秫米糋佮圓仔湯', tailo:null },
+      { hanji:'我想欲去拜拜，祈求我考試順利', tailo:null },
+      { hanji:'恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊', tailo:null },
+    ],
+  },
+  {
+    mandarin:'我想去拜拜，祈求考試順利',
+    correct:{ hanji:'我想欲去拜拜，祈求我考試順利', tailo:null },
+    distractors:[
+      { hanji:'我想欲食秫米糋佮圓仔湯', tailo:null },
+      { hanji:'咱會使食李仔攕、坐三輪車踅老街', tailo:null },
+      { hanji:'恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊', tailo:null },
+    ],
+  },
+  {
+    mandarin:'阿公很喜歡鹿港的麻粩，我們買一些伴手禮回去送他',
+    correct:{ hanji:'恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊', tailo:null },
+    distractors:[
+      { hanji:'我想欲食秫米糋佮圓仔湯', tailo:null },
+      { hanji:'咱會使食李仔攕、坐三輪車踅老街', tailo:null },
+      { hanji:'我想欲去拜拜，祈求我考試順利', tailo:null },
+    ],
+  },
+];
+
+function buildQuestionPool(){
+  const words = WORD_BANK.map(([hanji,tailo],i)=>({
+    id:'w'+i, type:'word', hanji, tailo, mandarin: WORD_MANDARIN[hanji] || hanji,
+  }));
+  const phrases = PHRASE_BANK.map((p,i)=>({ id:'p'+i, type:'phrase', hanji:p.hanji, tailo:p.tailo, mandarin:p.mandarin }));
+  const sentences = SENTENCE_SETS.map((s,i)=>({
+    id:'s'+i, type:'sentence', hanji:s.correct.hanji, tailo:s.correct.tailo, mandarin:s.mandarin,
+    sentenceDistractors:s.distractors,
+  }));
+  return { words, phrases, sentences };
+}
+const POOL = buildQuestionPool();
+
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+// 每局隨機抽 10 題：6 單字、2 詞組、2 句子（詞組／句子不足時以單字補足）
+function buildRoundQuestions(){
+  const words = shuffle(POOL.words).slice(0,6);
+  const phrases = shuffle(POOL.phrases).slice(0,2);
+  const sentences = shuffle(POOL.sentences).slice(0,2);
+  let combined = shuffle([...words, ...phrases, ...sentences]);
+  while(combined.length < 10){
+    combined.push(shuffle(POOL.words)[0]);
+  }
+  return combined.slice(0,10).map(q=>{
+    // 為每題準備干擾答案磚（同類型優先，不足則跨類型補）
+    let distractorPoolSameType;
+    if(q.type==='word') distractorPoolSameType = POOL.words.filter(w=>w.hanji!==q.hanji);
+    else if(q.type==='phrase') distractorPoolSameType = POOL.phrases.filter(p=>p.hanji!==q.hanji).map(p=>({hanji:p.hanji,tailo:p.tailo}));
+    else distractorPoolSameType = (q.sentenceDistractors||[]).map(d=>({hanji:d.hanji,tailo:d.tailo||null}));
+
+    let pool = shuffle(distractorPoolSameType);
+    const needed = q.type==='sentence' ? 3 : 6;
+    if(pool.length < needed){
+      const extra = shuffle(POOL.words.filter(w=>w.hanji!==q.hanji)).map(w=>({hanji:w.hanji,tailo:w.tailo}));
+      pool = pool.concat(extra);
+    }
+    q.distractors = pool.slice(0, needed);
+    return q;
+  });
+}
+
+/* ======================================================================
+   二、語音（國語題目 TTS + 台語音檔，音檔缺席時安全降級，不用國語TTS念臺羅）
+   ====================================================================== */
+const PHONETIC_MAP = {
+  '肉圓': '嘛完',
+  '豆花': '島輝',
+  '鹹粥': '嫌九',
+  '潤餅': '潤比呀',
+  '月餅': '尾比呀',
+  '串炸': '川雜',
+  '碗粿': '碗貴',
+  '蔥油餅': '聰遊比呀',
+  '全部配對成功！': '龍部配對星功！',
+  '麵茶': '米得',
+  '牛舌餅': '古幾比呀',
+  '圓仔湯': '因呀湯',
+  '麻粩': '摸老',
+  '芋丸': '歐丸',
+  '肉包': '巴包',
+  '粉粿': '昏貴',
+  '秫米糋': '術米金',
+  '李仔攕': '離呀籤',
+  '齒抿仔': '企抿呀',
+  '齒膏': '企高',
+  '糕仔餅': '高呀比呀',
+  '葵扇': '葵星',
+  '跋桮': '撥杯',
+  '鋩角': '迷角',
+  '鹿港': '落港',
+  '三輪車': '沙聯車',
+  '鹿港麵線糊': '落港米線口',
+  '麵茶冰': '米得冰',
+  '老街': '撈貴',
+  '拜拜': '拜拜',
+  '旗袍': '奇袍',
+  '全家福': '全家服',
+  '等路': '膽路',
+  '高鐵': '高踢',
+  '聽起來真趣味，我想欲食秫米糋佮圓仔湯。': '聽起來金促尾，瓦熊美甲術米金哈因呀湯。',
+  '咱會使食李仔攕、坐三輪車踅老街。': '藍誒塞甲離呀籤、賊沙聯車誰老街。',
+  '我想欲去拜拜，祈求我考試順利。': '瓦熊北企拜拜，其求瓦考習新利。',
+  '恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊。': '林阿公賢卡意落港A摸老，藍加美寡膽路顛企勝伊。',
+  '足𠢕！': '糾高！',
+  '真正厲害！': '金加利害！',
+  '閣來！': '閣來！',
+  '答著矣！': '答對啊！',
+  '台語真輪轉！': '台語金論轉！',
+  '任務開始：請收集 ': '莉務開使，請修集 ',
+  '任務開始：請收集': '莉務開使，請修集',
+  '接下來，請收集 ': '接落來，請修集 ',
+  '接下來，請收集': '接落來，請修集',
+  '注意看！這是 ': '住意看！幾系 ',
+  '注意看！這是': '住意看！幾系',
+  '不著矣': '美丟啊',
+  '錢無夠': '吉某高',
+  '買矣': '尾啊',
+  '請買': '請尾',
+  '伴手禮買好囉！': '膽路尾賀囉！',
+  '「鹽酥雞，一包三十，卡緊來喔！」聽起來是咧賣啥物？': '鹽酥雞，一包沙雜，卡緊來喔！聽起來是咧賣啥物？',
+  '「香腸頭，香腸頭，一支二十喔！」是咧賣啥物？': '香腸頭，香腸頭，幾機幾雜喔！是咧賣啥物？',
+  '「珍珠奶茶，真濃真好喝，來一杯喔！」是咧賣啥物？': '珍珠奶茶，金濃金賀利，來一杯喔！是咧賣啥物？',
+  '「地瓜球，QQ甜甜，一包二十五！」是咧賣啥物？': '地瓜球，QQ甜甜，一包哩雜高！是咧賣啥物？',
+  '「大腸包小腸，澎湃夠味，欲食無？」是咧賣啥物？': '大腸包小腸，澎湃夠味，美甲某？是咧賣啥物？',
+  '「臭豆腐，外酥內軟，燒燙燙上桌！」是咧賣啥物？': '臭豆腐，外酥內軟，燒燙燙上桌！是咧賣啥物？',
+  '鹽酥雞，一包三十，卡緊來喔！': '鹽酥雞，一包沙雜，卡緊來喔！',
+  '香腸頭，香腸頭，一支二十喔！': '香腸頭，香腸頭，幾機幾雜喔！',
+  '珍珠奶茶，真濃真好喝，來一杯喔！': '珍珠奶茶，金濃金賀利，來一杯喔！',
+  '地瓜球，QQ甜甜，一包二十五！': '地瓜球，QQ甜甜，一包哩雜高！',
+  '大腸包小腸，澎湃夠味，欲食無？': '大腸包小腸，澎湃夠味，美甲某？',
+  '臭豆腐，外酥內軟，燒燙燙上桌！': '臭豆腐，外酥內軟，燒燙燙上桌！',
+  '咱對藍田海邊出發，欲去藍田老街，應該向佗位行？': '藍對藍田海邊出發，北企藍田老街，應概向多位行？',
+  '離開老街，欲去頂藍田小村，應該向佗位行？': '離魁老街，北企頂藍田小村，應概向多位行？',
+  '對小村欲去藍田燈塔，應該向佗位行？': '對小村北企藍田燈塔，應概向多位行？',
+  '咱欲去泡溫泉，應該向佗位行較近？': '藍北企泡溫泉，應概向多位行卡近？',
+  '上尾一站欲去觀海步道，應該向佗位行？': '匈尾一站北企觀海步道，應概向多位行？',
+  '女伴：「遮 ê 溫泉氣氛真好，你欲袂欲來去泡湯？」': '遮A溫泉氣氛金賀，哩美美來企泡湯？',
+  '女伴：「你捌泡過海景溫泉無？」': '哩巴泡貴海景溫泉某？',
+  '女伴：「月娘遮爾媠，欲毋欲紮相機來翕相？」': '威娘家尼水，美美砸相機來合相？',
+  '女伴：「泡了了後，欲毋欲鬥陣去食寡宵夜？」': '泡利利奧，美美逗頂企甲掛宵夜？',
+  '你欲去金門出差，愛先去佗位辦理登機手續？': '哩北企金門出差，愛嫌企多位辦理登機手續？',
+  '落機了後，欲提行李，應該去佗位？': '落機利奧，北鐵行李，應概企多位？',
+  '欲入去管制區進前，愛先過佗位？': '北利企管制區頂尖，愛嫌貴多位？',
+  '飛行機欲起飛矣，愛去佗位等待上機？': '北型機北起飛阿，愛企多位等待上機？',
+  '我食著真濟好食的點心。': '我甲丟金解厚甲A點心。',
+  '我向店家問路，才知影老街的歷史。': '我向店家問路，才甲因老街A歷史。',
+  '我參觀老街的風景，拍照做紀念。': '我參觀老街A風景，拍照做紀念。',
+  '我佮朋友蹉老街，逐間店仔攏看。': '我嘎朋友車老街，大鋼店阿攏看。',
+  '日頭漸斜，我歡喜轉去厝。': '日頭漸斜，我歡喜顛企醋。',
+  '鹿仔': '陸阿',
+  '草仔': '草阿',
+  '山頭': '山頭',
+  '花仔': '揮阿',
+  '石頭': '九逃',
+  '天空': '聽框',
+  '海邊': '海冰',
+  '樹仔': '秋阿',
+  '鳳梨酥': '王來收',
+  '牛軋糖': '牛角糖',
+  '茶葉蛋': '得修冷',
+  '芒果乾': '酸阿官',
+  '花生糖': '花星糖',
+  '太陽餅': '太擁比呀',
+  '肉乾': '罵官',
+  '綠豆糕': '力豆糕',
+  '咖啡': '咖逼',
+  '手工餅乾': '手工比呀官',
+  '興': '星',
+  '無': '某',
+  '步': '波',
+  '皮': '輝',
+  '毛': '摸',
+  '肚': '度',
+  '鐵': '踢',
+  '籃': '那',
+  '柳': '柳',
+  '菇': '孤',
+  '去': '企',
+  '雅': '雅',
+  '魚': '黑',
+  '曾': '章',
+  '出': '促',
+  '沙': '沙',
+  '字': '力',
+  '語': '紀',
+  '鴨': '啊',
+  '衣': '一',
+  '有': '烏',
+  '會': '誒',
+  '蚵': '喔',
+  '黑': '凹',
+  '愛': '愛',
+  '後': '奧',
+  '寫': '寫',
+  '手': '修',
+  '花': '揮',
+  '話': '威',
+  '水': '水',
+  '餡': '含',
+  '圓': '圓',
+  '園': '輝',
+  '嬰': '應',
+  '惡': '喔',
+  '姆': '姆',
+  '黃': '黃',
+  '玻璃': '波雷',
+  '碎碎': '普普',
+  '阿母': '阿姆',
+  '媽媽': '媽媽',
+  '刀仔': '多阿',
+  '桃仔': '逃阿',
+  '貓仔': '喵阿',
+  '囉唆': '囉唆',
+  '哥哥': '郭郭',
+  '汽車': '器車',
+  '鵝仔': '鵝阿',
+  '牙齒': '呀企',
+  '書包': '書包',
+  '菜頭': '菜頭',
+  '雪文': '沙文',
+  '日頭': '利頭',
+  '魚仔': '黑阿',
+  '阿伯': '阿北',
+  '醫生': '醫生',
+  '溫池': '溫底',
+  '鞋仔': '誒阿',
+  '蚵仔': '喔阿',
+  '烏車': '喔車',
+  '愛國': '愛國',
+  '後日': '奧利',
+  '寫字': '寫力',
+  '手指': '秀幾',
+  '歡喜': '框黑',
+  '畫地': '威得',
+  '衛生': '威星',
+  '三領': '沙娘',
+  '圓仔': '因阿',
+  '園仔': '輝阿',
+  '嬰仔': '英阿',
+  '噢噢': '喔喔',
+  '不是': '美系',
+  '黃色': '黃學',
+  '亂嚷': '弄落',
+  '人來': '郎來',
+  '人情': '任情',
+  '代誌': '代吉',
+  '十日': '雜母',
+  '半仔': '波阿',
+  '印色': '因學',
+  '味色': '微學',
+  '報音': '波因',
+  '天地': '填底',
+  '姆仔': '姆阿',
+  '姑姑': '估估',
+  '娃仔': '挖阿',
+  '字兒': '利阿',
+  '尋找': '切阿',
+  '山仔': '沙阿',
+  '工作': '康奎',
+  '年仔': '尼阿',
+  '庄腳': '曾卡',
+  '度過': '度估',
+  '後面': '奧比呀',
+  '手巾': '秀金',
+  '手環': '秀寬',
+  '拼盤': '辦阿',
+  '春管': '寸官',
+  '歹人': '拍郎',
+  '毛刷': '摸擦',
+  '準備': '俊逼',
+  '漂亮': '水阿',
+  '烏鴉': '喔阿',
+  '無閒': '某應',
+  '牛兒': '牛阿',
+  '生日': '誰力',
+  '田園': '纏泥',
+  '畫畫': '威阿',
+  '病仔': '便阿',
+  '皮包': '輝阿',
+  '矮子': '誒阿',
+  '窗仔': '湯阿',
+  '笳苳': '加冬',
+  '茄苳': '加冬',
+  '箭仔': '金阿',
+  '籃仔': '那阿',
+  '老師': '老蘇',
+  '老爸': '老北',
+  '肉粽': '罵髒',
+  '色樣': '雅學',
+  '花朵': '輝阿',
+  '袂窳': '美百',
+  '說話': '威喔哈',
+  '議論': '義倫',
+  '車讚': '車沾',
+  '這些': '加誒',
+  '這呢': '家尼',
+  '這時': '幾嘛',
+  '醫院': '一印',
+  '開花': '魁輝',
+  '間存': '更存',
+  '雅子': '雅組',
+  '雅量': '雅良',
+  '雨水': '厚水',
+  '順利': '順力',
+  '頭殼': '頭殼',
+  '鴨子': '阿姐',
+  '麵線': '米線',
+  '黃仔': '恩阿',
+  '黑色': '喔學',
+  '咱來食麵茶。': '藍來甲米得',
+  '這碗麵茶真芳。': '幾碗米得金芳',
+  '我欲買牛舌餅。': '瓦美尾古幾比呀',
+  '牛舌餅是鹿港的名產。': '古幾比呀是落港A名產',
+  '圓仔湯食起來甜甜。': '因呀湯甲起來甜甜',
+  '咱正有一碗圓仔湯。': '藍正有幾碗因呀湯',
+  '阿媽買麻粩轉來。': '阿媽尾摸老顛來',
+  '麻粩是鹿港的傳統點心。': '摸老是落港A傳統點心',
+  '這包麻粩欲送予阿公。': '幾包摸老美勝伊阿公',
+  '我欲食一粒肉圓。': '瓦美甲幾粒嘛完',
+  '鹿港的肉圓真好食。': '落港A嘛完金厚甲',
+  '麵線糊食起來燒燒。': '米線口甲起來燒燒',
+  '咱去老街食豆花。': '藍企撈貴甲島輝',
+  '我買兩包糕仔餅。': '瓦尾兩包高呀比呀',
+  '這碗粉粿冰真清涼。': '幾碗昏貴冰金清涼',
+  '咱坐三輪車踅老街。': '藍賊沙聯車誰撈貴',
+  '老街有真濟傳統小食。': '撈貴有金解傳統小食',
+  '我欲買等路轉去。': '瓦美尾膽路顛企',
+  '食飽了後，咱去拜拜。': '甲飽利奧，藍企拜拜',
+  '鹿港的美食閣芳閣好食。': '落港A美食閣芳閣厚甲',
+  '好料': '吼溜',
+  '家庭旅遊': '嘎停里優',
+  '府城': '虎仙',
+  '洋裝': '用宗',
+  '火車': '灰恰',
+  '老厝': '撈處',
+  '考試': '考係',
+  '阿公': '阿工',
+  '麵線糊': '米線口',
+};
+
+const Speech = {
+  enabled:true,
+  speakMandarin(text){
+    if(!this.enabled || !('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang='zh-TW'; u.rate=0.95; u.pitch=1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const v = voices.find(v=>v.lang && v.lang.toLowerCase().includes('zh'));
+      if(v) u.voice=v;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  },
+  stopMandarin(){ if('speechSynthesis' in window){ try{ window.speechSynthesis.cancel(); }catch(e){} } },
+  currentAudio:null,
+  playTaiyu(path, onMissing, onDone){
+    this.stopTaiyu();
+    if(!this.enabled || !path){ onMissing && onMissing(); onDone && onDone(); return; }
+    try{
+      const audio = new Audio(path);
+      this.currentAudio = audio;
+      let settled=false;
+      const finish=()=>{ if(!settled){ settled=true; onDone && onDone(); } };
+      audio.addEventListener('ended', finish);
+      audio.addEventListener('error', ()=>{ onMissing && onMissing(); finish(); });
+      const p = audio.play();
+      if(p && typeof p.catch==='function'){ p.catch(()=>{ onMissing && onMissing(); finish(); }); }
+      setTimeout(finish, 3500);
+    }catch(e){ onMissing && onMissing(); onDone && onDone(); }
+  },
+  speakVocabApprox(hanji, tailo){
+    if(!this.enabled || !('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+      const trueVoice = voices.find(v=>{
+        const l=(v.lang||'').toLowerCase(), n=(v.name||'').toLowerCase();
+        return l.includes('nan')||l.includes('min')||n.includes('taiwanese')||n.includes('hokkien')||n.includes('閩南')||n.includes('台語');
+      });
+      let spokenText = hanji;
+      if(!trueVoice){
+        if(PHONETIC_MAP[hanji]){
+          spokenText = PHONETIC_MAP[hanji];
+        } else {
+          const keys = Object.keys(PHONETIC_MAP).sort((a,b)=>b.length-a.length);
+          for(const k of keys){ if(spokenText.includes(k)) spokenText = spokenText.split(k).join(PHONETIC_MAP[k]); }
+        }
+      }
+      const u = new SpeechSynthesisUtterance(spokenText);
+      if(trueVoice) u.voice = trueVoice;
+      u.lang = trueVoice ? 'zh-min-nan' : 'zh-TW';
+      u.rate = 0.85; u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }catch(e){ /* 靜默失敗，不影響遊戲 */ }
+  },
+  stopTaiyu(){ if(this.currentAudio){ try{ this.currentAudio.pause(); }catch(e){} this.currentAudio=null; } },
+  stopAll(){ this.stopMandarin(); this.stopTaiyu(); }
+};
+
+/* ======================================================================
+   三、遊戲狀態
+   ====================================================================== */
+const state = {
+  mode:'home', // home | playing | paused | success | fail
+  questions:[], qIndex:0, current:null, qStartTime:0, usedHintThisQ:false, questionResolved:false,
+  score:0, lives:3, combo:0, maxCombo:0, multiplier:1, correctCount:0, wrongHits:0, hintCount:0,
+  elapsed:0, wrongTally:{}, reviewLog:[], livelyMode:false,
+  effects:{ radar:0, dict:0, slow:0, longPaddle:0 },
+  served:false,
+  inventory:{},
+};
+let bestScore = 0;
+try{ bestScore = parseInt(localStorage.getItem('taigi_brick_best')||'0',10) || 0; }catch(e){}
+
+/* ======================================================================
+   四、畫布與遊戲物件
+   ====================================================================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W=0, H=0;
+function resizeCanvas(){
+  const wrap = document.getElementById('canvasWrap');
+  const rect = wrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', resizeCanvas);
+
+const paddle = { x:0, y:0, w:110, baseW:110, h:14 };
+const ball = { x:0, y:0, r:8, vx:0, vy:0, speed:280 };
+let bricks = [];      // 目前題目的磚塊
+let capsules = [];    // 掉落中的道具膠囊
+let particles = [];
+let extraBalls = [];  // 多重球／危險磚產生的額外干擾球（不判定答案，僅加速清除普通磚）
+let stars = [];
+function initStars(){
+  stars = [];
+  for(let i=0;i<80;i++) stars.push({ x:rand(0,W), y:rand(0,H), r:rand(0.4,1.8), tw:rand(0,Math.PI*2) });
+}
+
+const POWERUP_TYPES = [
+  { key:'replay', label:'華語重播', emoji:'🔁' },
+  { key:'radar',  label:'臺羅雷達', emoji:'📡' },
+  { key:'dict',   label:'辭典護盾', emoji:'📖' },
+  { key:'long',   label:'加長擋板', emoji:'📏' },
+  { key:'slow',   label:'慢速球', emoji:'🐢' },
+  { key:'bomb',   label:'排除炸彈', emoji:'💣' },
+  { key:'multiball', label:'多重球', emoji:'⚪' },
+  { key:'extralife', label:'額外生命', emoji:'💗' },
+];
+
+/* ======================================================================
+   五、磚塊佈局（每題重新排列，確保有路可通往正解）
+   ====================================================================== */
+function buildBricksForQuestion(q, qIdx){
+  const cols = 6;
+  const rows = 5;
+  const marginX = 24, marginY = 70;
+  const gap = 6;
+  const brickW = (W - marginX*2 - gap*(cols-1)) / cols;
+  const brickH = 36;
+
+  const cells = [];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      cells.push({ r, c, x: marginX + c*(brickW+gap), y: marginY + r*(brickH+gap) });
+    }
+  }
+  const shuffledCells = shuffle(cells);
+
+  const decoyCount = clamp(4 + Math.floor(qIdx/2), 4, 7);
+  const answerItems = [{ hanji:q.hanji, tailo:q.tailo, isCorrect:true }]
+    .concat(q.distractors.slice(0, decoyCount).map(d=>({ hanji:d.hanji, tailo:d.tailo, isCorrect:false })));
+
+  const list = [];
+  let cellIdx = 0;
+  answerItems.forEach(item=>{
+    const cell = shuffledCells[cellIdx++];
+    list.push({
+      kind:'answer', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true,
+      hanji:item.hanji, tailo:item.tailo, isCorrect:item.isCorrect, flash:0, flashColor:null,
+      outline: ['#22e2f0','#b98bff','#ffd166','#3ddc84'][Math.floor(Math.random()*4)],
+    });
+  });
+
+  // 道具磚 2 顆
+  const powerupCount = 2;
+  for(let i=0;i<powerupCount && cellIdx<shuffledCells.length;i++){
+    const cell = shuffledCells[cellIdx++];
+    const type = POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
+    list.push({ kind:'powerup', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true, type, flash:0 });
+  }
+
+  // 危險磚 1~2 顆（骷髏，效果隨機，不算台語答錯）
+  const dangerCount = qIdx >= 6 ? 2 : 1;
+  for(let i=0;i<dangerCount && cellIdx<shuffledCells.length;i++){
+    const cell = shuffledCells[cellIdx++];
+    list.push({ kind:'danger', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true, flash:0 });
+  }
+
+  // 其餘填普通障礙磚，但保留最後幾格當作空格（避免磚塊塞滿導致球路太封閉）
+  const remaining = shuffledCells.slice(cellIdx);
+  const emptyCount = Math.max(3, Math.floor(remaining.length*0.25));
+  const plainCells = remaining.slice(0, remaining.length - emptyCount);
+  plainCells.forEach(cell=>{
+    list.push({ kind:'plain', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true, flash:0 });
+  });
+
+  return list;
+}
+
+/* ======================================================================
+   六、輸入控制
+   ====================================================================== */
+const keysDown = {};
+let pointerX = null;
+window.addEventListener('keydown', (e)=>{
+  const k = e.key.toLowerCase();
+  keysDown[k] = true;
+  if(k===' '){ e.preventDefault(); if(state.mode==='playing' && !state.served){ launchBall(); } else if(document.getElementById('help-screen').classList.contains('active')){ /* 說明頁時 Space 不動作 */ } else { togglePause(); } }
+  if(k==='r'){ replayCurrentPrompt(); }
+  if(k==='m'){ toggleSound(); }
+  if(k==='escape'){ if(document.getElementById('help-screen').classList.contains('active')) closeHelp(); }
+});
+window.addEventListener('keyup', (e)=>{ keysDown[e.key.toLowerCase()] = false; });
+
+canvas.addEventListener('mousemove', (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  pointerX = e.clientX - rect.left;
+});
+canvas.addEventListener('click', ()=>{ if(state.mode==='playing' && !state.served) launchBall(); });
+canvas.addEventListener('touchstart', onTouch, {passive:false});
+canvas.addEventListener('touchmove', onTouch, {passive:false});
+function onTouch(e){
+  e.preventDefault();
+  if(e.touches && e.touches.length>0){
+    const rect = canvas.getBoundingClientRect();
+    pointerX = e.touches[0].clientX - rect.left;
+  }
+  if(state.mode==='playing' && !state.served) launchBall();
+}
+
+/* ======================================================================
+   七、UI 參照
+   ====================================================================== */
+const el = {
+  progressLabel: document.getElementById('progressLabel'),
+  levelVal: document.getElementById('levelVal'),
+  promptText: document.getElementById('promptText'),
+  scoreVal: document.getElementById('scoreVal'),
+  livesVal: document.getElementById('livesVal'),
+  comboVal: document.getElementById('comboVal'),
+  feedbackToast: document.getElementById('feedbackToast'),
+  ftTitle: document.getElementById('ftTitle'), ftBody: document.getElementById('ftBody'),
+  ftTailo: document.getElementById('ftTailo'), ftAudio: document.getElementById('ftAudio'),
+  dictPanel: document.getElementById('dictPanel'), dictMandarin: document.getElementById('dictMandarin'),
+  dictHanji: document.getElementById('dictHanji'), dictTailo: document.getElementById('dictTailo'),
+  pauseOverlay: document.getElementById('pauseOverlay'), btnSound: document.getElementById('btnSound'),
+  serveHint: document.getElementById('serveHint'),
+};
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ======================================================================
+   八、遊戲流程
+   ====================================================================== */
+function startGame(){
+  state.mode='playing';
+  state.questions = buildRoundQuestions();
+  state.qIndex = -1;
+  state.score=0; state.lives=3; state.combo=0; state.maxCombo=0; state.multiplier=1;
+  state.correctCount=0; state.wrongHits=0; state.hintCount=0; state.elapsed=0;
+  state.wrongTally={}; state.reviewLog=[]; state.livelyMode=false;
+  state.effects={ radar:0, dict:0, slow:0, longPaddle:0 };
+  state.inventory = {};
+  POWERUP_TYPES.forEach(p=>{ state.inventory[p.key] = 2; });
+
+  paddle.w = paddle.baseW; capsules=[]; particles=[]; extraBalls=[];
+  showScreen('game-screen');
+  resizeCanvas(); initStars();
+  updateHUD();
+  renderItemPanel();
+  nextQuestion();
+  lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function nextQuestion(){
+  state.qIndex++;
+  if(state.qIndex >= state.questions.length){ handleSuccess(); return; }
+  state.current = state.questions[state.qIndex];
+  state.qStartTime = performance.now();
+  state.usedHintThisQ = false;
+  state.questionResolved = false;
+
+  bricks = buildBricksForQuestion(state.current, state.qIndex);
+  extraBalls = [];
+  resetBallOnPaddle();
+
+  el.progressLabel.textContent = `第 ${state.qIndex+1}／${state.questions.length} 題`;
+  el.levelVal.textContent = String(state.qIndex+1).padStart(2,'0');
+  // 本題華語詞已顯示於上方任務列 promptText 中，不需要額外的 keywordLabel
+  el.promptText.textContent = `華語任務：請找出「${state.current.mandarin}」的台語說法`;
+  Speech.speakMandarin(`請找出「${state.current.mandarin}」的台語說法`);
+}
+
+function resetBallOnPaddle(){
+  state.served = false;
+  paddle.x = W/2 - paddle.w/2; paddle.y = H - 34;
+  ball.x = paddle.x + paddle.w/2; ball.y = paddle.y - ball.r - 2;
+  ball.vx = 0; ball.vy = 0;
+  el.serveHint.style.display = 'block';
+}
+function launchBall(){
+  state.served = true;
+  const angle = rand(-0.55, 0.55) - Math.PI/2; // 大致朝上，帶點左右角度
+  const spd = ball.speed * (performance.now()<state.effects.slow ? 0.6 : 1);
+  ball.vx = Math.cos(angle)*spd; ball.vy = Math.sin(angle)*spd;
+  el.serveHint.style.display = 'none';
+}
+
+function replayCurrentPrompt(){
+  if(!state.current) return;
+  Speech.speakMandarin(`請找出「${state.current.mandarin}」的台語說法`);
+}
+
+/* ======================================================================
+   九、碰撞與判定
+   ====================================================================== */
+function ballBrickCollision(b, brick){
+  return ball.x + ball.r > brick.x && ball.x - ball.r < brick.x + brick.w &&
+         ball.y + ball.r > brick.y && ball.y - ball.r < brick.y + brick.h;
+}
+function resolveBounceAgainstBrick(brick){
+  const overlapLeft = (ball.x + ball.r) - brick.x;
+  const overlapRight = (brick.x + brick.w) - (ball.x - ball.r);
+  const overlapTop = (ball.y + ball.r) - brick.y;
+  const overlapBottom = (brick.y + brick.h) - (ball.y - ball.r);
+  const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+  if(minOverlap === overlapTop || minOverlap === overlapBottom){ ball.vy *= -1; }
+  else { ball.vx *= -1; }
+}
+
+function onHitPowerupBrick(brick){
+  brick.alive = false;
+  spawnBurst(brick.x+brick.w/2, brick.y+brick.h/2, '#ff9d2e');
+  const keys = Object.keys(state.inventory);
+  const pick = keys[Math.floor(Math.random()*keys.length)];
+  state.inventory[pick] = (state.inventory[pick]||0) + 1;
+  setAlert(`🎁 獲得道具：${POWERUP_TYPES.find(p=>p.key===pick).label} +1`);
+  renderItemPanel();
+}
+function onHitDangerBrick(brick){
+  brick.alive = false;
+  spawnBurst(brick.x+brick.w/2, brick.y+brick.h/2, '#b91c1c');
+  const now = performance.now();
+  const effect = Math.floor(Math.random()*4);
+  if(effect===0){ // 球速突然增加
+    const spd = Math.hypot(ball.vx, ball.vy) || ball.speed;
+    const boosted = spd * 1.3;
+    const angle = Math.atan2(ball.vy, ball.vx);
+    ball.vx = Math.cos(angle)*boosted; ball.vy = Math.sin(angle)*boosted;
+    setAlert('⚠️ 骷髏磚：球速突然增加！');
+  } else if(effect===1){ // 擋板短暫縮短
+    paddle.w = Math.max(60, paddle.baseW*0.6);
+    state.effects.longPaddle = 0;
+    setTimeout(()=>{ if(performance.now() > state.effects.longPaddle) paddle.w = paddle.baseW; }, 4000);
+    setAlert('⚠️ 骷髏磚：擋板暫時縮短！');
+  } else if(effect===2){ // 扣除少量分數
+    state.score = Math.max(0, state.score - 15);
+    setAlert('⚠️ 骷髏磚：扣15分！');
+  } else { // 產生一顆額外干擾球（沿用一般球的物理，但不判定答案，只加速清障礙磚）
+    extraBalls.push({ x:ball.x, y:ball.y, r:ball.r*0.85, vx:-ball.vx, vy:ball.vy });
+    setAlert('⚠️ 骷髏磚：多了一顆干擾球！');
+  }
+  updateHUD();
+}
+function onHitPlainBrick(brick){
+  brick.alive = false;
+  state.score += 10;
+  spawnBurst(brick.x+brick.w/2, brick.y+brick.h/2, '#8a8f9c');
+  updateHUD();
+}
+function onHitAnswerBrick(brick){
+  if(state.questionResolved) return;
+  if(brick.isCorrect){
+    state.questionResolved = true;
+    brick.alive = false;
+    const elapsedQ = (performance.now()-state.qStartTime)/1000;
+    let gained = 100;
+    if(elapsedQ<=8) gained += 50;
+    if(!state.usedHintThisQ) gained += 30;
+    gained = Math.round(gained*state.multiplier);
+    state.score += gained; state.correctCount++;
+    state.combo++; state.maxCombo=Math.max(state.maxCombo,state.combo);
+
+    if(state.combo>=10 && !state.livelyMode){
+      state.livelyMode = true; state.score += 1000;
+      setAlert('🔥 臺語全壘打！額外 +1000 分！');
+    }
+    if(state.combo>=5) state.multiplier=3; else if(state.combo>=3) state.multiplier=2; else state.multiplier=1;
+
+    logReview(true, brick);
+    showFeedback(true, brick, `+${gained} 分`);
+    spawnBurst(brick.x+brick.w/2, brick.y+brick.h/2, '#3ddc84');
+    playAnswerAudio(state.current);
+
+    setTimeout(()=>{ if(state.mode==='playing') nextQuestion(); }, 1300);
+  } else {
+    state.wrongHits++; state.combo=0; state.multiplier=1;
+    state.score = Math.max(0, state.score - 20);
+    state.wrongTally[brick.hanji] = (state.wrongTally[brick.hanji]||0)+1;
+    brick.flash = 60; brick.flashColor = '#ff5f6d';
+    logReview(false, brick);
+    showFeedback(false, brick, '-20 分');
+    resolveBounceAgainstBrick(brick);
+    updateHUD();
+  }
+}
+
+function onBallDropped(){
+  state.lives = Math.max(0, state.lives-1);
+  extraBalls = [];
+  updateHUD();
+  if(state.lives<=0){ setTimeout(()=>handleFail(), 300); return; }
+  state.mode = 'paused-serve';
+  setTimeout(()=>{
+    if(state.mode==='paused-serve'){ state.mode='playing'; resetBallOnPaddle(); }
+  }, 700);
+}
+
+function logReview(isCorrect, brick){
+  state.reviewLog.push({
+    mandarinPrompt: `請找出「${state.current.mandarin}」的台語說法`,
+    hitHanji: brick.hanji, hitTailo: brick.tailo || '－',
+    correctHanji: state.current.hanji, correctTailo: state.current.tailo || '－',
+    isCorrect,
+  });
+}
+function synthCorrectSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.06 + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.06);
+      osc.stop(ctx.currentTime + idx * 0.06 + 0.12);
+    });
+  } catch(e) {}
+}
+
+function synthWrongSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+    osc1.frequency.setValueAtTime(180, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.22);
+    osc2.frequency.setValueAtTime(135, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.22);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    osc1.start();
+    osc2.start();
+    osc1.stop(ctx.currentTime + 0.22);
+  } catch(e) {}
+}
+
+function showFeedback(isCorrect, brick, extra){
+  if (isCorrect) { synthCorrectSound(); } else { synthWrongSound(); }
+  el.feedbackToast.classList.remove('correct','wrong');
+  el.feedbackToast.classList.add(isCorrect?'correct':'wrong','show');
+  el.ftTitle.textContent = isCorrect ? '答對了！' : '這毋是喔！';
+  if(isCorrect){
+    el.ftBody.textContent = `${state.current.mandarin}的台語是`;
+    el.ftTailo.textContent = state.current.tailo ? `${state.current.hanji}（${state.current.tailo}）` : state.current.hanji;
+  } else {
+    el.ftBody.textContent = `正確答案是「${state.current.hanji}」`;
+    el.ftTailo.textContent = state.current.tailo || '';
+  }
+  el.ftAudio.textContent = extra || '';
+  clearTimeout(showFeedback._t);
+  showFeedback._t = setTimeout(()=>{ el.feedbackToast.classList.remove('show'); }, isCorrect?1400:1100);
+}
+function playAnswerAudio(q){
+  const path = `audio/${q.id}.mp3`;
+  el.ftAudio.textContent = '';
+  Speech.playTaiyu(path, ()=>{ el.ftAudio.textContent = '▶ 臺羅：' + (q.tailo || q.hanji); Speech.speakVocabApprox(q.hanji, q.tailo); }, ()=>{});
+}
+function setAlert(msg){
+  el.ftAudio.textContent = msg;
+}
+
+/* ======================================================================
+   十、道具
+   ====================================================================== */
+function activatePowerup(key){
+  const now = performance.now();
+  if(key==='replay'){ replayCurrentPrompt(); }
+  else if(key==='radar'){ state.effects.radar = now + 3000; }
+  else if(key==='dict'){ state.effects.dict = now + 3000; showDictPanel(); }
+  else if(key==='long'){ state.effects.longPaddle = now + 10000; paddle.w = paddle.baseW*1.5; }
+  else if(key==='slow'){ state.effects.slow = now + 5000; }
+  else if(key==='bomb'){
+    const wrongOnes = bricks.filter(b=>b.kind==='answer' && !b.isCorrect && b.alive);
+    shuffle(wrongOnes).slice(0,3).forEach(b=>{ b.alive=false; spawnBurst(b.x+b.w/2,b.y+b.h/2,'#ff5f6d'); });
+  }
+  else if(key==='multiball'){
+    if(state.served){
+      const spd = Math.hypot(ball.vx, ball.vy) || ball.speed;
+      [-0.4, 0.4].forEach(offset=>{
+        const angle = Math.atan2(ball.vy, ball.vx) + offset;
+        extraBalls.push({ x:ball.x, y:ball.y, r:ball.r*0.85, vx:Math.cos(angle)*spd, vy:Math.sin(angle)*spd });
+      });
+    }
+  }
+  else if(key==='extralife'){
+    state.lives = Math.min(5, state.lives+1);
+    updateHUD();
+  }
+}
+
+function renderItemPanel(){
+  const list = document.getElementById('itemList');
+  if(!list) return;
+  list.innerHTML = POWERUP_TYPES.map(p=>{
+    const count = state.inventory[p.key] || 0;
+    const disabled = count<=0 || state.mode!=='playing';
+    return `<div class="item-card${disabled?' disabled':''}" data-key="${p.key}">
+      <span class="item-emoji">${p.emoji}</span>
+      <span class="item-label">${p.label}</span>
+      <span class="item-count">x${count}</span>
+    </div>`;
+  }).join('');
+}
+document.getElementById('itemList').addEventListener('click', (e)=>{
+  const card = e.target.closest('.item-card');
+  if(!card || card.classList.contains('disabled')) return;
+  useItem(card.dataset.key);
+});
+function useItem(key){
+  if(state.mode!=='playing') return;
+  if((state.inventory[key]||0) <= 0) return;
+  state.inventory[key]--;
+  activatePowerup(key);
+  renderItemPanel();
+}
+function showDictPanel(){
+  const q = state.current;
+  el.dictMandarin.textContent = q.mandarin;
+  el.dictHanji.textContent = q.hanji;
+  el.dictTailo.textContent = q.tailo || '（句子，見語音）';
+  el.dictPanel.classList.add('show');
+  setTimeout(()=>{ el.dictPanel.classList.remove('show'); }, 3000);
+}
+
+function spawnBurst(x,y,color){
+  for(let i=0;i<12;i++){
+    particles.push({ x,y, vx:rand(-150,150), vy:rand(-150,150), life:0.45, maxLife:0.45, color, size:rand(2,4) });
+  }
+}
+
+/* ======================================================================
+   十一、暫停 / 音效 / 重新開始
+   ====================================================================== */
+function togglePause(){
+  if(state.mode==='playing'){ state.mode='paused'; el.pauseOverlay.classList.add('show'); Speech.stopAll(); }
+  else if(state.mode==='paused'){ state.mode='playing'; el.pauseOverlay.classList.remove('show'); lastFrameTime=performance.now(); }
+}
+function toggleSound(){
+  Speech.enabled = !Speech.enabled;
+  el.btnSound.textContent = Speech.enabled ? '🔊 音效開關' : '🔇 音效開關';
+  if(!Speech.enabled) Speech.stopAll();
+}
+let modeBeforeHelp = null;
+function openHelp(){
+  modeBeforeHelp = state.mode;
+  if(state.mode==='playing'){ state.mode='paused'; Speech.stopAll(); }
+  showScreen('help-screen');
+}
+function closeHelp(){
+  showScreen('game-screen');
+  if(modeBeforeHelp==='playing'){ state.mode='playing'; lastFrameTime=performance.now(); }
+}
+
+/* ======================================================================
+   十二、結算
+   ====================================================================== */
+function handleSuccess(){
+  state.mode='success';
+  state.score += 500;
+  Speech.stopAll();
+  if(state.score>bestScore){ bestScore=state.score; try{ localStorage.setItem('taigi_brick_best', String(bestScore)); }catch(e){} }
+  renderResult(true);
+  showScreen('result-screen');
+}
+function handleFail(){
+  state.mode='fail';
+  Speech.stopAll();
+  renderResult(false);
+  showScreen('result-screen');
+}
+function renderResult(success){
+  const titleEl = document.getElementById('resultTitle');
+  titleEl.textContent = success ? '挑戰成功！' : '挑戰結束';
+  titleEl.className = success ? 'success' : 'fail';
+
+  const total = state.correctCount + state.wrongHits;
+  const acc = total>0 ? Math.round((state.correctCount/(state.qIndex+ (success?0:1)||1))*100) : 0;
+
+  try{
+    window.parent.postMessage({ type:'TAIYU_GAME_RESULT', gameKey:'game2', score: state.score, accuracy: acc }, window.location.origin);
+  }catch(e){ /* 不在 iframe 中執行時忽略 */ }
+
+  const grid = document.getElementById('statGrid');
+  const stats = [
+    ['總得分', state.score],
+    ['個人最高分', bestScore],
+    ['完成題數', `${success?state.questions.length:state.qIndex}／${state.questions.length}`],
+    ['正確題數', state.correctCount],
+    ['錯誤撞擊數', state.wrongHits],
+    ['最高連擊', state.maxCombo],
+    ['遊玩時間', state.elapsed.toFixed(1)+'s'],
+    ['最常答錯的詞語', topWrongWord()],
+  ];
+  grid.innerHTML = stats.map(([k,v])=>`<div class="stat-card"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+
+  const body = document.getElementById('reviewBody');
+  body.innerHTML = state.reviewLog.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.mandarinPrompt)}</td>
+      <td>${escapeHtml(r.hitHanji)}／${escapeHtml(r.hitTailo)}</td>
+      <td>${escapeHtml(r.correctHanji)}</td>
+      <td>${escapeHtml(r.correctTailo)}</td>
+      <td class="${r.isCorrect?'ok':'no'}">${r.isCorrect?'答對':'答錯'}</td>
+      <td>${r.isCorrect ? '答對了！非常好！' : `正確答案是「${escapeHtml(r.correctHanji)}」`}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:#7f93b0;">尚無作答紀錄</td></tr>';
+}
+function topWrongWord(){
+  const keys = Object.keys(state.wrongTally);
+  if(keys.length===0) return '－';
+  keys.sort((a,b)=>state.wrongTally[b]-state.wrongTally[a]);
+  return keys[0];
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ======================================================================
+   十三、HUD
+   ====================================================================== */
+function updateHUD(){
+  el.scoreVal.textContent = String(Math.max(0,state.score)).padStart(6,'0');
+  el.livesVal.textContent = '❤'.repeat(Math.max(0,state.lives)) + '♡'.repeat(Math.max(0,5-state.lives));
+  el.comboVal.textContent = 'x'+state.multiplier + (state.combo>0 ? `（${state.combo}連擊）` : '');
+}
+
+/* ======================================================================
+   十四、主要遊戲迴圈
+   ====================================================================== */
+let lastFrameTime = performance.now();
+function gameLoop(now){
+  requestAnimationFrame(gameLoop);
+  if(state.mode!=='playing' && state.mode!=='paused-serve'){ lastFrameTime = now; return; }
+  let dt = (now-lastFrameTime)/1000; dt = Math.min(dt, 0.033); lastFrameTime = now;
+  if(state.mode==='playing') state.elapsed += dt;
+
+  updatePaddle(dt);
+  if(state.served) { updateBall(dt, now); updateExtraBalls(dt, now); }
+  updateCapsules(dt);
+  updateParticles(dt);
+  bricks.forEach(b=>{ if(b.flash>0) b.flash -= 1; });
+
+  render(now);
+}
+
+function updatePaddle(dt){
+  const speed = 420;
+  if(pointerX!=null){
+    paddle.x += (pointerX - paddle.w/2 - paddle.x) * 0.35;
+  }
+  if(keysDown['arrowleft'] || keysDown['a']) paddle.x -= speed*dt;
+  if(keysDown['arrowright'] || keysDown['d']) paddle.x += speed*dt;
+  paddle.x = clamp(paddle.x, 6, W - paddle.w - 6);
+  paddle.y = H - 34;
+  if(!state.served){ ball.x = paddle.x + paddle.w/2; ball.y = paddle.y - ball.r - 2; }
+
+  if(performance.now() > state.effects.longPaddle && paddle.w !== paddle.baseW){ paddle.w = paddle.baseW; }
+}
+
+function updateBall(dt, now){
+  const slowMul = now < state.effects.slow ? 0.6 : 1;
+  ball.x += ball.vx*dt*slowMul; ball.y += ball.vy*dt*slowMul;
+
+  if(ball.x - ball.r < 0){ ball.x = ball.r; ball.vx *= -1; }
+  if(ball.x + ball.r > W){ ball.x = W - ball.r; ball.vx *= -1; }
+  if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -1; }
+
+  // 擋板碰撞
+  if(ball.y + ball.r > paddle.y && ball.y - ball.r < paddle.y + paddle.h &&
+     ball.x > paddle.x && ball.x < paddle.x + paddle.w && ball.vy > 0){
+    const hitPos = (ball.x - (paddle.x + paddle.w/2)) / (paddle.w/2); // -1 ~ 1
+    const spd = Math.hypot(ball.vx, ball.vy);
+    const angle = hitPos * 1.0 - Math.PI/2;
+    ball.vx = Math.cos(angle) * spd;
+    ball.vy = Math.sin(angle) * spd;
+    ball.y = paddle.y - ball.r - 1;
+  }
+
+  // 掉出畫面下方
+  if(ball.y - ball.r > H){
+    onBallDropped();
+    return;
+  }
+
+  // 磚塊碰撞（每幀只處理第一顆命中的磚，避免同幀多重誤判）
+  for(const brick of bricks){
+    if(!brick.alive) continue;
+    if(ballBrickCollision(ball, brick)){
+      if(brick.kind==='plain'){ resolveBounceAgainstBrick(brick); onHitPlainBrick(brick); }
+      else if(brick.kind==='powerup'){ resolveBounceAgainstBrick(brick); onHitPowerupBrick(brick); }
+      else if(brick.kind==='danger'){ resolveBounceAgainstBrick(brick); onHitDangerBrick(brick); }
+      else if(brick.kind==='answer'){
+        if(brick.isCorrect){ resolveBounceAgainstBrick(brick); onHitAnswerBrick(brick); }
+        else { onHitAnswerBrick(brick); } // 錯誤磚在函式內處理反彈，磚塊本身不消失
+      }
+      break;
+    }
+  }
+}
+
+// 額外干擾球（多重球道具／危險磚產生）：只清普通磚／道具磚／危險磚，不判定台語答案，
+// 掉出畫面直接消失、不扣生命。
+function updateExtraBalls(dt, now){
+  const slowMul = now < state.effects.slow ? 0.6 : 1;
+  extraBalls.forEach(b=>{ b.x += b.vx*dt*slowMul; b.y += b.vy*dt*slowMul; });
+
+  extraBalls.forEach(b=>{
+    if(b.x - b.r < 0){ b.x = b.r; b.vx *= -1; }
+    if(b.x + b.r > W){ b.x = W - b.r; b.vx *= -1; }
+    if(b.y - b.r < 0){ b.y = b.r; b.vy *= -1; }
+    if(b.y + b.r > paddle.y && b.y - b.r < paddle.y + paddle.h && b.x > paddle.x && b.x < paddle.x + paddle.w && b.vy > 0){
+      b.vy *= -1; b.y = paddle.y - b.r - 1;
+    }
+    for(const brick of bricks){
+      if(!brick.alive || brick.kind==='answer') continue; // 不影響答案磚判定
+      if(b.x + b.r > brick.x && b.x - b.r < brick.x + brick.w && b.y + b.r > brick.y && b.y - b.r < brick.y + brick.h){
+        const overlapLeft = (b.x + b.r) - brick.x, overlapRight = (brick.x + brick.w) - (b.x - b.r);
+        const overlapTop = (b.y + b.r) - brick.y, overlapBottom = (brick.y + brick.h) - (b.y - b.r);
+        const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+        if(minOverlap === overlapTop || minOverlap === overlapBottom){ b.vy *= -1; } else { b.vx *= -1; }
+        if(brick.kind==='plain'){ onHitPlainBrick(brick); }
+        else if(brick.kind==='powerup'){ onHitPowerupBrick(brick); }
+        else if(brick.kind==='danger'){ onHitDangerBrick(brick); }
+        break;
+      }
+    }
+  });
+
+  extraBalls = extraBalls.filter(b => b.y - b.r <= H);
+}
+
+function updateCapsules(dt){
+  capsules.forEach(c=>{ c.y += c.vy*dt; });
+  capsules = capsules.filter(c=>{
+    if(c.y - c.r > paddle.y + paddle.h) return false; // 掉出畫面
+    if(c.y + c.r > paddle.y && c.x > paddle.x && c.x < paddle.x + paddle.w){
+      activatePowerup(c.type.key);
+      return false;
+    }
+    return true;
+  });
+}
+function updateParticles(dt){
+  particles.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; p.vx*=0.9; p.vy*=0.9; });
+  particles = particles.filter(p=>p.life>0);
+}
+
+/* ======================================================================
+   十五、繪圖
+   ====================================================================== */
+function render(now){
+  ctx.clearRect(0,0,W,H);
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#050915'); g.addColorStop(1,'#01030a');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  stars.forEach(s=>{
+    const a = 0.4+0.5*Math.sin(now/450+s.tw);
+    ctx.fillStyle = `rgba(200,230,255,${a.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  });
+
+  drawBricks(now);
+  drawCapsules(now);
+  drawParticles();
+  drawPaddle(now);
+  drawExtraBalls();
+  drawBall();
+}
+
+function drawBricks(now){
+  const radarOn = now < state.effects.radar;
+  bricks.forEach(b=>{
+    if(!b.alive) return;
+    ctx.save();
+    if(b.kind==='plain'){
+      ctx.fillStyle = '#4b5566'; ctx.strokeStyle='#8a8f9c'; ctx.lineWidth=1.5;
+      roundRect(b.x,b.y,b.w,b.h,6); ctx.fill(); ctx.stroke();
+    } else if(b.kind==='powerup'){
+      ctx.fillStyle = 'rgba(255,157,46,0.18)'; ctx.strokeStyle='#ff9d2e'; ctx.lineWidth=2;
+      roundRect(b.x,b.y,b.w,b.h,6); ctx.fill(); ctx.stroke();
+      ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#ff9d2e'; ctx.fillText('✨', b.x+b.w/2, b.y+b.h/2+1);
+    } else if(b.kind==='danger'){
+      ctx.fillStyle = 'rgba(90,10,15,0.55)'; ctx.strokeStyle='#b91c1c'; ctx.lineWidth=2;
+      roundRect(b.x,b.y,b.w,b.h,6); ctx.fill(); ctx.stroke();
+      ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#fff'; ctx.fillText('💀', b.x+b.w/2, b.y+b.h/2+1);
+    } else {
+      let outline = b.outline;
+      let fillA = 'rgba(10,16,36,0.9)';
+      if(b.flash>0 && b.flashColor){ outline = b.flashColor; fillA = 'rgba(60,15,20,0.5)'; }
+      if(radarOn && b.isCorrect){
+        const flick = 0.5+0.5*Math.sin(now/90);
+        outline = `rgba(255,215,120,${0.6+flick*0.4})`;
+      }
+      ctx.shadowColor = outline; ctx.shadowBlur = 10;
+      ctx.fillStyle = fillA; ctx.strokeStyle = outline; ctx.lineWidth = 2.2;
+      roundRect(b.x,b.y,b.w,b.h,8); ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle = '#fff';
+      const fontSize = b.hanji.length > 4 ? 13 : 15;
+      ctx.font = `bold ${fontSize}px "Segoe UI","Microsoft JhengHei",sans-serif`;
+      const midY = b.tailo ? b.y+b.h/2-7 : b.y+b.h/2;
+      wrapText(b.hanji, b.x+b.w/2, midY, b.w-6, fontSize+2);
+      if(b.tailo){
+        ctx.fillStyle = '#8be9ff';
+        ctx.font = 'bold 11px "Consolas","Courier New",monospace';
+        ctx.fillText(b.tailo, b.x+b.w/2, b.y+b.h/2+9, b.w-4);
+      }
+    }
+    ctx.restore();
+  });
+}
+function wrapText(text, cx, cy, maxWidth, lineHeight){
+  if(ctx.measureText(text).width <= maxWidth || text.length<=4){
+    ctx.fillText(text, cx, cy);
+    return;
+  }
+  const mid = Math.ceil(text.length/2);
+  const line1 = text.slice(0,mid), line2 = text.slice(mid);
+  ctx.fillText(line1, cx, cy-lineHeight/2+2);
+  ctx.fillText(line2, cx, cy+lineHeight/2+2);
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function drawPaddle(now){
+  ctx.save();
+  const glow = state.livelyMode ? '#ffb85c' : '#22e2f0';
+  ctx.shadowColor = glow; ctx.shadowBlur = state.livelyMode?18:10;
+  ctx.fillStyle = '#0d2233'; ctx.strokeStyle = glow; ctx.lineWidth = 2;
+  roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 7); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+function drawBall(){
+  ctx.save();
+  ctx.shadowColor = '#fff'; ctx.shadowBlur = 8;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawExtraBalls(){
+  extraBalls.forEach(b=>{
+    ctx.save();
+    ctx.shadowColor = '#b98bff'; ctx.shadowBlur = 6;
+    ctx.fillStyle = '#d9bfff';
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+function drawCapsules(now){
+  capsules.forEach(c=>{
+    ctx.save();
+    ctx.translate(c.x,c.y);
+    ctx.fillStyle = 'rgba(4,10,25,0.9)'; ctx.strokeStyle='#ff9d2e'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,c.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.font='13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(c.type.emoji, 0, 1);
+    ctx.restore();
+  });
+}
+function drawParticles(){
+  particles.forEach(p=>{
+    ctx.globalAlpha = clamp(p.life/p.maxLife,0,1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+/* ======================================================================
+   十六、按鈕事件
+   ====================================================================== */
+document.getElementById('btnStart').addEventListener('click', ()=>{
+  if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); }
+  startGame();
+});
+document.getElementById('btnReplayPrompt').addEventListener('click', replayCurrentPrompt);
+document.getElementById('btnPauseMini').addEventListener('click', togglePause);
+document.getElementById('btnSound').addEventListener('click', toggleSound);
+document.getElementById('btnResume').addEventListener('click', togglePause);
+document.getElementById('btnQuitToHome').addEventListener('click', ()=>{
+  state.mode='home'; Speech.stopAll(); el.pauseOverlay.classList.remove('show'); showScreen('home-screen');
+});
+document.getElementById('btnRetry').addEventListener('click', startGame);
+document.getElementById('btnHome').addEventListener('click', ()=>{ showScreen('home-screen'); });
+document.getElementById('btnHelp').addEventListener('click', openHelp);
+document.getElementById('btnCloseHelp').addEventListener('click', closeHelp);
+
+/* ======================================================================
+   十七、初始化
+   ====================================================================== */
+resizeCanvas();
+initStars();
+
+})();
+</script>
+</body>
+</html>

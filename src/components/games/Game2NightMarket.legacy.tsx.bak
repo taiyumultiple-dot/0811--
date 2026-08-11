@@ -1,0 +1,1515 @@
+import { useState, useEffect, useRef } from 'react';
+import { GameShell } from './GameShell';
+import { GAMES } from './gamesData';
+import { speakTaiyu } from '../../lib/speech';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Volume2,
+  Trophy,
+  Heart,
+  Clock,
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronRight,
+  ChevronLeft,
+  VolumeX,
+  Award,
+  Crown,
+  Eye,
+  Shield,
+  Zap,
+  Maximize2
+} from 'lucide-react';
+import { charAming } from '../../assets/images/characters';
+
+// Level Config for Tai-Gi Brick Breaker
+interface LevelConfig {
+  target: { label: string; subLabel: string };
+  distractors: { label: string; subLabel: string }[];
+}
+
+const LEVEL_CONFIGS: LevelConfig[] = [
+  {
+    target: { label: '麵茶', subLabel: 'mī-tê' },
+    distractors: [
+      { label: '牛舌餅', subLabel: 'gû-tsi̍h-piánn' },
+      { label: '圓仔湯', subLabel: 'înn-á-thng' },
+      { label: '麻粩', subLabel: 'muâ-láu' },
+      { label: '古早味', subLabel: 'koo-tshá-bī' },
+    ]
+  },
+  {
+    target: { label: '蚵仔煎', subLabel: 'ô-á-tsian' },
+    distractors: [
+      { label: '臭豆腐', subLabel: 'tshàu-tāu-hū' },
+      { label: '鹽酥雞', subLabel: 'iâm-so͘-ke' },
+      { label: '地瓜球', subLabel: 'tē-kuê-kiû' },
+      { label: '青草茶', subLabel: 'tshenn-tsháu-tê' },
+    ]
+  },
+  {
+    target: { label: '大腸包小腸', subLabel: 'tuā-tn̂g-pau-sió-tn̂g' },
+    distractors: [
+      { label: '香腸', subLabel: 'tsian-tshiâng' },
+      { label: '筒仔米糕', subLabel: 'tâng-á-bí-ko' },
+      { label: '肉圓', subLabel: 'bah-ôan' },
+      { label: '蔥油餅', subLabel: 'tshang-iû-piánn' },
+    ]
+  },
+  {
+    target: { label: '珍珠奶茶', subLabel: 'tsin-tsu-nâi-tê' },
+    distractors: [
+      { label: '甘蔗汁', subLabel: 'kam-sià-tsiap' },
+      { label: '豆花', subLabel: 'tāu-hue' },
+      { label: '糖葫蘆', subLabel: 'thâng-ôo-lōo' },
+      { label: '雞蛋糕', subLabel: 'ke-tn̂g-ko' },
+    ]
+  },
+  {
+    target: { label: '圓仔湯', subLabel: 'înn-á-thng' },
+    distractors: [
+      { label: '麻粩', subLabel: 'muâ-láu' },
+      { label: '麵茶', subLabel: 'mī-tê' },
+      { label: '牛舌餅', subLabel: 'gû-tsi̍h-piánn' },
+      { label: '古早味', subLabel: 'koo-tshá-bī' },
+    ]
+  }
+];
+
+// Brick Structure
+interface Brick {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label: string;
+  subLabel?: string;
+  type: 'correct' | 'distractor' | 'hazard' | 'info';
+  color: string;
+  active: boolean;
+}
+
+// Particle Structure for Neon Explosion Effects
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  size: number;
+  alpha: number;
+  life: number;
+}
+
+// Sound effects synthesizer using Web Audio API
+function playArcadeSfx(type: 'bounce' | 'correct' | 'hazard' | 'lost' | 'powerup' | 'click') {
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'bounce' || type === 'click') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'correct') {
+      // ascending arpeggio chord C5-E5-G5-C6
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.1);
+      osc.frequency.setValueAtTime(783.99, now + 0.2);
+      osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.3);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.45);
+      osc.start(now);
+      osc.stop(now + 0.45);
+    } else if (type === 'hazard') {
+      // explosion buzz sound
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(30, now + 0.35);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (type === 'lost') {
+      // sad slide down
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(280, now);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (type === 'powerup') {
+      // laser pitch sweep
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, now);
+      osc.frequency.exponentialRampToValueAtTime(1600, now + 0.22);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    }
+  } catch (e) {
+    console.warn('AudioContext failed to trigger sound effect', e);
+  }
+}
+
+export default function Game2NightMarket({ onNext, onHome }: { onNext: () => void; onHome?: () => void }) {
+  // Game state
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [score, setScore] = useState(2450); // Start with high score shown in picture
+  const [lives, setLives] = useState(3);
+  const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'completed'>('playing');
+  const [highContrast, setHighContrast] = useState(false); // Accessibility big-font white bg option
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Powerups state
+  const [powerBallActive, setPowerBallActive] = useState(false); // fast fire-ball pierce mode
+  const [powerBallTime, setPowerBallTime] = useState(0);
+  const [shieldActive, setShieldActive] = useState(false); // bottom safety shield
+  const [extendActive, setExtendActive] = useState(false); // paddle width increase
+  const [extendTime, setExtendTime] = useState(0);
+
+  // Stats
+  const [combo, setCombo] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes level timer
+
+  // Canvas Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animFrameId = useRef<number | null>(null);
+
+  // Core physics parameters
+  const [paddleX, setPaddleX] = useState(250);
+  const paddleWidth = extendActive ? 150 : 100;
+  const paddleHeight = 12;
+
+  const ballRef = useRef({
+    x: 300,
+    y: 350,
+    vx: 3,
+    vy: -3.5,
+    radius: 8,
+    active: false, // Wait for launch (Space / Click)
+  });
+
+  const bricksRef = useRef<Brick[]>([]);
+  const particlesRef = useRef<Particle[]>([]);
+  const currentLevelConfig = LEVEL_CONFIGS[levelIndex] || LEVEL_CONFIGS[0];
+
+  // Helper to trigger voice pronunciation
+  const playTargetVoice = () => {
+    if (soundEnabled) {
+      speakTaiyu(currentLevelConfig.target.label);
+    }
+  };
+
+  // Speak on level load
+  useEffect(() => {
+    const speakTimer = setTimeout(() => {
+      playTargetVoice();
+    }, 800);
+    return () => clearTimeout(speakTimer);
+  }, [levelIndex]);
+
+  // Handle countdown timer
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setGameState('gameover');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameState]);
+
+  // Handle powerup timers countdown
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const interval = setInterval(() => {
+      if (powerBallActive) {
+        setPowerBallTime((prev) => {
+          if (prev <= 1) {
+            setPowerBallActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
+      if (extendActive) {
+        setExtendTime((prev) => {
+          if (prev <= 1) {
+            setExtendActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameState, powerBallActive, extendActive]);
+
+  // Generate bricks for the current level
+  const generateBricks = (index: number) => {
+    const config = LEVEL_CONFIGS[index] || LEVEL_CONFIGS[0];
+    const newBricks: Brick[] = [];
+
+    // Row positions
+    const rowY = [45, 90, 135, 180, 225];
+
+    // Define colors for neon theme
+    const colors = {
+      correct: '#f59e0b', // Glowing Gold/Amber
+      distractor: '#06b6d4', // Cyan neon
+      distractor2: '#10b981', // Emerald green
+      distractor3: '#8b5cf6', // Violet
+      hazard: '#f43f5e', // Hot pink/red
+      info: '#f97316', // Orange
+    };
+
+    // Staggered layout exactly matching picture
+    // Row 0 (y = 45): Red X, Red X, Target word (Yellow), Red X, Red X
+    const row0 = ['hazard', 'hazard', 'correct', 'hazard', 'hazard'];
+    row0.forEach((type, col) => {
+      const x = 30 + col * 110;
+      let label = '❌';
+      let subLabel = '';
+      let color = colors.hazard;
+
+      if (type === 'correct') {
+        label = config.target.label;
+        subLabel = config.target.subLabel;
+        color = colors.correct;
+      }
+
+      newBricks.push({
+        id: `row0_${col}`,
+        x,
+        y: rowY[0],
+        width: 100,
+        height: 36,
+        label,
+        subLabel,
+        type: type as any,
+        color,
+        active: true,
+      });
+    });
+
+    // Row 1 (y = 90): Distractor 1 (Blue/Cyan), Distractor 2 (Blue/Green), Red X, Red X
+    const row1 = ['distractor_0', 'distractor_1', 'hazard', 'hazard'];
+    row1.forEach((type, col) => {
+      const x = 85 + col * 110;
+      let label = '❌';
+      let subLabel = '';
+      let color = colors.hazard;
+
+      if (type === 'distractor_0') {
+        label = config.distractors[0].label;
+        subLabel = config.distractors[0].subLabel;
+        color = colors.distractor;
+      } else if (type === 'distractor_1') {
+        label = config.distractors[1].label;
+        subLabel = config.distractors[1].subLabel;
+        color = '#38bdf8'; // Sky blue
+      }
+
+      newBricks.push({
+        id: `row1_${col}`,
+        x,
+        y: rowY[1],
+        width: 100,
+        height: 36,
+        label,
+        subLabel,
+        type: type.startsWith('distractor') ? 'distractor' : 'hazard',
+        color,
+        active: true,
+      });
+    });
+
+    // Row 2 (y = 135): Red X, Red X, Distractor 3 (Green), Red X, Red X
+    const row2 = ['hazard', 'hazard', 'distractor_2', 'hazard', 'hazard'];
+    row2.forEach((type, col) => {
+      const x = 30 + col * 110;
+      let label = '❌';
+      let subLabel = '';
+      let color = colors.hazard;
+
+      if (type === 'distractor_2') {
+        label = config.distractors[2].label;
+        subLabel = config.distractors[2].subLabel;
+        color = colors.distractor2;
+      }
+
+      newBricks.push({
+        id: `row2_${col}`,
+        x,
+        y: rowY[2],
+        width: 100,
+        height: 36,
+        label,
+        subLabel,
+        type: type === 'distractor_2' ? 'distractor' : 'hazard',
+        color,
+        active: true,
+      });
+    });
+
+    // Row 3 (y = 180): Skull, Distractor 4 (Purple), Skull, Red X
+    const row3 = ['skull', 'distractor_3', 'skull', 'hazard'];
+    row3.forEach((type, col) => {
+      const x = 85 + col * 110;
+      let label = '❌';
+      let subLabel = '';
+      let color = colors.hazard;
+
+      if (type === 'distractor_3') {
+        label = config.distractors[3].label;
+        subLabel = config.distractors[3].subLabel;
+        color = colors.distractor3;
+      } else if (type === 'skull') {
+        label = '💀';
+        color = '#ec4899'; // Magenta skull
+      }
+
+      newBricks.push({
+        id: `row3_${col}`,
+        x,
+        y: rowY[3],
+        width: 100,
+        height: 36,
+        label,
+        subLabel,
+        type: type === 'distractor_3' ? 'distractor' : 'hazard',
+        color,
+        active: true,
+      });
+    });
+
+    // Row 4 (y = 225): Red X, Info 1 (Orange), Info 2 (Orange), Red X, Red X
+    const row4 = ['hazard', 'info_1', 'info_2', 'hazard', 'hazard'];
+    row4.forEach((type, col) => {
+      const x = 30 + col * 110;
+      let label = '❌';
+      let subLabel = '';
+      let color = colors.hazard;
+
+      if (type === 'info_1') {
+        label = '鹿港老街';
+        subLabel = 'Luk-áng lâu-kai';
+        color = colors.info;
+      } else if (type === 'info_2') {
+        label = '在地小吃';
+        subLabel = 'tsāi-tē sió-tsia̍h';
+        color = colors.info;
+      }
+
+      newBricks.push({
+        id: `row4_${col}`,
+        x,
+        y: rowY[4],
+        width: 100,
+        height: 36,
+        label,
+        subLabel,
+        type: type.startsWith('info') ? 'info' : 'hazard',
+        color,
+        active: true,
+      });
+    });
+
+    bricksRef.current = newBricks;
+  };
+
+  // Reset/Initialize game blocks
+  useEffect(() => {
+    generateBricks(levelIndex);
+    ballRef.current = {
+      x: 300,
+      y: 350,
+      vx: 3,
+      vy: -3.5,
+      radius: 8,
+      active: false,
+    };
+  }, [levelIndex]);
+
+  // Sound play helper
+  const triggerSfx = (type: 'bounce' | 'correct' | 'hazard' | 'lost' | 'powerup' | 'click') => {
+    if (soundEnabled) {
+      playArcadeSfx(type);
+    }
+  };
+
+  // Click handler to trigger ball launching
+  const handleLaunchBall = () => {
+    if (gameState !== 'playing') return;
+    if (!ballRef.current.active) {
+      ballRef.current.active = true;
+      ballRef.current.vx = (Math.random() * 2 - 1) * 1.5 + 2.5; // Random diagonal launch
+      ballRef.current.vy = -3.8;
+      triggerSfx('click');
+    }
+  };
+
+  // Power-up activation buttons
+  const triggerPowerup = (type: 'ball' | 'shield' | 'paddle') => {
+    if (gameState !== 'playing') return;
+    if (type === 'ball') {
+      if (score >= 200) {
+        setScore((s) => s - 200);
+        setPowerBallActive(true);
+        setPowerBallTime(10);
+        triggerSfx('powerup');
+      }
+    } else if (type === 'shield') {
+      if (score >= 300 && !shieldActive) {
+        setScore((s) => s - 300);
+        setShieldActive(true);
+        triggerSfx('powerup');
+      }
+    } else if (type === 'paddle') {
+      if (score >= 150) {
+        setScore((s) => s - 150);
+        setExtendActive(true);
+        setExtendTime(15);
+        triggerSfx('powerup');
+      }
+    }
+  };
+
+  // Spawn visual particle explosions on hitting blocks
+  const spawnParticles = (x: number, y: number, color: string) => {
+    const burstCount = highContrast ? 8 : 16;
+    for (let i = 0; i < burstCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 3 + 1;
+      particlesRef.current.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color,
+        size: Math.random() * 4 + 2,
+        alpha: 1,
+        life: 1.0,
+      });
+    }
+  };
+
+  // Main canvas rendering animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let isComponentMounted = true;
+
+    const render = () => {
+      if (!isComponentMounted) return;
+
+      // 1. CLEAR CANVAS
+      if (highContrast) {
+        ctx.fillStyle = '#ffffff'; // Solid light pristine background
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // draw light subtle horizontal grids for alignment
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1.0;
+        for (let i = 40; i < canvas.height; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(canvas.width, i);
+          ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = '#0a0d1d'; // Deep interstellar retro space background
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Cyber grids
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.08)';
+        ctx.lineWidth = 1.0;
+        for (let i = 40; i < canvas.width; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, canvas.height);
+          ctx.stroke();
+        }
+        for (let i = 40; i < canvas.height; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(canvas.width, i);
+          ctx.stroke();
+        }
+      }
+
+      // 2. PHYSICS UPDATE
+      if (gameState === 'playing') {
+        const ball = ballRef.current;
+
+        if (ball.active) {
+          // speed factor
+          const speedMultiplier = powerBallActive ? 1.4 : 1.0;
+          ball.x += ball.vx * speedMultiplier;
+          ball.y += ball.vy * speedMultiplier;
+
+          // Wall bounces
+          if (ball.x - ball.radius < 0) {
+            ball.x = ball.radius;
+            ball.vx = -ball.vx;
+            triggerSfx('bounce');
+          } else if (ball.x + ball.radius > canvas.width) {
+            ball.x = canvas.width - ball.radius;
+            ball.vx = -ball.vx;
+            triggerSfx('bounce');
+          }
+
+          if (ball.y - ball.radius < 0) {
+            ball.y = ball.radius;
+            ball.vy = -ball.vy;
+            triggerSfx('bounce');
+          }
+
+          // Bottom screen collision (lost ball)
+          if (ball.y + ball.radius > canvas.height) {
+            if (shieldActive) {
+              setShieldActive(false);
+              ball.vy = -Math.abs(ball.vy);
+              ball.y = canvas.height - 20;
+              triggerSfx('powerup');
+              spawnParticles(ball.x, ball.y, '#06b6d4');
+            } else {
+              // Lost life
+              triggerSfx('lost');
+              setLives((l) => {
+                const nextLives = l - 1;
+                if (nextLives <= 0) {
+                  setGameState('gameover');
+                }
+                return nextLives;
+              });
+
+              // Reset ball position on paddle
+              ball.active = false;
+              ball.x = paddleX + paddleWidth / 2;
+              ball.y = 350;
+              ball.vx = 3;
+              ball.vy = -3.5;
+            }
+          }
+
+          // Paddle collision
+          const paddleY = 370;
+          if (
+            ball.vy > 0 &&
+            ball.y + ball.radius >= paddleY &&
+            ball.y - ball.radius <= paddleY + paddleHeight &&
+            ball.x >= paddleX &&
+            ball.x <= paddleX + paddleWidth
+          ) {
+            // angle based on hit position
+            const hitOffset = ball.x - (paddleX + paddleWidth / 2);
+            const normalizedHit = hitOffset / (paddleWidth / 2);
+            const bounceAngle = normalizedHit * (Math.PI / 3); // Max 60 degrees
+
+            const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+            ball.vx = currentSpeed * Math.sin(bounceAngle);
+            ball.vy = -Math.abs(currentSpeed * Math.cos(bounceAngle));
+
+            triggerSfx('bounce');
+            spawnParticles(ball.x, paddleY, highContrast ? '#0f172a' : '#00f3ff');
+          }
+
+          // Brick collision detection
+          const bricks = bricksRef.current;
+          for (let i = 0; i < bricks.length; i++) {
+            const brick = bricks[i];
+            if (!brick.active) continue;
+
+            // Ball overlap box bounding box collision
+            const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
+            const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
+
+            const distanceX = ball.x - closestX;
+            const distanceY = ball.y - closestY;
+            const distanceSquared = distanceX * distanceX + distanceY * distanceY;
+
+            if (distanceSquared < ball.radius * ball.radius) {
+              // Collision!
+              brick.active = false;
+              spawnParticles(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.color);
+
+              // Bounce back unless powerBallActive is true
+              if (!powerBallActive) {
+                // Determine collision side
+                const overlapX = ball.radius - Math.abs(distanceX);
+                const overlapY = ball.radius - Math.abs(distanceY);
+
+                if (overlapX < overlapY) {
+                  ball.vx = distanceX > 0 ? Math.abs(ball.vx) : -Math.abs(ball.vx);
+                } else {
+                  ball.vy = distanceY > 0 ? Math.abs(ball.vy) : -Math.abs(ball.vy);
+                }
+              }
+
+              // Evaluate hit brick type
+              if (brick.type === 'correct') {
+                triggerSfx('correct');
+                setScore((s) => s + 500); // Massive boost for correct
+                setCombo((c) => c + 1);
+
+                // Speak correct word
+                speakTaiyu(brick.label);
+
+                // Level complete sequence
+                setTimeout(() => {
+                  if (levelIndex < LEVEL_CONFIGS.length - 1) {
+                    setLevelIndex((prev) => prev + 1);
+                  } else {
+                    setGameState('completed');
+                  }
+                }, 1200);
+
+              } else if (brick.type === 'distractor' || brick.type === 'info') {
+                triggerSfx('bounce');
+                setScore((s) => s + 100);
+
+                // Speak distractor word out loud for educational feedback!
+                speakTaiyu(brick.label);
+
+              } else if (brick.type === 'hazard') {
+                triggerSfx('hazard');
+                setScore((s) => Math.max(0, s - 150)); // Penalty
+                setCombo(1); // Lose combo
+
+                // If skull, lose 1 extra life!
+                if (brick.label === '💀') {
+                  setLives((l) => {
+                    const nextLives = l - 1;
+                    if (nextLives <= 0) {
+                      setGameState('gameover');
+                    }
+                    return nextLives;
+                  });
+                }
+              }
+
+              break; // Handle one collision per frame
+            }
+          }
+        } else {
+          // Ball follows paddle when not launched
+          ball.x = paddleX + paddleWidth / 2;
+          ball.y = 358;
+        }
+      }
+
+      // 3. DRAW PARTICLES
+      particlesRef.current.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.025;
+        p.life -= 0.025;
+
+        if (highContrast) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = p.color;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+      // Filter out dead particles
+      particlesRef.current = particlesRef.current.filter((p) => p.life > 0);
+
+      // 4. DRAW BRICKS
+      bricksRef.current.forEach((brick) => {
+        if (!brick.active) return;
+
+        ctx.save();
+        if (highContrast) {
+          // Sharp solid white blocks with thick black borders for elder accessibility
+          ctx.strokeStyle = brick.type === 'correct' ? '#e65100' : '#1e293b';
+          ctx.lineWidth = brick.type === 'correct' ? 4 : 2.5;
+          ctx.fillStyle = brick.type === 'correct' ? '#fffbeb' : '#ffffff';
+
+          // draw round corner rect
+          ctx.beginPath();
+          ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          // Text labels - big black text
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = brick.type === 'correct' ? '#b45309' : '#0f172a';
+
+          if (brick.subLabel) {
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(brick.label, brick.x + brick.width / 2, brick.y + 11);
+
+            ctx.fillStyle = brick.type === 'correct' ? '#d97706' : '#2563eb';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(brick.subLabel, brick.x + brick.width / 2, brick.y + 26);
+          } else {
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillText(brick.label, brick.x + brick.width / 2, brick.y + brick.height / 2 + 1);
+          }
+        } else {
+          // Futuristic Cyber Neon brick look
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = brick.color;
+          ctx.strokeStyle = brick.color;
+          ctx.lineWidth = brick.type === 'correct' ? 3.0 : 1.5;
+
+          if (brick.type === 'correct') {
+            ctx.fillStyle = 'rgba(217, 119, 6, 0.25)'; // Glowing translucent gold
+          } else if (brick.type === 'hazard') {
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.15)'; // Deep red tint
+          } else {
+            ctx.fillStyle = 'rgba(11, 15, 30, 0.85)';
+          }
+
+          ctx.beginPath();
+          ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 5);
+          ctx.fill();
+          ctx.stroke();
+
+          // Internal grid decoration for futuristic arcade look
+          ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(brick.x + 3, brick.y + brick.height / 2);
+          ctx.lineTo(brick.x + brick.width - 3, brick.y + brick.height / 2);
+          ctx.stroke();
+
+          // Draw Text labels
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#ffffff';
+
+          if (brick.subLabel) {
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText(brick.label, brick.x + brick.width / 2, brick.y + 11);
+
+            ctx.fillStyle = brick.type === 'correct' ? '#fcd34d' : '#22d3ee';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText(brick.subLabel, brick.x + brick.width / 2, brick.y + 26);
+          } else {
+            ctx.font = 'bold 14px sans-serif';
+            if (brick.label === '💀') {
+              ctx.font = '20px sans-serif';
+            }
+            ctx.fillText(brick.label, brick.x + brick.width / 2, brick.y + brick.height / 2 + 1);
+          }
+        }
+        ctx.restore();
+      });
+
+      // 5. DRAW BOTTOM SHIELD POWER-UP
+      if (shieldActive) {
+        ctx.save();
+        if (highContrast) {
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(0, canvas.height - 3);
+          ctx.lineTo(canvas.width, canvas.height - 3);
+          ctx.stroke();
+        } else {
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#06b6d4';
+          ctx.strokeStyle = '#22d3ee';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(0, canvas.height - 4);
+          ctx.lineTo(canvas.width, canvas.height - 4);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 6. DRAW PADDLE
+      ctx.save();
+      const paddleY = 370;
+      if (highContrast) {
+        ctx.fillStyle = '#0f172a'; // solid dark black/navy
+        ctx.beginPath();
+        ctx.roundRect(paddleX, paddleY, paddleWidth, paddleHeight, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        // Glowing futuristic neon cyan paddle capsule
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#00f3ff';
+        ctx.fillStyle = '#0e7490';
+        ctx.beginPath();
+        ctx.roundRect(paddleX, paddleY, paddleWidth, paddleHeight, 6);
+        ctx.fill();
+
+        // White neon capsule highlight
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(paddleX + 10, paddleY + 2, paddleWidth - 20, 3, 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 7. DRAW BALL
+      ctx.save();
+      const ball = ballRef.current;
+      if (highContrast) {
+        ctx.fillStyle = '#000000'; // solid high contrast black ball
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Glowing orange if power-ball fireball active, else cyan ball
+        const ballColor = powerBallActive ? '#f97316' : '#ffffff';
+        ctx.shadowBlur = powerBallActive ? 18 : 10;
+        ctx.shadowColor = ballColor;
+        ctx.fillStyle = ballColor;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (powerBallActive) {
+          // spark halos
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.radius + 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // 8. LAUNCH HINT MESSAGE IF BALL IS IDLE
+      if (!ball.active && gameState === 'playing') {
+        ctx.save();
+        ctx.textAlign = 'center';
+        if (highContrast) {
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillText('點擊下方或按「空白鍵」發射聲韻求！', canvas.width / 2, 310);
+        } else {
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = '#06b6d4';
+          ctx.fillStyle = '#22d3ee';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('🚀 點擊下方或按「空白鍵」發射聲韻球！', canvas.width / 2, 310);
+        }
+        ctx.restore();
+      }
+
+      // Loop animation
+      animFrameId.current = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      isComponentMounted = false;
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+    };
+  }, [gameState, levelIndex, paddleX, extendActive, powerBallActive, shieldActive, highContrast]);
+
+  // Handle paddle mouse moving
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const newX = mouseX - paddleWidth / 2;
+    setPaddleX(Math.max(0, Math.min(600 - paddleWidth, newX)));
+  };
+
+  // Handle paddle mobile touch moving
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const touchX = touch.clientX - rect.left;
+    const newX = touchX - paddleWidth / 2;
+    setPaddleX(Math.max(0, Math.min(600 - paddleWidth, newX)));
+  };
+
+  // Keyboard controls listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameState !== 'playing') return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        setPaddleX((x) => Math.max(0, x - 25));
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        setPaddleX((x) => Math.min(600 - paddleWidth, x + 25));
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        handleLaunchBall();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState, paddleWidth]);
+
+  // Next game callback
+  const handleNextGame = () => {
+    onNext();
+  };
+
+  // Replay whole game callback
+  const handleTryAgain = () => {
+    setLevelIndex(0);
+    setScore(2450);
+    setLives(3);
+    setTimeLeft(120);
+    setShieldActive(false);
+    setExtendActive(false);
+    setPowerBallActive(false);
+    setGameState('playing');
+  };
+
+  // Carousel slider state
+  const carouselContainerRef = useRef<HTMLDivElement>(null);
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -220 : 220;
+      carouselContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <GameShell onHome={onHome}>
+      <div className={`flex flex-col gap-4 flex-1 select-none w-full p-1 ${highContrast ? 'bg-slate-50 text-slate-900' : 'bg-[#030614] text-white'}`}>
+        
+        {/* ==================== TOP NAVIGATION CAROUSEL ==================== */}
+        <div className={`relative flex items-center border rounded-3xl p-2 shadow-sm shrink-0 w-full overflow-hidden ${
+          highContrast ? 'bg-white border-slate-200' : 'bg-slate-950/70 border-cyan-950'
+        }`}>
+          <button
+            onClick={() => scrollCarousel('left')}
+            className={`p-1.5 rounded-full shadow-md active:scale-90 transition-transform cursor-pointer absolute left-2 z-20 ${
+              highContrast ? 'bg-slate-200 text-slate-800' : 'bg-cyan-800 text-white'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" strokeWidth={3} />
+          </button>
+
+          <div
+            ref={carouselContainerRef}
+            className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1 px-10 w-full scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {GAMES.map((game) => {
+              const isActive = game.key === 'game2';
+              return (
+                <div
+                  key={game.key}
+                  className={`flex-none w-52 rounded-2xl p-2.5 flex items-center gap-2.5 border-2 transition-all duration-300 select-none ${
+                    isActive
+                      ? highContrast
+                        ? 'bg-slate-200 border-slate-950 shadow-md scale-[1.02]'
+                        : 'bg-cyan-950/60 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)] scale-[1.02]'
+                      : highContrast
+                      ? 'bg-white border-slate-200 hover:border-slate-300'
+                      : 'bg-[#0b0e1e]/60 border-slate-850 hover:border-cyan-900'
+                  }`}
+                >
+                  <img
+                    src={game.icon}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="w-10 h-10 rounded-xl object-cover border border-cyan-950"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[10px] font-black tracking-wider ${highContrast ? 'text-slate-600' : 'text-cyan-400'}`}>
+                      第 {game.id} 關
+                    </div>
+                    <div className={`text-xs font-black truncate ${isActive ? 'text-red-500' : highContrast ? 'text-slate-800' : 'text-slate-200'}`}>
+                      {game.title}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => scrollCarousel('right')}
+            className={`p-1.5 rounded-full shadow-md active:scale-90 transition-transform cursor-pointer absolute right-2 z-20 ${
+              highContrast ? 'bg-slate-200 text-slate-800' : 'bg-cyan-800 text-white'
+            }`}
+          >
+            <ChevronRight className="w-5 h-5" strokeWidth={3} />
+          </button>
+        </div>
+
+        {/* ==================== CORE GRID (MAIN SECTION) ==================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+          
+          {/* 1. LEFT COLUMN: ACCESSIBILITY, SCORE, LIVES & POWERUPS */}
+          <div className="lg:col-span-3 flex flex-col gap-3">
+            
+            {/* Accessibility Toggle Card */}
+            <div className={`border rounded-2xl p-3 flex flex-col gap-2 ${
+              highContrast ? 'bg-white border-slate-300' : 'bg-[#0c0f24] border-cyan-950'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black flex items-center gap-1.5">
+                  <Eye className="w-4.5 h-4.5 text-yellow-400" />
+                  <span>大字高對比白底模式</span>
+                </span>
+                <button
+                  onClick={() => setHighContrast(!highContrast)}
+                  className={`w-10 h-5.5 rounded-full transition-colors relative cursor-pointer ${
+                    highContrast ? 'bg-emerald-500' : 'bg-slate-700'
+                  }`}
+                >
+                  <div className={`w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 shadow-sm transition-transform ${
+                    highContrast ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                可將背景切換為極簡白底，文字加粗加大，專為視力不良或長輩設計。
+              </p>
+            </div>
+
+            {/* Score & HUD Indicator */}
+            <div className={`border rounded-3xl p-4 flex flex-col gap-3 shadow-md ${
+              highContrast ? 'bg-white border-slate-300' : 'bg-[#0c0f24] border-cyan-950/60'
+            }`}>
+              <h3 className={`font-black text-sm pb-1.5 border-b flex items-center gap-1.5 ${
+                highContrast ? 'text-slate-800 border-slate-200' : 'text-cyan-400 border-cyan-950/60'
+              }`}>
+                <Trophy className="w-4.5 h-4.5 text-yellow-500" /> 遊戲狀態
+              </h3>
+              
+              <div className="flex flex-col gap-2.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-400">SCORE 分數：</span>
+                  <span className={`font-black text-lg font-mono ${highContrast ? 'text-slate-900' : 'text-cyan-400'}`}>
+                    {score.toString().padStart(6, '0')}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-400">LEVEL 難度：</span>
+                  <span className={`font-black font-mono px-2.5 py-0.5 rounded text-[11px] ${
+                    highContrast ? 'bg-slate-100 text-slate-800' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                  }`}>
+                    {(levelIndex + 1).toString().padStart(2, '0')}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-400">LIVES 生命：</span>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Heart
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < lives 
+                            ? 'text-rose-500 fill-rose-500 animate-pulse' 
+                            : 'text-slate-300 dark:text-slate-800'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-400">TIME 倒數：</span>
+                  <span className="font-mono font-black text-rose-500">
+                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Shopping powerups upgrades! */}
+            <div className={`border rounded-3xl p-4 flex flex-col gap-3 shadow-md flex-1 ${
+              highContrast ? 'bg-white border-slate-300' : 'bg-[#0c0f24] border-cyan-950/60'
+            }`}>
+              <h3 className={`font-black text-sm pb-1.5 border-b flex items-center gap-1.5 ${
+                highContrast ? 'text-slate-800 border-slate-200' : 'text-cyan-400 border-cyan-950/60'
+              }`}>
+                <Zap className="w-4.5 h-4.5 text-amber-400 animate-bounce" /> 台語學習商店 / 道具
+              </h3>
+
+              <div className="flex flex-col gap-2">
+                {/* Powerup 1: Fast Ball */}
+                <button
+                  onClick={() => triggerPowerup('ball')}
+                  disabled={score < 200 || powerBallActive}
+                  className={`w-full p-2 rounded-xl border flex items-center justify-between text-left transition-all ${
+                    powerBallActive
+                      ? 'bg-orange-500/20 border-orange-500'
+                      : highContrast
+                      ? 'bg-slate-50 border-slate-200 hover:bg-slate-100 disabled:opacity-40'
+                      : 'bg-slate-950/50 border-cyan-950/50 hover:bg-cyan-500/10 disabled:opacity-30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center font-black">
+                      🔥
+                    </div>
+                    <div>
+                      <div className="text-xs font-black">貫穿加速火球</div>
+                      <div className="text-[9px] text-slate-400">破壞不反彈 (10秒)</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black font-mono bg-orange-500 text-white px-2 py-0.5 rounded">
+                    {powerBallActive ? `${powerBallTime}秒` : '200 pt'}
+                  </span>
+                </button>
+
+                {/* Powerup 2: Shield */}
+                <button
+                  onClick={() => triggerPowerup('shield')}
+                  disabled={score < 300 || shieldActive}
+                  className={`w-full p-2 rounded-xl border flex items-center justify-between text-left transition-all ${
+                    shieldActive
+                      ? 'bg-cyan-500/20 border-cyan-500'
+                      : highContrast
+                      ? 'bg-slate-50 border-slate-200 hover:bg-slate-100 disabled:opacity-40'
+                      : 'bg-slate-950/50 border-cyan-950/50 hover:bg-cyan-500/10 disabled:opacity-30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-black">
+                      🛡️
+                    </div>
+                    <div>
+                      <div className="text-xs font-black">聲韻安全底護盾</div>
+                      <div className="text-[9px] text-slate-400">防止球墜落一次</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black font-mono bg-cyan-500 text-white px-2 py-0.5 rounded">
+                    {shieldActive ? '已開啟' : '300 pt'}
+                  </span>
+                </button>
+
+                {/* Powerup 3: Extend Board */}
+                <button
+                  onClick={() => triggerPowerup('paddle')}
+                  disabled={score < 150 || extendActive}
+                  className={`w-full p-2 rounded-xl border flex items-center justify-between text-left transition-all ${
+                    extendActive
+                      ? 'bg-emerald-500/20 border-emerald-500'
+                      : highContrast
+                      ? 'bg-slate-50 border-slate-200 hover:bg-slate-100 disabled:opacity-40'
+                      : 'bg-slate-950/50 border-cyan-950/50 hover:bg-cyan-500/10 disabled:opacity-30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+                      ↔️
+                    </div>
+                    <div>
+                      <div className="text-xs font-black">加長板</div>
+                      <div className="text-[9px] text-slate-400">擋板寬度增加50% (15秒)</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black font-mono bg-emerald-500 text-white px-2 py-0.5 rounded">
+                    {extendActive ? `${extendTime}秒` : '150 pt'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. MIDDLE COLUMN: THE CHROME INTERACTIVE CANON BRICK BREAKER */}
+          <div className="lg:col-span-6 flex flex-col gap-3">
+            
+            {/* Top task prompt */}
+            <div className={`p-4 rounded-2xl flex items-center justify-between shadow ${
+              highContrast ? 'bg-white border border-slate-300' : 'bg-slate-950/60 border border-cyan-950'
+            }`}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl animate-bounce">🎯</span>
+                <div>
+                  <div className={`text-[10px] font-black tracking-wider ${highContrast ? 'text-slate-500' : 'text-cyan-400'}`}>
+                    聽音任務 / TARGET TASK
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-2xl font-black text-red-500 tracking-wide">
+                      {currentLevelConfig.target.label}
+                    </span>
+                    <span className="text-sm font-mono text-cyan-500 font-bold">
+                      {currentLevelConfig.target.subLabel}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={playTargetVoice}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all shadow active:scale-90 cursor-pointer ${
+                  highContrast 
+                    ? 'bg-slate-800 hover:bg-slate-900' 
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 ring-2 ring-cyan-500/20'
+                }`}
+              >
+                <Volume2 className="w-6 h-6" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Central Canvas Board with neon-cyber bezel */}
+            <div className={`relative flex-1 rounded-2xl overflow-hidden shadow-2xl p-1 border-4 ${
+              highContrast 
+                ? 'bg-white border-slate-400' 
+                : 'bg-slate-950 border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.15)]'
+            }`}>
+              
+              {/* Gameplay canvas */}
+              <canvas
+                ref={canvasRef}
+                width={600}
+                height={400}
+                onMouseMove={handleMouseMove}
+                onTouchMove={handleTouchMove}
+                onClick={handleLaunchBall}
+                className="w-full h-auto aspect-[3/2] block cursor-crosshair rounded-xl"
+              />
+
+              {/* GAME OVER AND COMPLETED OVERLAY SCREENS */}
+              <AnimatePresence>
+                {gameState === 'gameover' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-center p-6 z-30"
+                  >
+                    <div className="text-5xl mb-3">💀</div>
+                    <h2 className="text-red-500 text-3xl font-black tracking-widest uppercase">
+                      Game Over
+                    </h2>
+                    <p className="text-slate-400 text-xs mt-1 mb-6 max-w-xs">
+                      很遺憾，生命值已用盡！再接再厲，多聽多練台語拼音，相信下次一定能擊碎所有錯字！
+                    </p>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={handleTryAgain}
+                        className="px-8 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs shadow-lg flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>重新挑戰 (TRY AGAIN)</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {gameState === 'completed' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-center p-6 z-30"
+                  >
+                    <div className="text-6xl animate-bounce mb-3">🏆</div>
+                    <h2 className="text-amber-400 text-3xl font-black tracking-widest">
+                      恭喜通關！
+                    </h2>
+                    <div className="text-xs text-slate-300 mt-2 max-w-xs">
+                      恭喜你成功擊碎所有正確的台語詞彙磚！你的台語拼音辨識能力簡直太棒了！
+                    </div>
+
+                    <div className="my-6 bg-slate-900 border border-cyan-500/20 p-4 rounded-2xl max-w-xs w-full">
+                      <div className="text-slate-400 text-[10px]">FINAL MONEY (最終得分)</div>
+                      <div className="text-cyan-400 font-mono text-3xl font-black mt-1">
+                        {score} <span className="text-xs">pt</span>
+                      </div>
+                      <div className="text-slate-500 text-[9px] mt-1">Levels Cleared: 05</div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleTryAgain}
+                        className="px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white font-black text-xs border border-slate-800 active:scale-95 cursor-pointer"
+                      >
+                        重新遊玩
+                      </button>
+                      <button
+                        onClick={handleNextGame}
+                        className="px-8 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-xs shadow-lg flex items-center gap-1 active:scale-95 cursor-pointer"
+                      >
+                        <span>進入第 3 關</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* 3. RIGHT COLUMN: RETRO ARCADE BEZEL DECOR & OBJECTIVES */}
+          <div className="lg:col-span-3 flex flex-col gap-4">
+            
+            {/* Old street nostalgic vector arcade bezel exactly like picture */}
+            <div className={`border-2 rounded-3xl p-4 flex flex-col gap-3 h-full relative overflow-hidden ${
+              highContrast ? 'bg-white border-slate-300' : 'bg-[#0b0e24] border-cyan-500/20'
+            }`}>
+              
+              {/* Retro badge holder */}
+              <div className="relative rounded-2xl bg-gradient-to-b from-indigo-950/70 to-slate-950 border border-cyan-500/20 p-3 flex flex-col items-center justify-center text-center overflow-hidden">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.15)_0%,transparent_70%)] pointer-events-none" />
+                
+                {/* Custom Inline SVG Illustration of a retro arcade coin-grabbing deer */}
+                <svg className="w-24 h-24 mt-1 filter drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="45" fill="#1e1b4b" stroke="#06b6d4" strokeWidth="2" />
+                  {/* Antlers */}
+                  <path d="M35 25C30 15 22 20 22 20C22 20 28 22 30 28M65 25C70 15 78 20 78 20C78 20 72 22 70 28" stroke="#f97316" strokeWidth="4" strokeLinecap="round" />
+                  {/* Deer face */}
+                  <circle cx="50" cy="55" r="28" fill="#f59e0b" />
+                  <ellipse cx="50" cy="62" rx="14" ry="10" fill="#fef3c7" />
+                  {/* Cute Eyes */}
+                  <circle cx="42" cy="48" r="4" fill="#0f172a" />
+                  <circle cx="58" cy="48" r="4" fill="#0f172a" />
+                  {/* White pupil highlights */}
+                  <circle cx="43.5" cy="46.5" r="1.2" fill="#ffffff" />
+                  <circle cx="59.5" cy="46.5" r="1.2" fill="#ffffff" />
+                  {/* Rosy Cheeks */}
+                  <circle cx="36" cy="56" r="3" fill="#f43f5e" opacity="0.6" />
+                  <circle cx="64" cy="56" r="3" fill="#f43f5e" opacity="0.6" />
+                  {/* Nose & Smile */}
+                  <ellipse cx="50" cy="58" rx="3.5" ry="2" fill="#1e293b" />
+                  <path d="M47 64C48 66 52 66 53 64" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" />
+                  {/* Gold Coin */}
+                  <circle cx="50" cy="80" r="12" fill="#eab308" stroke="#facc15" strokeWidth="1.5" />
+                  <text x="50" y="84" fill="#78350f" fontSize="11" fontWeight="bold" textAnchor="middle">鹿</text>
+                </svg>
+
+                <div className="bg-amber-500/15 border border-amber-500/30 rounded-md px-3 py-0.5 mt-2.5 text-[10px] font-black text-amber-500 tracking-wider">
+                  鹿港老街
+                </div>
+              </div>
+
+              {/* Title Bezel Block */}
+              <div className="text-center">
+                <h1 className={`text-xl font-black tracking-wider ${highContrast ? 'text-slate-900' : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400'}`}>
+                  臺羅聲韻打磚王
+                </h1>
+                <div className="text-[10px] text-slate-400 font-mono tracking-widest uppercase mt-0.5">
+                  Tai-Gi Brick Breaker
+                </div>
+              </div>
+
+              {/* Learning Objectives Board */}
+              <div className={`rounded-2xl p-3 flex flex-col gap-2 border ${
+                highContrast ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-cyan-950/40'
+              }`}>
+                <div className="text-[10px] font-black tracking-wider text-slate-400">
+                  學習目標 / OBJECTIVES
+                </div>
+                <ul className="flex flex-col gap-1.5 text-xs font-bold text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <span className="text-amber-500 text-sm">🎯</span>
+                    <span>打對正確詞磚</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-sm">⭐️</span>
+                    <span>收集台語道具</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-rose-500 text-sm">👂</span>
+                    <span>練習聽音辨詞</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-sm">🏆</span>
+                    <span>挑戰高分排行</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Action Buttons: Pause & Mute */}
+              <div className="grid grid-cols-2 gap-2 mt-auto">
+                <button
+                  onClick={() => {
+                    triggerSfx('click');
+                    setGameState((prev) => (prev === 'playing' ? 'paused' : 'playing'));
+                  }}
+                  className={`py-2 rounded-xl border font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer select-none transition-all ${
+                    gameState === 'paused'
+                      ? 'bg-amber-500 text-slate-950 border-amber-400'
+                      : highContrast
+                      ? 'bg-slate-800 text-white border-slate-700'
+                      : 'bg-[#0a0d1e] border-cyan-950 text-cyan-400 hover:bg-cyan-500/10'
+                  }`}
+                >
+                  {gameState === 'paused' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                  <span>{gameState === 'paused' ? '繼續' : '暫停'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setSoundEnabled(!soundEnabled);
+                    triggerSfx('click');
+                  }}
+                  className={`py-2 rounded-xl border font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer select-none transition-all ${
+                    !soundEnabled
+                      ? 'bg-rose-900/40 border-rose-900 text-rose-400'
+                      : highContrast
+                      ? 'bg-slate-200 text-slate-800 border-slate-300'
+                      : 'bg-[#0a0d1e] border-cyan-950 text-cyan-400 hover:bg-cyan-500/10'
+                  }`}
+                >
+                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  <span>{soundEnabled ? '音效開啟' : '音效關閉'}</span>
+                </button>
+              </div>
+
+              {/* Bottom Instructions Info Bezel */}
+              <div className={`rounded-xl p-2.5 border text-[9px] leading-relaxed text-slate-400 ${
+                highContrast ? 'bg-slate-100 border-slate-300' : 'bg-slate-950/60 border-cyan-950'
+              }`}>
+                <div className="font-black mb-1 flex items-center gap-1 text-slate-300">
+                  <span>🕹️</span> CONTROLS 操作說明
+                </div>
+                <div>滑鼠 / 觸控：左右移動滑板接球。</div>
+                <div>鍵盤：方向鍵 ← → 可控制滑板，按 [空白鍵] 可發射聲韻球！</div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </GameShell>
+  );
+}

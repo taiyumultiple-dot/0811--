@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>臺羅送批大挑戰：鹿港老街篇</title>
+<style>
+  :root{
+    --bg-deep:#04060f;
+    --cyan:#22e2f0;
+    --orange:#ff9d2e;
+    --green:#3ddc84;
+    --red:#ff5f6d;
+    --gold:#ffd166;
+    --text:#e7f6ff;
+    --text-dim:#7f93b0;
+    --font-ui: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-mono: "Consolas", "Courier New", monospace;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; height:100%; background:#000; font-family:var(--font-ui); color:var(--text); overscroll-behavior:none; }
+  #app{ width:100%; height:100%; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 50% 0%, #0b1230 0%, #04060f 60%, #000 100%); }
+  .stage{ position:relative; width:100%; max-width:1280px; aspect-ratio:16/9; max-height:100vh;
+    background:var(--bg-deep); overflow:hidden; border-radius:8px; box-shadow:0 0 60px rgba(34,226,240,0.15);
+    touch-action:none; user-select:none; }
+  @media (max-width:760px){ .stage{ max-height:none; aspect-ratio:9/16; } }
+
+  .screen{ position:absolute; inset:0; display:none; }
+  .screen.active{ display:flex; }
+  button{ font-family:var(--font-ui); cursor:pointer; border:none; outline:none; }
+  .btn{ background:linear-gradient(180deg,#123246,#0a1c2b); border:2px solid var(--cyan); color:var(--cyan);
+    padding:10px 22px; border-radius:999px; font-weight:700; font-size:15px; box-shadow:0 0 12px rgba(34,226,240,0.25);
+    transition:transform .12s ease; white-space:nowrap; }
+  .btn:active{ transform:scale(0.94); }
+  .btn.primary{ background:linear-gradient(180deg,#ff9d2e,#c8730f); border-color:#ffb85c; color:#1b0e00; box-shadow:0 0 18px rgba(255,157,46,0.4);}
+  .scrollbox{ overflow-y:auto; scrollbar-width:thin; }
+
+  /* 首頁 */
+  #home-screen{ flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px;
+    background: radial-gradient(circle at 20% 20%, rgba(34,226,240,0.08), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255,157,46,0.08), transparent 40%), var(--bg-deep); }
+  .home-title{ font-size:clamp(22px,4.2vw,38px); font-weight:900; letter-spacing:2px; color:var(--gold);
+    text-shadow:0 0 18px rgba(255,209,102,0.6); margin:0; }
+  .home-sub{ color:var(--cyan); font-weight:700; letter-spacing:2px; font-size:clamp(12px,2vw,15px); margin:0;}
+  .home-desc{ max-width:580px; color:var(--text-dim); font-size:16px; line-height:1.8;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.2); border-radius:14px; padding:16px 20px;
+    text-align:left; max-height:40vh; overflow-y:auto; }
+  .home-desc b{ color:var(--text); }
+  .home-desc ul{ margin:6px 0; padding-left:18px; }
+
+  .mode-select{ width:100%; max-width:580px; }
+  .mode-title{ font-size:15px; color:var(--cyan); letter-spacing:2px; margin-bottom:6px; text-align:center; }
+  .mode-btns{ display:flex; gap:8px; }
+  .mode-btn{ flex:1; background:rgba(255,255,255,0.03); border:2px solid rgba(34,226,240,0.3); color:var(--text);
+    border-radius:14px; padding:10px 8px; cursor:pointer; font-family:var(--font-ui); text-align:center; }
+  .mode-btn b{ display:block; font-size:17px; color:#fff; }
+  .mode-btn span{ display:block; font-size:12.5px; color:var(--text-dim); margin-top:4px; }
+  .mode-btn.active{ border-color:var(--gold); background:rgba(255,209,102,0.1); }
+  .mode-btn.active b{ color:var(--gold); }
+
+  /* 遊戲畫面 */
+  #game-screen{ position:absolute; inset:0; }
+  canvas#gameCanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .hud{ position:absolute; pointer-events:none; z-index:5; font-family:var(--font-mono); }
+  .hud .panel{ pointer-events:auto; background:rgba(4,10,25,0.85); border:1px solid rgba(34,226,240,0.45);
+    border-radius:14px; padding:8px 14px; box-shadow:0 0 14px rgba(34,226,240,0.15); }
+
+  .hud-top-left{ top:10px; left:10px; }
+  .hud-top-left .lbl{ font-size:12px; color:var(--text-dim); letter-spacing:1px; }
+  .hud-top-left .val{ font-size:22px; font-weight:900; color:var(--gold); }
+  .hud-top-left .combo{ color:var(--orange); font-weight:900; font-size:14px; margin-top:4px; }
+
+  .hud-top-center{ top:10px; left:50%; transform:translateX(-50%); width:min(58vw,540px); text-align:center; }
+  .hud-top-center .prompt{ font-size:clamp(14px,2.2vw,18px); font-weight:800; color:#fff; }
+  .hud-top-center .sub{ font-size:13px; color:var(--cyan); margin-top:2px; }
+  .hud-top-center .progress{ font-size:12px; color:var(--text-dim); margin-top:2px; }
+
+  .hud-top-right{ top:10px; right:10px; display:flex; gap:8px; }
+  .hud-top-right .stat{ text-align:center; }
+  .hud-top-right .lbl{ font-size:12px; color:var(--text-dim); }
+  .hud-top-right .val{ font-size:19px; font-weight:900; color:var(--cyan); }
+  .hearts{ letter-spacing:1px; font-size:16px; }
+
+  .hud-left-icons{ top:50%; left:10px; transform:translateY(-50%); display:flex; flex-direction:column; gap:10px; pointer-events:auto; }
+  .icon-btn{ width:52px; height:52px; border-radius:50%; background:rgba(4,10,25,0.85);
+    border:1px solid rgba(34,226,240,0.5); color:var(--cyan); font-size:19px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:1px; cursor:pointer; position:relative; }
+  .icon-btn .icon-cap{ font-size:11.5px; color:var(--text-dim); }
+  .icon-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .icon-btn .badge{ position:absolute; top:-4px; right:-4px; background:var(--orange); color:#1b0e00; font-size:10px;
+    font-weight:900; border-radius:999px; padding:1px 5px; }
+
+  .hud-bottom-bar{ bottom:10px; left:50%; transform:translateX(-50%); width:min(92vw,760px);
+    display:flex; justify-content:space-around; font-size:12px; color:var(--text-dim); text-align:center; gap:6px; }
+  .hud-bottom-bar b{ color:var(--text); }
+
+  .mail-pouch{ position:absolute; top:96px; left:10px; font-size:12px; color:var(--text-dim); pointer-events:none; }
+  .mail-pouch .content{ color:var(--gold); font-weight:900; }
+
+  .feedback-toast{ position:absolute; top:30%; left:50%; transform:translate(-50%,-50%) scale(0.9);
+    background:rgba(4,10,25,0.93); border:2px solid var(--cyan); border-radius:16px; padding:14px 22px; text-align:center;
+    min-width:220px; max-width:70vw; opacity:0; transition:opacity .18s ease, transform .18s ease; pointer-events:none; z-index:20; }
+  .feedback-toast.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .feedback-toast.correct{ border-color:var(--green); box-shadow:0 0 26px rgba(61,220,132,0.5); }
+  .feedback-toast.wrong{ border-color:var(--red); box-shadow:0 0 26px rgba(255,95,109,0.5); }
+  .feedback-toast.deliver{ border-color:var(--gold); box-shadow:0 0 26px rgba(255,209,102,0.5); }
+  .ft-title{ font-size:22px; font-weight:900; }
+  .feedback-toast.correct .ft-title{ color:var(--green); }
+  .feedback-toast.wrong .ft-title{ color:var(--red); }
+  .feedback-toast.deliver .ft-title{ color:var(--gold); }
+  .ft-body{ font-size:15px; color:var(--text); margin-top:6px; }
+  .ft-tailo{ font-family:var(--font-mono); color:var(--orange); font-size:18px; margin-top:2px; }
+  .ft-audio{ font-size:12px; color:var(--text-dim); margin-top:6px; }
+
+  .dict-panel{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(4,10,25,0.95);
+    border:2px solid var(--orange); border-radius:16px; padding:14px 20px; text-align:center; z-index:25; display:none; min-width:220px;
+    box-shadow:0 0 24px rgba(255,157,46,.45); }
+  .dict-panel.show{ display:block; }
+  .dict-panel .row{ display:flex; justify-content:space-between; gap:14px; font-size:15px; margin:4px 0; }
+  .dict-panel .row span:first-child{ color:var(--text-dim); }
+  .dict-panel .row span:last-child{ color:#fff; font-weight:700; }
+
+  .pause-overlay{ position:absolute; inset:0; background:rgba(0,0,0,0.72); z-index:30; display:none;
+    align-items:center; justify-content:center; flex-direction:column; gap:14px; text-align:center; padding:20px; }
+  .pause-overlay.show{ display:flex; }
+  .pause-overlay h2{ color:var(--cyan); letter-spacing:4px; margin:0; }
+  .lane-hint{ position:absolute; bottom:60px; left:50%; transform:translateX(-50%); color:var(--text-dim);
+    font-size:12px; z-index:8; pointer-events:none; background:rgba(4,10,25,0.6); padding:4px 10px; border-radius:8px; }
+
+  #help-screen{ background:var(--bg-deep); padding:16px; }
+  .help-wrap{ width:100%; display:flex; flex-direction:column; gap:12px; align-items:stretch; }
+  .help-header{ text-align:center; }
+  .help-header h1{ color:#fff; margin:0; font-size:clamp(20px,3.4vw,28px); text-shadow:0 0 14px rgba(34,226,240,0.5); }
+  .help-header p{ color:var(--orange); margin:2px 0 0; font-size:16px; font-weight:700; letter-spacing:2px; }
+  .help-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media (max-width:820px){ .help-grid{ grid-template-columns:repeat(2,1fr); } }
+  .help-card{ background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.3); border-radius:12px; padding:10px 12px; position:relative; }
+  .help-card.wide{ grid-column:span 2; }
+  .help-num{ position:absolute; top:-9px; left:-9px; width:22px; height:22px; border-radius:50%; background:var(--cyan);
+    color:#04121a; font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 8px rgba(34,226,240,0.6); }
+  .help-card-title{ font-weight:900; color:var(--gold); font-size:17px; margin-bottom:6px; }
+  .help-card ul{ margin:0; padding-left:16px; font-size:15px; color:var(--text-dim); line-height:1.6; }
+  .controls-list{ font-size:15px; color:var(--text-dim); line-height:2; }
+  kbd{ display:inline-block; background:rgba(34,226,240,0.12); border:1px solid rgba(34,226,240,0.5); border-radius:4px;
+    padding:3px 9px; color:var(--cyan); font-family:var(--font-mono); font-size:14px; margin-right:4px; }
+
+  /* 結算畫面 */
+  #result-screen{ flex-direction:column; align-items:center; padding:20px; gap:14px; overflow-y:auto; background:var(--bg-deep); }
+  #result-screen h2{ letter-spacing:3px; margin:4px 0 0; }
+  #result-screen h2.success{ color:var(--green); }
+  #result-screen h2.timeup{ color:var(--gold); }
+  #result-screen h2.fail{ color:var(--red); }
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:780px; }
+  @media (max-width:600px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat-card{ background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.25); border-radius:12px; padding:10px; text-align:center; }
+  .stat-card .k{ font-size:12.5px; color:var(--text-dim); }
+  .stat-card .v{ font-size:20px; font-weight:900; color:var(--cyan); margin-top:2px; }
+  .review-wrap{ width:100%; max-width:920px; max-height:30vh; overflow:auto; border:1px solid rgba(34,226,240,0.25); border-radius:12px; }
+  table.review{ width:100%; border-collapse:collapse; font-size:12px; }
+  table.review th, table.review td{ padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:left; white-space:nowrap; }
+  table.review th{ position:sticky; top:0; background:#0a1024; color:var(--cyan); }
+  table.review td.ok{ color:var(--green); font-weight:700; }
+  table.review td.no{ color:var(--red); font-weight:700; }
+  .result-btns{ display:flex; gap:12px; margin-top:6px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="stage" id="stage">
+
+    <!-- 首頁 -->
+    <div class="screen active" id="home-screen">
+      <div style="font-size:44px;">📮</div>
+      <h1 class="home-title">臺羅送批大挑戰</h1>
+      <p class="home-sub">鹿港老街篇・收著正確詞卡，送台語去旅行！</p>
+      <div class="home-desc scrollbox">
+        <b>任務目標：</b>聽華語題目，在三條跑道中收集正確的台語詞卡，避開錯誤詞卡與路障，再送到收件站完成投遞。
+        <ul>
+          <li><b>換道</b>：左右方向鍵／A、D 換道；手機左右滑動</li>
+          <li><b>收集</b>：所有詞卡收集前外觀一致，收集後才知道對不對</li>
+          <li><b>收對</b>：加分、郵件+1；<b>收錯</b>：扣分但不扣生命；<b>撞路障</b>：扣生命，不算台語答錯</li>
+          <li>收集到正確詞卡後，繼續跑到「鹿港老街」收件站才算完成投遞</li>
+          <li>每局隨機抽 10 題（6單字／2詞組／2句子），從 50 題題庫中抽取</li>
+        </ul>
+      </div>
+      <div class="mode-select">
+        <div class="mode-title">選擇難度</div>
+        <div class="mode-btns">
+          <button class="mode-btn" data-mode="easy"><b>初學模式</b><span>120秒・速度慢・生命5</span></button>
+          <button class="mode-btn active" data-mode="normal"><b>挑戰模式</b><span>90秒・速度中・生命3</span></button>
+          <button class="mode-btn" data-mode="hard"><b>高手模式</b><span>60秒・速度快・生命3</span></button>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <button class="btn primary" id="btnStart" style="font-size:18px;padding:14px 40px;">開始送批</button>
+        <button class="btn" id="btnHelpHome" style="font-size:14px;">📖 遊戲說明</button>
+      </div>
+    </div>
+
+    <!-- 遊戲說明頁 -->
+    <div class="screen" id="help-screen">
+      <div class="help-wrap scrollbox">
+        <div class="help-header">
+          <h1>遊戲說明</h1>
+          <p>臺羅送批大挑戰・鹿港老街篇</p>
+        </div>
+        <div class="help-grid">
+          <div class="help-card"><div class="help-num">1</div><div class="help-card-title">🎯 任務目標</div>
+            <ul><li>聽華語題目，收集正確的台語詞卡，送到指定地點。</li></ul></div>
+          <div class="help-card"><div class="help-num">2</div><div class="help-card-title">🏃 遊戲流程</div>
+            <ul><li>聽題目 → 找詞卡 → 左右換道 → 收集答案 → 避開障礙 → 送到收件站。</li></ul></div>
+          <div class="help-card"><div class="help-num">3</div><div class="help-card-title">✉️ 詞卡說明</div>
+            <ul><li>台語漢字＋臺羅拼音信、干擾詞卡、錯誤拼音、錯調卡。</li></ul></div>
+          <div class="help-card"><div class="help-num">4</div><div class="help-card-title">🚧 障礙說明</div>
+            <ul><li>固定路障（扣生命）、封路工程（暫時封閉一條跑道）。</li></ul></div>
+          <div class="help-card"><div class="help-num">5</div><div class="help-card-title">🎲 題目規則</div>
+            <ul><li>每局10題，從50題中隨機抽選，包含單字、詞組與句子。</li></ul></div>
+          <div class="help-card"><div class="help-num">6</div><div class="help-card-title">⌨️ 操作方式</div>
+            <div class="controls-list">
+              <div><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd> 換道</div>
+              <div><kbd>Space</kbd> 暫停／繼續</div>
+              <div><kbd>R</kbd> 華語重播　<kbd>M</kbd> 音效開關</div>
+              <div><kbd>H</kbd> 提示　<kbd>Esc</kbd> 返回首頁</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn primary" id="btnCloseHelp" style="align-self:center;">Esc 返回</button>
+      </div>
+    </div>
+
+    <!-- 遊戲畫面 -->
+    <div class="screen" id="game-screen">
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="hud hud-top-left">
+        <div class="panel">
+          <div class="lbl">分數 SCORE</div>
+          <div class="val" id="scoreVal">0</div>
+          <div class="combo" id="comboVal">連擊 ×1</div>
+        </div>
+      </div>
+
+      <div class="hud hud-top-center">
+        <div class="panel">
+          <div class="prompt" id="promptText">華語任務：請收集「麵茶」的台語說法，並寄到鹿港老街</div>
+          <div class="sub">語音：華語　主題：鹿港美食</div>
+          <div class="progress" id="progressVal">第 1／10 題</div>
+        </div>
+      </div>
+
+      <div class="hud hud-top-right">
+        <div class="panel" style="display:flex;gap:14px;">
+          <div class="stat"><div class="lbl">時間</div><div class="val" id="timeVal">90s</div></div>
+          <div class="stat"><div class="lbl">郵件</div><div class="val" id="mailVal">0</div></div>
+          <div class="stat"><div class="lbl">生命</div><div class="hearts" id="livesVal">❤❤❤</div></div>
+        </div>
+      </div>
+
+      <div class="hud hud-left-icons">
+        <button class="icon-btn" id="btnPauseMini" title="暫停(Space)"><span>⏸</span><span class="icon-cap">暫停</span></button>
+        <button class="icon-btn" id="btnReplayPrompt" title="華語重播(R)"><span>🔁</span><span class="icon-cap">重播</span></button>
+        <button class="icon-btn" id="btnSound" title="音效開關(M)"><span>🔊</span><span class="icon-cap">音效</span></button>
+        <button class="icon-btn" id="btnHint" title="提示(H)"><span>💡</span><span class="icon-cap">提示</span><span class="badge" id="hintBadge">2</span></button>
+        <button class="icon-btn" id="btnHome" title="返回首頁"><span>🏠</span><span class="icon-cap">首頁</span></button>
+      </div>
+
+      <div class="hud-bottom-bar panel">
+        <span>📩 <b>收集正確台語詞卡</b></span>
+        <span>🚫 <b>避開錯誤拼音與障礙</b></span>
+        <span>📮 <b>送到鹿港老街得高分！</b></span>
+      </div>
+
+      <div class="lane-hint" id="laneHint">← → 或 A／D 換道，手機左右滑動</div>
+
+      <div class="feedback-toast" id="feedbackToast">
+        <div class="ft-title" id="ftTitle">收著矣！</div>
+        <div class="ft-body" id="ftBody">麵茶的台語是</div>
+        <div class="ft-tailo" id="ftTailo">mī-tê</div>
+        <div class="ft-audio" id="ftAudio"></div>
+      </div>
+
+      <div class="dict-panel" id="dictPanel">
+        <div class="row"><span>華語</span><span id="dictMandarin">－</span></div>
+        <div class="row"><span>台語漢字</span><span id="dictHanji">－</span></div>
+        <div class="row"><span>臺羅拼音</span><span id="dictTailo">－</span></div>
+      </div>
+
+      <div class="pause-overlay" id="pauseOverlay">
+        <h2>已暫停</h2>
+        <button class="btn primary" id="btnResume">繼續送批</button>
+        <button class="btn" id="btnQuitToHome">返回首頁</button>
+      </div>
+    </div>
+
+    <!-- 結算畫面 -->
+    <div class="screen" id="result-screen">
+      <h2 id="resultTitle">任務結算</h2>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="review-wrap scrollbox">
+        <table class="review">
+          <thead><tr><th>華語題目</th><th>你收集的內容</th><th>正確台語漢字</th><th>正確臺羅拼音</th><th>是否答對</th></tr></thead>
+          <tbody id="reviewBody"></tbody>
+        </table>
+      </div>
+      <div class="result-btns">
+        <button class="btn primary" id="btnRetry">再玩一次</button>
+        <button class="btn" id="btnHome2">返回首頁</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ======================================================================
+   一、題庫（沿用系列已建立、驗證過的鹿港美食／老街詞彙與句子）
+   ====================================================================== */
+const WORD_BANK = [
+  ['麵茶','mī-tê'], ['牛舌餅','gû-tsi̍h-piánn'], ['圓仔湯','înn-á-thng'], ['麻粩','muâ-láu'],
+  ['芋丸','ōo-uân'], ['肉包','bah-pau'], ['粉粿','hún-kué'], ['秫米糋','tsu̍t-bí-tsìnn'],
+  ['李仔攕','lí-á-tshiám'], ['糕仔餅','ko-á-piánn'], ['三輪車','sann-lián-tshia'], ['齒抿仔','khí-bín-á'],
+  ['齒膏','khí-ko'], ['葵扇','khuê-sìnn'], ['跋桮','pua̍h-pue'], ['鹿港','Lo̍k-káng'], ['老街','lāu-kue'],
+  ['麵線糊','mī-suànn-kôo'], ['拜拜','pài-pài'], ['旗袍','kî-phâu'], ['全家福','tsuân-ka-hok'],
+  ['等路','tán-lōo'], ['高鐵','ko-thih'], ['阿公','a-kong'], ['考試','khó-tshì'], ['豆花','tāu-hue'],
+  ['肉圓','bah-uân'], ['割包','kuah-pau'], ['菜脯','tshài-póo'], ['冰品','ping-phín'],
+];
+const WORD_MANDARIN = {
+  '麵茶':'麵茶','牛舌餅':'牛舌餅','圓仔湯':'湯圓','麻粩':'麻粩','芋丸':'芋丸','肉包':'肉包','粉粿':'粉粿',
+  '秫米糋':'糯米炸','李仔攕':'糖葫蘆','糕仔餅':'糕餅','三輪車':'三輪車','齒抿仔':'牙刷','齒膏':'牙膏','葵扇':'扇子',
+  '跋桮':'擲筊','鹿港':'鹿港','老街':'老街','麵線糊':'麵線糊','拜拜':'拜拜','旗袍':'旗袍','全家福':'全家福','等路':'伴手禮',
+  '高鐵':'高鐵','阿公':'阿公','考試':'考試','豆花':'豆花','肉圓':'肉圓','割包':'割包','菜脯':'菜脯','冰品':'冰品',
+};
+const PHRASE_BANK = [
+  { hanji:'鹿港老街', tailo:'Lo̍k-káng lāu-kue', mandarin:'鹿港老街' },
+  { hanji:'在地小吃', tailo:'tsāi-tē sió-tsia̍h', mandarin:'在地小吃' },
+  { hanji:'鹿港麵線糊', tailo:'Lo̍k-káng mī-suànn-kôo', mandarin:'鹿港麵線糊' },
+  { hanji:'麵茶冰', tailo:'mī-tê-ping', mandarin:'麵茶冰' },
+];
+// 情境任務（句子題）：依序收集兩個詞卡再投遞，使用完整標註臺羅的句子（不自行編造整句羅馬拼音）
+const SENTENCE_BANK = [
+  { mandarin:'我想吃糯米炸和湯圓', steps:[ {hanji:'秫米糋',tailo:'tsu̍t-bí-tsìnn'}, {hanji:'圓仔湯',tailo:'înn-á-thng'} ] },
+  { mandarin:'我們可以吃糖葫蘆、坐三輪車逛老街', steps:[ {hanji:'李仔攕',tailo:'lí-á-tshiám'}, {hanji:'三輪車',tailo:'sann-lián-tshia'}, {hanji:'老街',tailo:'lāu-kue'} ] },
+  { mandarin:'我想去拜拜，祈求考試順利', steps:[ {hanji:'拜拜',tailo:'pài-pài'}, {hanji:'考試',tailo:'khó-tshì'} ] },
+  { mandarin:'阿公很喜歡鹿港的麻粩，我們買一些伴手禮回去送他', steps:[ {hanji:'阿公',tailo:'a-kong'}, {hanji:'麻粩',tailo:'muâ-láu'}, {hanji:'等路',tailo:'tán-lōo'} ] },
+  { mandarin:'我們坐三輪車逛鹿港老街', steps:[ {hanji:'三輪車',tailo:'sann-lián-tshia'}, {hanji:'鹿港老街',tailo:'Lo̍k-káng lāu-kue'} ] },
+];
+
+function buildQuestionPool(){
+  const words = WORD_BANK.map(([hanji,tailo],i)=>({ id:'w'+i, type:'word', hanji, tailo, mandarin: WORD_MANDARIN[hanji] || hanji, score:50 }));
+  const phrases = PHRASE_BANK.map((p,i)=>({ id:'p'+i, type:'phrase', hanji:p.hanji, tailo:p.tailo, mandarin:p.mandarin, score:80 }));
+  const sentences = SENTENCE_BANK.map((s,i)=>({ id:'s'+i, type:'sentence', mandarin:s.mandarin, steps:s.steps, score:300 }));
+  return { words, phrases, sentences, all: words.concat(phrases) };
+}
+const POOL_SETS = buildQuestionPool();
+const POOL = POOL_SETS.all;
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+function buildRoundQuestions(){
+  const words = shuffle(POOL_SETS.words).slice(0,6);
+  const phrases = shuffle(POOL_SETS.phrases).slice(0,2);
+  const sentences = shuffle(POOL_SETS.sentences).slice(0,2);
+  let combined = shuffle([...words, ...phrases, ...sentences]);
+  while(combined.length < 10){ combined.push(shuffle(POOL_SETS.words)[0]); }
+  return combined.slice(0,10);
+}
+
+/* ======================================================================
+   二、語音
+   ====================================================================== */
+const PHONETIC_MAP = {
+  '肉圓': '嘛完',
+  '豆花': '島輝',
+  '鹹粥': '嫌九',
+  '潤餅': '潤比呀',
+  '月餅': '尾比呀',
+  '串炸': '川雜',
+  '碗粿': '碗貴',
+  '蔥油餅': '聰遊比呀',
+  '全部配對成功！': '龍部配對星功！',
+  '麵茶': '米得',
+  '牛舌餅': '古幾比呀',
+  '圓仔湯': '因呀湯',
+  '麻粩': '摸老',
+  '芋丸': '歐丸',
+  '肉包': '巴包',
+  '粉粿': '昏貴',
+  '秫米糋': '術米金',
+  '李仔攕': '離呀籤',
+  '齒抿仔': '企抿呀',
+  '齒膏': '企高',
+  '糕仔餅': '高呀比呀',
+  '葵扇': '葵星',
+  '跋桮': '撥杯',
+  '鋩角': '迷角',
+  '鹿港': '落港',
+  '三輪車': '沙聯車',
+  '鹿港麵線糊': '落港米線口',
+  '麵茶冰': '米得冰',
+  '老街': '撈貴',
+  '拜拜': '拜拜',
+  '旗袍': '奇袍',
+  '全家福': '全家服',
+  '等路': '膽路',
+  '高鐵': '高踢',
+  '聽起來真趣味，我想欲食秫米糋佮圓仔湯。': '聽起來金促尾，瓦熊美甲術米金哈因呀湯。',
+  '咱會使食李仔攕、坐三輪車踅老街。': '藍誒塞甲離呀籤、賊沙聯車誰老街。',
+  '我想欲去拜拜，祈求我考試順利。': '瓦熊北企拜拜，其求瓦考習新利。',
+  '恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊。': '林阿公賢卡意落港A摸老，藍加美寡膽路顛企勝伊。',
+  '足𠢕！': '糾高！',
+  '真正厲害！': '金加利害！',
+  '閣來！': '閣來！',
+  '答著矣！': '答對啊！',
+  '台語真輪轉！': '台語金論轉！',
+  '任務開始：請收集 ': '莉務開使，請修集 ',
+  '任務開始：請收集': '莉務開使，請修集',
+  '接下來，請收集 ': '接落來，請修集 ',
+  '接下來，請收集': '接落來，請修集',
+  '注意看！這是 ': '住意看！幾系 ',
+  '注意看！這是': '住意看！幾系',
+  '不著矣': '美丟啊',
+  '錢無夠': '吉某高',
+  '買矣': '尾啊',
+  '請買': '請尾',
+  '伴手禮買好囉！': '膽路尾賀囉！',
+  '「鹽酥雞，一包三十，卡緊來喔！」聽起來是咧賣啥物？': '鹽酥雞，一包沙雜，卡緊來喔！聽起來是咧賣啥物？',
+  '「香腸頭，香腸頭，一支二十喔！」是咧賣啥物？': '香腸頭，香腸頭，幾機幾雜喔！是咧賣啥物？',
+  '「珍珠奶茶，真濃真好喝，來一杯喔！」是咧賣啥物？': '珍珠奶茶，金濃金賀利，來一杯喔！是咧賣啥物？',
+  '「地瓜球，QQ甜甜，一包二十五！」是咧賣啥物？': '地瓜球，QQ甜甜，一包哩雜高！是咧賣啥物？',
+  '「大腸包小腸，澎湃夠味，欲食無？」是咧賣啥物？': '大腸包小腸，澎湃夠味，美甲某？是咧賣啥物？',
+  '「臭豆腐，外酥內軟，燒燙燙上桌！」是咧賣啥物？': '臭豆腐，外酥內軟，燒燙燙上桌！是咧賣啥物？',
+  '鹽酥雞，一包三十，卡緊來喔！': '鹽酥雞，一包沙雜，卡緊來喔！',
+  '香腸頭，香腸頭，一支二十喔！': '香腸頭，香腸頭，幾機幾雜喔！',
+  '珍珠奶茶，真濃真好喝，來一杯喔！': '珍珠奶茶，金濃金賀利，來一杯喔！',
+  '地瓜球，QQ甜甜，一包二十五！': '地瓜球，QQ甜甜，一包哩雜高！',
+  '大腸包小腸，澎湃夠味，欲食無？': '大腸包小腸，澎湃夠味，美甲某？',
+  '臭豆腐，外酥內軟，燒燙燙上桌！': '臭豆腐，外酥內軟，燒燙燙上桌！',
+  '咱對藍田海邊出發，欲去藍田老街，應該向佗位行？': '藍對藍田海邊出發，北企藍田老街，應概向多位行？',
+  '離開老街，欲去頂藍田小村，應該向佗位行？': '離魁老街，北企頂藍田小村，應概向多位行？',
+  '對小村欲去藍田燈塔，應該向佗位行？': '對小村北企藍田燈塔，應概向多位行？',
+  '咱欲去泡溫泉，應該向佗位行較近？': '藍北企泡溫泉，應概向多位行卡近？',
+  '上尾一站欲去觀海步道，應該向佗位行？': '匈尾一站北企觀海步道，應概向多位行？',
+  '女伴：「遮 ê 溫泉氣氛真好，你欲袂欲來去泡湯？」': '遮A溫泉氣氛金賀，哩美美來企泡湯？',
+  '女伴：「你捌泡過海景溫泉無？」': '哩巴泡貴海景溫泉某？',
+  '女伴：「月娘遮爾媠，欲毋欲紮相機來翕相？」': '威娘家尼水，美美砸相機來合相？',
+  '女伴：「泡了了後，欲毋欲鬥陣去食寡宵夜？」': '泡利利奧，美美逗頂企甲掛宵夜？',
+  '你欲去金門出差，愛先去佗位辦理登機手續？': '哩北企金門出差，愛嫌企多位辦理登機手續？',
+  '落機了後，欲提行李，應該去佗位？': '落機利奧，北鐵行李，應概企多位？',
+  '欲入去管制區進前，愛先過佗位？': '北利企管制區頂尖，愛嫌貴多位？',
+  '飛行機欲起飛矣，愛去佗位等待上機？': '北型機北起飛阿，愛企多位等待上機？',
+  '我食著真濟好食的點心。': '我甲丟金解厚甲A點心。',
+  '我向店家問路，才知影老街的歷史。': '我向店家問路，才甲因老街A歷史。',
+  '我參觀老街的風景，拍照做紀念。': '我參觀老街A風景，拍照做紀念。',
+  '我佮朋友蹉老街，逐間店仔攏看。': '我嘎朋友車老街，大鋼店阿攏看。',
+  '日頭漸斜，我歡喜轉去厝。': '日頭漸斜，我歡喜顛企醋。',
+  '鹿仔': '陸阿',
+  '草仔': '草阿',
+  '山頭': '山頭',
+  '花仔': '揮阿',
+  '石頭': '九逃',
+  '天空': '聽框',
+  '海邊': '海冰',
+  '樹仔': '秋阿',
+  '鳳梨酥': '王來收',
+  '牛軋糖': '牛角糖',
+  '茶葉蛋': '得修冷',
+  '芒果乾': '酸阿官',
+  '花生糖': '花星糖',
+  '太陽餅': '太擁比呀',
+  '肉乾': '罵官',
+  '綠豆糕': '力豆糕',
+  '咖啡': '咖逼',
+  '手工餅乾': '手工比呀官',
+  '興': '星',
+  '無': '某',
+  '步': '波',
+  '皮': '輝',
+  '毛': '摸',
+  '肚': '度',
+  '鐵': '踢',
+  '籃': '那',
+  '柳': '柳',
+  '菇': '孤',
+  '去': '企',
+  '雅': '雅',
+  '魚': '黑',
+  '曾': '章',
+  '出': '促',
+  '沙': '沙',
+  '字': '力',
+  '語': '紀',
+  '鴨': '啊',
+  '衣': '一',
+  '有': '烏',
+  '會': '誒',
+  '蚵': '喔',
+  '黑': '凹',
+  '愛': '愛',
+  '後': '奧',
+  '寫': '寫',
+  '手': '修',
+  '花': '揮',
+  '話': '威',
+  '水': '水',
+  '餡': '含',
+  '圓': '圓',
+  '園': '輝',
+  '嬰': '應',
+  '惡': '喔',
+  '姆': '姆',
+  '黃': '黃',
+  '玻璃': '波雷',
+  '碎碎': '普普',
+  '阿母': '阿姆',
+  '媽媽': '媽媽',
+  '刀仔': '多阿',
+  '桃仔': '逃阿',
+  '貓仔': '喵阿',
+  '囉唆': '囉唆',
+  '哥哥': '郭郭',
+  '汽車': '器車',
+  '鵝仔': '鵝阿',
+  '牙齒': '呀企',
+  '書包': '書包',
+  '菜頭': '菜頭',
+  '雪文': '沙文',
+  '日頭': '利頭',
+  '魚仔': '黑阿',
+  '阿伯': '阿北',
+  '醫生': '醫生',
+  '溫池': '溫底',
+  '鞋仔': '誒阿',
+  '蚵仔': '喔阿',
+  '烏車': '喔車',
+  '愛國': '愛國',
+  '後日': '奧利',
+  '寫字': '寫力',
+  '手指': '秀幾',
+  '歡喜': '框黑',
+  '畫地': '威得',
+  '衛生': '威星',
+  '三領': '沙娘',
+  '圓仔': '因阿',
+  '園仔': '輝阿',
+  '嬰仔': '英阿',
+  '噢噢': '喔喔',
+  '不是': '美系',
+  '黃色': '黃學',
+  '亂嚷': '弄落',
+  '人來': '郎來',
+  '人情': '任情',
+  '代誌': '代吉',
+  '十日': '雜母',
+  '半仔': '波阿',
+  '印色': '因學',
+  '味色': '微學',
+  '報音': '波因',
+  '天地': '填底',
+  '姆仔': '姆阿',
+  '姑姑': '估估',
+  '娃仔': '挖阿',
+  '字兒': '利阿',
+  '尋找': '切阿',
+  '山仔': '沙阿',
+  '工作': '康奎',
+  '年仔': '尼阿',
+  '庄腳': '曾卡',
+  '度過': '度估',
+  '後面': '奧比呀',
+  '手巾': '秀金',
+  '手環': '秀寬',
+  '拼盤': '辦阿',
+  '春管': '寸官',
+  '歹人': '拍郎',
+  '毛刷': '摸擦',
+  '準備': '俊逼',
+  '漂亮': '水阿',
+  '烏鴉': '喔阿',
+  '無閒': '某應',
+  '牛兒': '牛阿',
+  '生日': '誰力',
+  '田園': '纏泥',
+  '畫畫': '威阿',
+  '病仔': '便阿',
+  '皮包': '輝阿',
+  '矮子': '誒阿',
+  '窗仔': '湯阿',
+  '笳苳': '加冬',
+  '茄苳': '加冬',
+  '箭仔': '金阿',
+  '籃仔': '那阿',
+  '老師': '老蘇',
+  '老爸': '老北',
+  '肉粽': '罵髒',
+  '色樣': '雅學',
+  '花朵': '輝阿',
+  '袂窳': '美百',
+  '說話': '威喔哈',
+  '議論': '義倫',
+  '車讚': '車沾',
+  '這些': '加誒',
+  '這呢': '家尼',
+  '這時': '幾嘛',
+  '醫院': '一印',
+  '開花': '魁輝',
+  '間存': '更存',
+  '雅子': '雅組',
+  '雅量': '雅良',
+  '雨水': '厚水',
+  '順利': '順力',
+  '頭殼': '頭殼',
+  '鴨子': '阿姐',
+  '麵線': '米線',
+  '黃仔': '恩阿',
+  '黑色': '喔學',
+  '咱來食麵茶。': '藍來甲米得',
+  '這碗麵茶真芳。': '幾碗米得金芳',
+  '我欲買牛舌餅。': '瓦美尾古幾比呀',
+  '牛舌餅是鹿港的名產。': '古幾比呀是落港A名產',
+  '圓仔湯食起來甜甜。': '因呀湯甲起來甜甜',
+  '咱正有一碗圓仔湯。': '藍正有幾碗因呀湯',
+  '阿媽買麻粩轉來。': '阿媽尾摸老顛來',
+  '麻粩是鹿港的傳統點心。': '摸老是落港A傳統點心',
+  '這包麻粩欲送予阿公。': '幾包摸老美勝伊阿公',
+  '我欲食一粒肉圓。': '瓦美甲幾粒嘛完',
+  '鹿港的肉圓真好食。': '落港A嘛完金厚甲',
+  '麵線糊食起來燒燒。': '米線口甲起來燒燒',
+  '咱去老街食豆花。': '藍企撈貴甲島輝',
+  '我買兩包糕仔餅。': '瓦尾兩包高呀比呀',
+  '這碗粉粿冰真清涼。': '幾碗昏貴冰金清涼',
+  '咱坐三輪車踅老街。': '藍賊沙聯車誰撈貴',
+  '老街有真濟傳統小食。': '撈貴有金解傳統小食',
+  '我欲買等路轉去。': '瓦美尾膽路顛企',
+  '食飽了後，咱去拜拜。': '甲飽利奧，藍企拜拜',
+  '鹿港的美食閣芳閣好食。': '落港A美食閣芳閣厚甲',
+  '好料': '吼溜',
+  '家庭旅遊': '嘎停里優',
+  '府城': '虎仙',
+  '洋裝': '用宗',
+  '火車': '灰恰',
+  '老厝': '撈處',
+  '考試': '考係',
+  '阿公': '阿工',
+  '麵線糊': '米線口',
+};
+
+const Speech = {
+  enabled:true,
+  speakMandarin(text){
+    if(!this.enabled || !('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang='zh-TW'; u.rate=0.95; u.pitch=1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const v = voices.find(v=>v.lang && v.lang.toLowerCase().includes('zh'));
+      if(v) u.voice=v;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  },
+  stopMandarin(){ if('speechSynthesis' in window){ try{ window.speechSynthesis.cancel(); }catch(e){} } },
+  currentAudio:null,
+  playTaiyu(path, onMissing, onDone){
+    this.stopTaiyu();
+    if(!this.enabled || !path){ onMissing && onMissing(); onDone && onDone(); return; }
+    try{
+      const audio = new Audio(path);
+      this.currentAudio = audio;
+      let settled=false;
+      const finish=()=>{ if(!settled){ settled=true; onDone && onDone(); } };
+      audio.addEventListener('ended', finish);
+      audio.addEventListener('error', ()=>{ onMissing && onMissing(); finish(); });
+      const p = audio.play();
+      if(p && typeof p.catch==='function'){ p.catch(()=>{ onMissing && onMissing(); finish(); }); }
+      setTimeout(finish, 3500);
+    }catch(e){ onMissing && onMissing(); onDone && onDone(); }
+  },
+  speakVocabApprox(hanji, tailo){
+    if(!this.enabled || !('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+      const trueVoice = voices.find(v=>{
+        const l=(v.lang||'').toLowerCase(), n=(v.name||'').toLowerCase();
+        return l.includes('nan')||l.includes('min')||n.includes('taiwanese')||n.includes('hokkien')||n.includes('閩南')||n.includes('台語');
+      });
+      let spokenText = hanji;
+      if(!trueVoice){
+        if(PHONETIC_MAP[hanji]){
+          spokenText = PHONETIC_MAP[hanji];
+        } else {
+          const keys = Object.keys(PHONETIC_MAP).sort((a,b)=>b.length-a.length);
+          for(const k of keys){ if(spokenText.includes(k)) spokenText = spokenText.split(k).join(PHONETIC_MAP[k]); }
+        }
+      }
+      const u = new SpeechSynthesisUtterance(spokenText);
+      if(trueVoice) u.voice = trueVoice;
+      u.lang = trueVoice ? 'zh-min-nan' : 'zh-TW';
+      u.rate = 0.85; u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }catch(e){ /* 靜默失敗，不影響遊戲 */ }
+  },
+  stopTaiyu(){ if(this.currentAudio){ try{ this.currentAudio.pause(); }catch(e){} this.currentAudio=null; } },
+  stopAll(){ this.stopMandarin(); this.stopTaiyu(); }
+};
+
+/* ======================================================================
+   三、難度模式與狀態
+   ====================================================================== */
+const MODE_CONFIG = {
+  easy:   { duration:120, speed:170, lives:5, obstacleRate:0.55, hint:3 },
+  normal: { duration:90,  speed:230, lives:3, obstacleRate:0.75, hint:2 },
+  hard:   { duration:60,  speed:300, lives:3, obstacleRate:1.0,  hint:1 },
+};
+const state = {
+  mode:'home', // home | playing | paused | success | timeup | fail
+  difficulty:'normal',
+  questions:[], qIndex:0, current:null, qStartTime:0,
+  stepIndex:0, // 情境任務目前收集到第幾個
+  phase:'collect', // collect | deliver
+  score:0, combo:0, maxCombo:0, lives:3, timeLeft:90, mail:0,
+  correctCount:0, wrongCount:0, obstacleHits:0, deliverCount:0, hintUsed:0,
+  hintCharges:2, wrongTally:{}, reviewLog:[],
+  effects:{ radar:0 },
+};
+let bestScore = 0;
+try{ bestScore = parseInt(localStorage.getItem('taigi_runner_best')||'0',10) || 0; }catch(e){}
+
+/* ======================================================================
+   四、畫布與跑道物件
+   ====================================================================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W=0, H=0;
+function resizeCanvas(){
+  const stage = document.getElementById('stage');
+  const rect = stage.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', resizeCanvas);
+
+function laneX(idx){ return W*(0.28 + idx*0.22); } // 0,1,2 → 三條跑道中心 x
+const player = { lane:1, x:0, y:0, hitFlash:0, slowUntil:0 };
+let items = []; // 詞卡與障礙物件 {lane,y,type,...}
+let particles = [];
+let roadLampT = 0;
+let spawnTimer = 0;
+let stationActive = false; // 是否已經有收件站在路上
+let stationItem = null;
+
+function initGeometry(){
+  player.x = laneX(player.lane);
+  player.y = H*0.82;
+}
+
+/* ======================================================================
+   五、輸入
+   ====================================================================== */
+let touchStartX=null, touchStartY=null;
+window.addEventListener('keydown', (e)=>{
+  const k = e.key.toLowerCase();
+  if(k==='arrowleft' || k==='a'){ e.preventDefault(); changeLane(-1); }
+  if(k==='arrowright' || k==='d'){ e.preventDefault(); changeLane(1); }
+  if(k===' '){ e.preventDefault(); togglePause(); }
+  if(k==='r'){ replayCurrentPrompt(); }
+  if(k==='m'){ toggleSound(); }
+  if(k==='h'){ useHint(); }
+  if(k==='escape'){
+    if(document.getElementById('help-screen').classList.contains('active')) closeHelp();
+    else if(state.mode==='playing' || state.mode==='paused'){ state.mode='home'; Speech.stopAll(); el.pauseOverlay.classList.remove('show'); showScreen('home-screen'); }
+  }
+});
+function changeLane(dir){
+  if(state.mode!=='playing') return;
+  player.lane = clamp(player.lane+dir, 0, 2);
+}
+canvas.addEventListener('touchstart', (e)=>{
+  if(e.touches[0]){ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; }
+}, {passive:true});
+canvas.addEventListener('touchend', (e)=>{
+  if(touchStartX==null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX-touchStartX, dy = t.clientY-touchStartY;
+  if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)){
+    changeLane(dx>0 ? 1 : -1);
+  }
+  touchStartX=null; touchStartY=null;
+}, {passive:true});
+
+/* ======================================================================
+   六、UI 參照
+   ====================================================================== */
+const el = {
+  scoreVal: document.getElementById('scoreVal'), comboVal: document.getElementById('comboVal'),
+  promptText: document.getElementById('promptText'), progressVal: document.getElementById('progressVal'),
+  timeVal: document.getElementById('timeVal'), mailVal: document.getElementById('mailVal'), livesVal: document.getElementById('livesVal'),
+  feedbackToast: document.getElementById('feedbackToast'), ftTitle: document.getElementById('ftTitle'),
+  ftBody: document.getElementById('ftBody'), ftTailo: document.getElementById('ftTailo'), ftAudio: document.getElementById('ftAudio'),
+  dictPanel: document.getElementById('dictPanel'), dictMandarin: document.getElementById('dictMandarin'),
+  dictHanji: document.getElementById('dictHanji'), dictTailo: document.getElementById('dictTailo'),
+  pauseOverlay: document.getElementById('pauseOverlay'), btnSound: document.getElementById('btnSound'),
+  hintBadge: document.getElementById('hintBadge'), btnHint: document.getElementById('btnHint'),
+  laneHint: document.getElementById('laneHint'),
+};
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ======================================================================
+   七、遊戲流程
+   ====================================================================== */
+function startGame(){
+  state.mode='playing';
+  const cfg = MODE_CONFIG[state.difficulty];
+  state.questions = buildRoundQuestions();
+  state.qIndex=-1;
+  state.score=0; state.combo=0; state.maxCombo=0; state.lives=cfg.lives; state.timeLeft=cfg.duration; state.mail=0;
+  state.correctCount=0; state.wrongCount=0; state.obstacleHits=0; state.deliverCount=0; state.hintUsed=0;
+  state.hintCharges=cfg.hint; state.wrongTally={}; state.reviewLog=[];
+  state.effects={ radar:0 };
+
+  player.lane=1; player.hitFlash=0; player.slowUntil=0;
+  items=[]; particles=[]; spawnTimer=0; stationActive=false; stationItem=null;
+  showScreen('game-screen');
+  resizeCanvas(); initGeometry();
+  updateHUD();
+  nextQuestion();
+  lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function nextQuestion(){
+  state.qIndex++;
+  if(state.qIndex >= 10 || state.qIndex >= state.questions.length){
+    handleSuccess();
+    return;
+  }
+  resizeCanvas(); initGeometry();
+  state.current = state.questions[state.qIndex];
+  state.qStartTime = performance.now();
+  state.stepIndex = 0;
+  state.phase = 'collect';
+  items = []; stationActive=false; stationItem=null;
+
+  const q = state.current;
+  const targetLabel = q.type==='sentence' ? q.steps[0].hanji+'的台語說法' : `「${q.mandarin}」的台語說法`;
+  el.promptText.textContent = q.type==='sentence'
+    ? `華語任務：請依序收集「${q.steps.map(s=>WORD_MANDARIN[s.hanji]||s.hanji).join('、')}」，並寄到鹿港老街`
+    : `華語任務：請收集「${q.mandarin}」的台語說法，並寄到鹿港老街`;
+  el.progressVal.textContent = `第 ${state.qIndex+1}／10 題`;
+
+  const speakText = q.type==='sentence'
+    ? `請依序收集${q.steps.map(s=>WORD_MANDARIN[s.hanji]||s.hanji).join('、')}，並寄到鹿港老街`
+    : `請收集${q.mandarin}的台語說法，並寄到鹿港老街`;
+  Speech.speakMandarin(speakText);
+}
+
+function currentTargetStep(){
+  const q = state.current;
+  if(q.type==='sentence') return q.steps[state.stepIndex];
+  return { hanji:q.hanji, tailo:q.tailo };
+}
+
+/* ======================================================================
+   八、物件生成（詞卡與障礙）
+   ====================================================================== */
+function spawnWave(){
+  const cfg = MODE_CONFIG[state.difficulty];
+  if(state.phase==='deliver'){
+    if(!stationActive){
+      stationActive = true;
+      stationItem = { lane:1, y:-60, kind:'station', speedMul:1 };
+      items.push(stationItem);
+    }
+    return;
+  }
+  const target = currentTargetStep();
+  const lanesUsed = [0,1,2];
+  const laneAssign = shuffle(lanesUsed);
+  const correctLane = laneAssign[0];
+
+  // 這一波的詞卡/障礙決定：1 個正解 + 最多兩個干擾（詞卡或障礙），確保至少留一條乾淨跑道
+  const kinds = [];
+  kinds.push({ lane: correctLane, kind:'answer', hanji: target.hanji, tailo: target.tailo, isCorrect:true });
+
+  const wantObstacle = Math.random() < cfg.obstacleRate*0.5;
+  const otherLanes = laneAssign.slice(1);
+  otherLanes.forEach((ln,idx)=>{
+    if(idx===0 && wantObstacle){
+      kinds.push({ lane:ln, kind:'obstacle' });
+    } else if(Math.random() < 0.75){
+      const decoyPool = POOL.filter(p=>p.hanji!==target.hanji);
+      const d = decoyPool[Math.floor(Math.random()*decoyPool.length)];
+      kinds.push({ lane:ln, kind:'answer', hanji:d.hanji, tailo:d.tailo, isCorrect:false });
+    }
+    // 否則該跑道留空，保證至少一條路乾淨好走
+  });
+
+  kinds.forEach(k=>{
+    items.push({ lane:k.lane, y:-60, kind:k.kind, hanji:k.hanji, tailo:k.tailo, isCorrect:k.isCorrect,
+      state:'idle', wobble: rand(0,Math.PI*2) });
+  });
+}
+
+/* ======================================================================
+   九、判定
+   ====================================================================== */
+function onCollectAnswer(item){
+  if(item.state!=='idle') return;
+  const radarOn = false;
+  if(item.isCorrect){
+    item.state='collected';
+    state.mail++;
+    state.correctCount++;
+    state.combo++; state.maxCombo=Math.max(state.maxCombo,state.combo);
+    logReview(true, item, currentTargetStep());
+    showFeedback('correct','收著矣！', `${WORD_MANDARIN[item.hanji]||item.hanji}的台語是`, `${item.hanji}（${item.tailo}）`, '');
+
+    const q = state.current;
+    if(q.type==='sentence' && state.stepIndex < q.steps.length-1){
+      state.stepIndex++;
+      // 還沒收集完整套情境任務，繼續 collect 階段收下一個目標
+    } else {
+      state.phase='deliver';
+    }
+  } else {
+    item.state='removed';
+    state.wrongCount++;
+    state.combo=0;
+    const penalty=30;
+    state.score = Math.max(0, state.score-penalty);
+    state.wrongTally[item.hanji] = (state.wrongTally[item.hanji]||0)+1;
+    logReview(false, item, currentTargetStep());
+    showFeedback('wrong','這毋是喔！', `正確答案是「${currentTargetStep().hanji}」`, currentTargetStep().tailo, `-${penalty}分`);
+  }
+  updateHUD();
+}
+function onHitObstacle(item){
+  item.state='removed';
+  state.lives = Math.max(0, state.lives-1);
+  state.combo = 0;
+  state.obstacleHits++;
+  player.hitFlash = 1;
+  player.slowUntil = performance.now()+900;
+  spawnBurst(player.x, player.y, '#ff9d2e');
+  updateHUD();
+  if(state.lives<=0){ setTimeout(()=>handleFail(), 400); }
+}
+function onDeliver(item){
+  item.state='collected';
+  stationActive=false;
+  const q = state.current;
+  const gained = Math.round((q.score||100) * (1+Math.min(state.combo,4)*0.2));
+  state.score += gained;
+  state.deliverCount++;
+  showFeedback('deliver','送著矣！', '成功投遞到鹿港老街', '', `+${gained}分`);
+  playFinalAudio(q);
+  updateHUD();
+  setTimeout(()=>{ if(state.mode==='playing') nextQuestion(); }, 1400);
+}
+
+function logReview(isCorrect, hitItem, target){
+  state.reviewLog.push({
+    mandarinPrompt: state.current.type==='sentence' ? state.current.mandarin : state.current.mandarin,
+    hitHanji: hitItem.hanji, hitTailo: hitItem.tailo||'',
+    correctHanji: target.hanji, correctTailo: target.tailo||'',
+    isCorrect,
+  });
+}
+function synthCorrectSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.06 + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.06);
+      osc.stop(ctx.currentTime + idx * 0.06 + 0.12);
+    });
+  } catch(e) {}
+}
+
+function synthWrongSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+    osc1.frequency.setValueAtTime(180, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.22);
+    osc2.frequency.setValueAtTime(135, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.22);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    osc1.start();
+    osc2.start();
+    osc1.stop(ctx.currentTime + 0.22);
+  } catch(e) {}
+}
+
+function showFeedback(kind,title,body,tailo,extra){
+  if (kind === 'correct' || kind === 'deliver') { synthCorrectSound(); } else if (kind === 'wrong') { synthWrongSound(); }
+  el.feedbackToast.classList.remove('correct','wrong','deliver');
+  el.feedbackToast.classList.add(kind,'show');
+  el.ftTitle.textContent = title;
+  el.ftBody.textContent = body;
+  el.ftTailo.textContent = tailo;
+  el.ftAudio.textContent = extra||'';
+  clearTimeout(showFeedback._t);
+  showFeedback._t = setTimeout(()=>{ el.feedbackToast.classList.remove('show'); }, 1300);
+}
+function playFinalAudio(q){
+  const path = `audio/${q.id||'sentence'}.mp3`;
+  Speech.playTaiyu(path, ()=>{
+    const label = q.type==='sentence' ? q.steps.map(s=>s.tailo).join(' ') : q.tailo;
+    el.ftAudio.textContent = (el.ftAudio.textContent||'') + ' ▶ 臺羅：'+label;
+    const speakHanji = q.type==='sentence' ? q.steps.map(s=>s.hanji).join('') : q.hanji;
+    Speech.speakVocabApprox(speakHanji, label);
+  }, ()=>{});
+}
+
+/* ======================================================================
+   十、道具
+   ====================================================================== */
+document.getElementById('btnHint').addEventListener('click', useHint);
+function useHint(){
+  if(state.mode!=='playing' || state.hintCharges<=0) return;
+  state.hintCharges--; state.hintUsed++;
+  state.effects.radar = performance.now()+3000;
+  showDictPanel();
+  renderIconStates();
+}
+function showDictPanel(){
+  const t = currentTargetStep();
+  const q = state.current;
+  el.dictMandarin.textContent = q.type==='sentence' ? (WORD_MANDARIN[t.hanji]||t.hanji) : q.mandarin;
+  el.dictHanji.textContent = t.hanji;
+  el.dictTailo.textContent = t.tailo;
+  el.dictPanel.classList.add('show');
+  setTimeout(()=>{ el.dictPanel.classList.remove('show'); }, 3000);
+}
+function renderIconStates(){
+  el.hintBadge.textContent = state.hintCharges;
+  el.btnHint.disabled = state.hintCharges<=0;
+}
+function replayCurrentPrompt(){
+  if(!state.current) return;
+  const q = state.current;
+  const speakText = q.type==='sentence'
+    ? `請依序收集${q.steps.map(s=>WORD_MANDARIN[s.hanji]||s.hanji).join('、')}，並寄到鹿港老街`
+    : `請收集${q.mandarin}的台語說法，並寄到鹿港老街`;
+  Speech.speakMandarin(speakText);
+}
+
+function spawnBurst(x,y,color){
+  for(let i=0;i<12;i++) particles.push({ x,y, vx:rand(-140,140), vy:rand(-140,140), life:0.45, maxLife:0.45, color, size:rand(2,4) });
+}
+
+/* ======================================================================
+   十一、暫停 / 音效
+   ====================================================================== */
+function togglePause(){
+  if(state.mode==='playing'){ state.mode='paused'; el.pauseOverlay.classList.add('show'); Speech.stopAll(); }
+  else if(state.mode==='paused'){ state.mode='playing'; el.pauseOverlay.classList.remove('show'); lastFrameTime=performance.now(); }
+}
+function toggleSound(){
+  Speech.enabled = !Speech.enabled;
+  document.getElementById('btnSound').querySelector('span').textContent = Speech.enabled ? '🔊' : '🔇';
+  if(!Speech.enabled) Speech.stopAll();
+}
+let modeBeforeHelp=null;
+function openHelp(){
+  modeBeforeHelp = state.mode;
+  if(state.mode==='playing'){ state.mode='paused'; Speech.stopAll(); }
+  showScreen('help-screen');
+}
+function closeHelp(){
+  if(modeBeforeHelp==='playing' || modeBeforeHelp==='paused'){
+    showScreen('game-screen');
+    if(modeBeforeHelp==='playing'){ state.mode='playing'; lastFrameTime=performance.now(); }
+  } else {
+    showScreen('home-screen');
+  }
+}
+
+/* ======================================================================
+   十二、結算
+   ====================================================================== */
+function handleSuccess(){
+  state.mode='success'; Speech.stopAll();
+  if(state.score>bestScore){ bestScore=state.score; try{ localStorage.setItem('taigi_runner_best', String(bestScore)); }catch(e){} }
+  renderResult('success','任務完成！送批成功');
+  showScreen('result-screen');
+}
+function handleTimeUp(){
+  state.mode='timeup'; Speech.stopAll();
+  if(state.score>bestScore){ bestScore=state.score; try{ localStorage.setItem('taigi_runner_best', String(bestScore)); }catch(e){} }
+  renderResult('timeup','時間到！本次任務結算');
+  showScreen('result-screen');
+}
+function handleFail(){
+  state.mode='fail'; Speech.stopAll();
+  renderResult('fail','生命歸零，任務結束');
+  showScreen('result-screen');
+}
+function renderResult(cls,title){
+  const titleEl = document.getElementById('resultTitle');
+  titleEl.textContent = title; titleEl.className = cls;
+
+  try{
+    const answered = state.correctCount + state.wrongCount;
+    const acc = answered>0 ? Math.round((state.correctCount/answered)*100) : 0;
+    window.parent.postMessage({ type:'TAIYU_GAME_RESULT', gameKey:'game3', score: state.score, accuracy: acc }, window.location.origin);
+  }catch(e){ /* 不在 iframe 中執行時忽略 */ }
+
+  const grid = document.getElementById('statGrid');
+  const stats = [
+    ['總分', state.score], ['個人最高分', bestScore], ['完成題數', `${state.qIndex}／10`],
+    ['成功投遞數', state.deliverCount], ['收集正確郵件', state.correctCount], ['錯誤詞卡數', state.wrongCount],
+    ['撞擊障礙次數', state.obstacleHits], ['最高連擊', state.maxCombo],
+    ['使用提示次數', state.hintUsed], ['最常答錯的詞語', topWrongWord()],
+  ];
+  grid.innerHTML = stats.map(([k,v])=>`<div class="stat-card"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+
+  const body = document.getElementById('reviewBody');
+  body.innerHTML = state.reviewLog.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.mandarinPrompt)}</td>
+      <td>${escapeHtml(r.hitHanji)}／${escapeHtml(r.hitTailo)}</td>
+      <td>${escapeHtml(r.correctHanji)}</td>
+      <td>${escapeHtml(r.correctTailo)}</td>
+      <td class="${r.isCorrect?'ok':'no'}">${r.isCorrect?'答對':'答錯'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:#7f93b0;">尚無作答紀錄</td></tr>';
+}
+function topWrongWord(){
+  const keys = Object.keys(state.wrongTally);
+  if(keys.length===0) return '－';
+  keys.sort((a,b)=>state.wrongTally[b]-state.wrongTally[a]);
+  return keys[0];
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ======================================================================
+   十三、HUD
+   ====================================================================== */
+function updateHUD(){
+  el.scoreVal.textContent = state.score;
+  el.comboVal.textContent = '連擊 ×'+(1+Math.min(state.combo,4)*0.2).toFixed(state.combo>0?1:0);
+  el.mailVal.textContent = state.mail;
+  el.livesVal.textContent = '❤'.repeat(Math.max(0,state.lives)) + '♡'.repeat(Math.max(0,5-state.lives));
+  renderIconStates();
+}
+function updateTimeHUD(){
+  el.timeVal.textContent = Math.max(0,Math.ceil(state.timeLeft))+'s';
+}
+
+/* ======================================================================
+   十四、主要遊戲迴圈
+   ====================================================================== */
+let lastFrameTime = performance.now();
+function gameLoop(now){
+  requestAnimationFrame(gameLoop);
+  if(state.mode!=='playing'){ lastFrameTime=now; return; }
+  let dt=(now-lastFrameTime)/1000; dt=Math.min(dt,0.033); lastFrameTime=now;
+
+  state.timeLeft -= dt;
+  if(state.timeLeft<=0){ state.timeLeft=0; updateTimeHUD(); handleTimeUp(); return; }
+  updateTimeHUD();
+
+  updateItems(dt, now);
+  updateParticles(dt);
+  if(player.hitFlash>0) player.hitFlash = Math.max(0, player.hitFlash-dt*2.5);
+  player.x += (laneX(player.lane)-player.x)*Math.min(1,dt*10);
+
+  roadLampT += dt;
+  render(now);
+}
+
+function updateItems(dt, now){
+  const cfg = MODE_CONFIG[state.difficulty];
+  const slowMul = now < player.slowUntil ? 0.5 : 1;
+  const speed = cfg.speed * slowMul;
+
+  spawnTimer -= dt;
+  if(spawnTimer<=0){
+    spawnTimer = state.phase==='deliver' ? 2.2 : rand(0.9,1.3);
+    spawnWave();
+  }
+
+  items.forEach(it=>{ it.y += speed*dt; });
+
+  // 碰撞判定：物件抵達玩家 y 附近，且在同一跑道
+  items.forEach(it=>{
+    if(it.state==='removed' || it.state==='collected') return;
+    if(Math.abs(it.y-player.y) < 34 && it.lane===player.lane){
+      if(it.kind==='answer'){ onCollectAnswer(it); }
+      else if(it.kind==='obstacle'){ onHitObstacle(it); }
+      else if(it.kind==='station'){ onDeliver(it); }
+    }
+  });
+
+  items = items.filter(it => it.y < H+80 && it.state!=='removed' && it.state!=='collected');
+}
+function updateParticles(dt){
+  particles.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; p.vx*=0.9; p.vy*=0.9; });
+  particles = particles.filter(p=>p.life>0);
+}
+
+/* ======================================================================
+   十五、繪圖
+   ====================================================================== */
+function render(now){
+  ctx.clearRect(0,0,W,H);
+  drawRoad(now);
+  drawItems(now);
+  drawParticles();
+  drawPlayer(now);
+}
+
+function drawRoad(now){
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0a0e22'); g.addColorStop(0.4,'#080a18'); g.addColorStop(1,'#04050c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // 遠方牌樓
+  ctx.save();
+  ctx.strokeStyle='rgba(34,226,240,0.5)'; ctx.lineWidth=3; ctx.shadowColor='#22e2f0'; ctx.shadowBlur=12;
+  ctx.strokeRect(W*0.32, H*0.06, W*0.36, H*0.14);
+  ctx.fillStyle='#22e2f0'; ctx.font='bold 15px "Segoe UI","Microsoft JhengHei",sans-serif'; ctx.textAlign='center';
+  ctx.fillText('鹿港老街', W*0.5, H*0.14);
+  ctx.restore();
+
+  // 三線道路（透視梯形）
+  ctx.save();
+  ctx.fillStyle = 'rgba(20,26,46,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(W*0.38, H*0.2); ctx.lineTo(W*0.62, H*0.2); ctx.lineTo(W*0.92, H); ctx.lineTo(W*0.08, H); ctx.closePath();
+  ctx.fill();
+  // 車道分隔虛線
+  ctx.strokeStyle='rgba(34,226,240,0.35)'; ctx.setLineDash([14,14]); ctx.lineWidth=3;
+  [0.44,0.5,0.56].forEach((topX,i)=>{
+    // approximate lane divider from top to bottom
+  });
+  for(const frac of [0.3333, 0.6667]){
+    const topX = W*(0.38 + frac*0.24);
+    const botX = W*(0.08 + frac*0.84);
+    ctx.beginPath(); ctx.moveTo(topX, H*0.2); ctx.lineTo(botX, H); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawPlayer(now){
+  ctx.save();
+  const glow = player.hitFlash>0 ? '#ff5f6d' : '#22e2f0';
+  ctx.translate(player.x, player.y);
+  ctx.shadowColor=glow; ctx.shadowBlur=16;
+  ctx.fillStyle='#3ddc84'; ctx.strokeStyle=glow; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.ellipse(0,0,26,30,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.font='24px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🦖', 0, 2);
+  ctx.restore();
+}
+
+function drawItems(now){
+  const radarOn = now < state.effects.radar;
+  items.forEach(it=>{
+    const x = laneX(it.lane);
+    ctx.save();
+    ctx.translate(x, it.y);
+    if(it.kind==='obstacle'){
+      ctx.fillStyle='#e6b800'; ctx.strokeStyle='#3a2a00'; ctx.lineWidth=2;
+      ctx.fillRect(-32,-14,64,28); ctx.strokeRect(-32,-14,64,28);
+      ctx.fillStyle='#1b1400'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⚠️ 路障', 0, 1);
+    } else if(it.kind==='station'){
+      ctx.fillStyle='rgba(255,209,102,0.18)'; ctx.strokeStyle='#ffd166'; ctx.lineWidth=3;
+      ctx.shadowColor='#ffd166'; ctx.shadowBlur=18;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-70,-30,140,60,14) : ctx.rect(-70,-30,140,60);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#ffd166'; ctx.font='bold 16px "Segoe UI","Microsoft JhengHei",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('📮 鹿港老街', 0, 1);
+    } else {
+      let glow = 'rgba(34,226,240,0.35)', border='#22e2f0';
+      if(it.state==='collected'){ glow='rgba(61,220,132,0.6)'; border='#3ddc84'; }
+      else if(radarOn && it.isCorrect){ const f=0.5+0.5*Math.sin(now/90); glow=`rgba(255,215,120,${0.4+f*0.4})`; border='#ffd166'; }
+      ctx.shadowColor=glow; ctx.shadowBlur=14;
+      ctx.fillStyle='rgba(245,250,255,0.95)'; ctx.strokeStyle=border; ctx.lineWidth=2.4;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-56,-26,112,52,10) : ctx.rect(-56,-26,112,52);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#12202e'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const fs = (it.hanji||'').length>4 ? 12 : 15;
+      ctx.font = `bold ${fs}px "Segoe UI","Microsoft JhengHei",sans-serif`;
+      ctx.fillText(it.hanji||'', 0, it.tailo?-8:0);
+      if(it.tailo){ ctx.fillStyle='#0369a1'; ctx.font='bold 10px "Consolas","Courier New",monospace'; ctx.fillText(it.tailo,0,9); }
+    }
+    ctx.restore();
+  });
+}
+function drawParticles(){
+  particles.forEach(p=>{
+    ctx.globalAlpha = clamp(p.life/p.maxLife,0,1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+/* ======================================================================
+   十六、按鈕事件
+   ====================================================================== */
+document.getElementById('btnStart').addEventListener('click', ()=>{
+  if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); }
+  startGame();
+});
+document.getElementById('btnPauseMini').addEventListener('click', togglePause);
+document.getElementById('btnReplayPrompt').addEventListener('click', replayCurrentPrompt);
+document.getElementById('btnSound').addEventListener('click', toggleSound);
+document.getElementById('btnResume').addEventListener('click', togglePause);
+document.getElementById('btnQuitToHome').addEventListener('click', ()=>{
+  state.mode='home'; Speech.stopAll(); el.pauseOverlay.classList.remove('show'); showScreen('home-screen');
+});
+document.getElementById('btnHome').addEventListener('click', ()=>{
+  state.mode='home'; Speech.stopAll(); showScreen('home-screen');
+});
+document.getElementById('btnRetry').addEventListener('click', startGame);
+document.getElementById('btnHome2').addEventListener('click', ()=>{ showScreen('home-screen'); });
+document.getElementById('btnHelpHome').addEventListener('click', openHelp);
+document.getElementById('btnCloseHelp').addEventListener('click', closeHelp);
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.difficulty = btn.dataset.mode;
+  });
+});
+
+/* ======================================================================
+   十七、初始化
+   ====================================================================== */
+resizeCanvas();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,999 @@
+import { useState, useEffect, useRef } from 'react';
+import { GameShell } from './GameShell';
+import { speakTaiyu } from '../../lib/speech';
+import { playCorrectSound, playWrongSound } from '../../utils/soundEffects';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Volume2,
+  VolumeX,
+  Pause,
+  Home,
+  HelpCircle,
+  Play,
+  RotateCcw,
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+  ArrowDown,
+  Trash2,
+  Sparkles,
+  Award
+} from 'lucide-react';
+
+interface FoodLabItem {
+  name: string;
+  tailo: string;
+  letters: string[];
+  desc: string;
+  helper: { char: string; type: string; desc: string }[];
+}
+
+const LAB_FOODS: FoodLabItem[] = [
+  {
+    name: '麵茶',
+    tailo: 'mī-tê',
+    letters: ['m', 'ī', '-', 't', 'ê'],
+    desc: '「麵茶」是鹿港的傳統點心，香香，甜甜，足好食！',
+    helper: [
+      { char: 'm', type: '子音', desc: '雙唇鼻音，如 English 的 m' },
+      { char: 'ī', type: '母音', desc: '加上平調，為第七聲中平調' },
+      { char: '-', type: '連字符', desc: '用來連接台語字詞拼音' },
+      { char: 't', type: '子音', desc: '舌尖不送氣清塞音' },
+      { char: 'ê', type: '韻尾', desc: '中前圓唇母音，發音如 e' }
+    ]
+  },
+  {
+    name: '肉包',
+    tailo: 'bah-pao',
+    letters: ['b', 'a', 'h', '-', 'p', 'a', 'o'],
+    desc: '「肉包」是老街必吃的美味點心，皮Ｑ肉鮮，多汁好味！',
+    helper: [
+      { char: 'b', type: '子音', desc: '雙唇濁塞音，發音時聲帶振動' },
+      { char: 'a', type: '母音', desc: '央低不圓唇母音' },
+      { char: 'h', type: '入聲', desc: '入聲韻尾，短促收尾' },
+      { char: '-', type: '連字符', desc: '用來連接台語字詞拼音' },
+      { char: 'p', type: '子音', desc: '雙唇不送氣清塞音' },
+      { char: 'a', type: '母音', desc: '低元音，嘴巴張大' },
+      { char: 'o', type: '母音', desc: '半閉後圓唇母音' }
+    ]
+  },
+  {
+    name: '芋丸',
+    tailo: 'ōo-uân',
+    letters: ['ō', 'o', '-', 'u', 'â', 'n'],
+    desc: '「芋丸」是鹿港特產，外層滿滿芋頭絲，內含鮮美肉餡！',
+    helper: [
+      { char: 'ō', type: '母音', desc: '帶有中平聲調符號' },
+      { char: 'o', type: '母音', desc: '半閉後圓唇母音' },
+      { char: '-', type: '連字符', desc: '連接台語字詞拼音' },
+      { char: 'u', type: '母音', desc: '閉後圓唇母音' },
+      { char: 'â', type: '母音', desc: '帶有降調符號（第五聲）' },
+      { char: 'n', type: '鼻音', desc: '鼻音韻尾：舌尖鼻音' }
+    ]
+  },
+  {
+    name: '粉粿',
+    tailo: 'hún-kué',
+    letters: ['h', 'ú', 'n', '-', 'k', 'u', 'é'],
+    desc: '「粉粿」是Ｑ滑彈牙的傳統冰品配料，冰涼消暑好滋味！',
+    helper: [
+      { char: 'h', type: '子音', desc: '清喉擦音，如英文 h' },
+      { char: 'ú', type: '母音', desc: '帶有高降調符號（第二聲）' },
+      { char: 'n', type: '鼻音', desc: '鼻音韻尾：舌尖鼻音' },
+      { char: '-', type: '連字符', desc: '連接台語字詞拼音' },
+      { char: 'k', type: '子音', desc: '舌根不送氣清塞音' },
+      { char: 'u', type: '母音', desc: '閉後圓唇母音' },
+      { char: 'é', type: '母音', desc: '帶有高降調符號（第二聲）' }
+    ]
+  },
+  {
+    name: '麻糬',
+    tailo: 'muâ-tsî',
+    letters: ['m', 'u', 'â', '-', 't', 's', 'î'],
+    desc: '「麻糬」是Ｑ彈糯米點心，沾上花生粉，香甜不油膩！',
+    helper: [
+      { char: 'm', type: '子音', desc: '雙唇鼻音' },
+      { char: 'u', type: '母音', desc: '閉後圓唇母音' },
+      { char: 'â', type: '母音', desc: '帶有降調符號（第五聲）' },
+      { char: '-', type: '連字符', desc: '連接台語字詞拼音' },
+      { char: 't', type: '子音', desc: '舌尖不送氣清塞音' },
+      { char: 's', type: '子音', desc: '舌尖清擦音' },
+      { char: 'î', type: '母音', desc: '帶有降調符號（第五聲）' }
+    ]
+  }
+];
+
+interface FallingBlock {
+  letter: string;
+  colorClass: string;
+  isSpecial: boolean; // Special clear/bomb tool
+}
+
+interface PlacedBlock {
+  letter: string;
+  colorClass: string;
+  isSpecial: boolean;
+  isCorrect: boolean;
+}
+
+export default function Game6FoodLab({ onNext, onHome }: { onNext: () => void; onHome?: () => void }) {
+  // Game main state
+  const [gameState, setGameState] = useState<'start' | 'playing' | 'paused' | 'win' | 'gameover'>('start');
+  const [dnaScore, setDnaScore] = useState(128);
+  const [highScore, setHighScore] = useState(128);
+  const [level, setLevel] = useState(1);
+  const [energy, setEnergy] = useState(30); // Percentage: 0 to 100
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Target word setup - randomized food list so words/graphics differ every play session
+  const [foodList, setFoodList] = useState<FoodLabItem[]>(() => {
+    return [...LAB_FOODS].sort(() => Math.random() - 0.5);
+  });
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const currentTarget = foodList[currentIndex % foodList.length] || LAB_FOODS[0];
+  const cols = currentTarget.letters.length;
+  const rows = 10;
+
+  // Next upcoming block
+  const [nextBlock, setNextBlock] = useState<FallingBlock>({ letter: 'm', colorClass: 'bg-emerald-500 border-emerald-300', isSpecial: false });
+
+  // Current falling block coordinates and values
+  const [fallingBlock, setFallingBlock] = useState<FallingBlock & { r: number; c: number } | null>(null);
+
+  // 2D Placed blocks board state
+  const [board, setBoard] = useState<(PlacedBlock | null)[][]>([]);
+
+  // Columns correctly snapped indicators
+  const [colSnapped, setColSnapped] = useState<boolean[]>([]);
+
+  // Sound triggers
+  const playSound = (txt: string, tailo?: string) => {
+    if (soundEnabled) {
+      speakTaiyu(txt, undefined, tailo);
+    }
+  };
+
+  // Sparkles animations references
+  const [sparkleCol, setSparkleCol] = useState<number | null>(null);
+  const [shakeBoard, setShakeBoard] = useState(false);
+
+  // Game loop controls
+  const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const stateRef = useRef(gameState);
+  const boardRef = useRef(board);
+  const fallingRef = useRef(fallingBlock);
+  const colsRef = useRef(cols);
+
+  // Sync state to refs for asynchronous execution safety
+  useEffect(() => { stateRef.current = gameState; }, [gameState]);
+  useEffect(() => { boardRef.current = board; }, [board]);
+  useEffect(() => { fallingRef.current = fallingBlock; }, [fallingBlock]);
+  useEffect(() => { colsRef.current = cols; }, [cols]);
+
+  // Load high score
+  useEffect(() => {
+    const saved = localStorage.getItem('taiyu_lab_high');
+    if (saved) {
+      setHighScore(parseInt(saved, 10));
+    }
+  }, []);
+
+  // Initialize word round
+  useEffect(() => {
+    resetWordRound();
+  }, [currentIndex]);
+
+  const resetWordRound = () => {
+    // Empty board grid
+    const emptyBoard = Array(rows).fill(null).map(() => Array(cols).fill(null));
+    setBoard(emptyBoard);
+    setColSnapped(Array(cols).fill(false));
+
+    // Generate first and next blocks
+    const targetLetters = currentTarget.letters;
+    const initial = getRandomBlock(targetLetters);
+    const next = getRandomBlock(targetLetters);
+
+    setFallingBlock({
+      ...initial,
+      r: 0,
+      c: Math.floor(cols / 2)
+    });
+    setNextBlock(next);
+  };
+
+  // Helper to generate correct or wrong/tool block
+  const getRandomBlock = (targets: string[]): FallingBlock => {
+    const r = Math.random();
+    
+    // 12% chance for special eraser block (matches Figure 2's purple utility block)
+    if (r < 0.12) {
+      return {
+        letter: '✎',
+        colorClass: 'bg-purple-600 border-purple-400 text-white shadow-[0_0_10px_#a855f7]',
+        isSpecial: true
+      };
+    }
+
+    // 65% chance for correct letters of current target
+    if (r < 0.77) {
+      const char = targets[Math.floor(Math.random() * targets.length)];
+      // Determine coloring matching Figure 2
+      let colorClass = 'bg-emerald-500 border-emerald-300 shadow-[0_0_8px_#10b981] text-white'; // Default letter
+      if (char === '-') {
+        colorClass = 'bg-cyan-500 border-cyan-300 shadow-[0_0_8px_#06b6d4] text-white'; // Hyphen
+      } else if (char.match(/[āíìîā̃éêēóō]/) || char === 'ê' || char === 'ō') {
+        colorClass = 'bg-amber-500 border-amber-300 shadow-[0_0_8px_#f59e0b] text-white'; // Tone vowel
+      }
+
+      return {
+        letter: char,
+        colorClass,
+        isSpecial: false
+      };
+    }
+
+    // Otherwise generate distractor letters
+    const distractors = ['k', 'h', 'a', 'o', 'u', 'i', 'p', 't', 's'];
+    const char = distractors[Math.floor(Math.random() * distractors.length)];
+    return {
+      letter: char,
+      colorClass: 'bg-slate-700 border-slate-500 text-slate-300',
+      isSpecial: false
+    };
+  };
+
+  // Keyboard inputs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (stateRef.current !== 'playing' || !fallingRef.current) return;
+
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        e.preventDefault();
+        moveLeft();
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        e.preventDefault();
+        moveRight();
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        e.preventDefault();
+        moveDown();
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        dropInstantly();
+      } else if (e.code === 'KeyP') {
+        e.preventDefault();
+        setGameState('paused');
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        setSoundEnabled(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Continuous auto-fall timer
+  useEffect(() => {
+    if (gameState !== 'playing') {
+      if (loopTimerRef.current) clearInterval(loopTimerRef.current);
+      return;
+    }
+
+    const intervalMs = Math.max(250, 1000 - level * 100); // Speeds up with level
+    loopTimerRef.current = setInterval(() => {
+      moveDown();
+    }, intervalMs);
+
+    return () => {
+      if (loopTimerRef.current) clearInterval(loopTimerRef.current);
+    };
+  }, [gameState, level, fallingBlock]);
+
+  // Movements helpers
+  const moveLeft = () => {
+    const curr = fallingRef.current;
+    if (!curr) return;
+    if (curr.c > 0 && !boardRef.current[curr.r][curr.c - 1]) {
+      setFallingBlock({ ...curr, c: curr.c - 1 });
+    }
+  };
+
+  const moveRight = () => {
+    const curr = fallingRef.current;
+    if (!curr) return;
+    if (curr.c < colsRef.current - 1 && !boardRef.current[curr.r][curr.c + 1]) {
+      setFallingBlock({ ...curr, c: curr.c + 1 });
+    }
+  };
+
+  const moveDown = () => {
+    const curr = fallingRef.current;
+    if (!curr) return;
+
+    const nextRow = curr.r + 1;
+    // Check floor or stacked block
+    const isFloor = nextRow >= rows;
+    const isBlockBelow = !isFloor && boardRef.current[nextRow][curr.c] !== null;
+
+    if (isFloor || isBlockBelow) {
+      lockBlock(curr);
+    } else {
+      setFallingBlock({ ...curr, r: nextRow });
+    }
+  };
+
+  const dropInstantly = () => {
+    const curr = fallingRef.current;
+    if (!curr) return;
+
+    let targetR = curr.r;
+    while (targetR + 1 < rows && !boardRef.current[targetR + 1][curr.c]) {
+      targetR++;
+    }
+    lockBlock({ ...curr, r: targetR });
+  };
+
+  // Lock falling block into the grid
+  const lockBlock = (block: FallingBlock & { r: number; c: number }) => {
+    const updatedBoard = boardRef.current.map(row => [...row]);
+    const targetLetters = LAB_FOODS[currentIndex].letters;
+
+    // A. Handle Special Eraser Block (✎)
+    if (block.isSpecial) {
+      // Clear entire column
+      for (let r = 0; r < rows; r++) {
+        updatedBoard[r][block.c] = null;
+      }
+      setBoard(updatedBoard);
+
+      // Re-evaluate snap state for this column
+      const nextSnapped = [...colSnapped];
+      nextSnapped[block.c] = false;
+      setColSnapped(nextSnapped);
+
+      playSound('秫米糋', '清除！');
+      spawnNext();
+      return;
+    }
+
+    // B. Standard block landing
+    const isTargetMatch = block.letter === targetLetters[block.c];
+
+    if (isTargetMatch) {
+      // Snap directly to the bottom target row (Row 9)
+      const targetCell = updatedBoard[rows - 1][block.c];
+      
+      // If it's not already correct, lock it in!
+      if (!targetCell || !targetCell.isCorrect) {
+        updatedBoard[rows - 1][block.c] = {
+          letter: block.letter,
+          colorClass: block.colorClass,
+          isSpecial: false,
+          isCorrect: true
+        };
+
+        // Clear any mistake blocks that were stacked above it in this column!
+        for (let r = 0; r < rows - 1; r++) {
+          updatedBoard[r][block.c] = null;
+        }
+
+        // Trigger flash and correct sounds
+        setSparkleCol(block.c);
+        setTimeout(() => setSparkleCol(null), 800);
+        
+        playCorrectSound();
+        playSound('答著矣！');
+        setDnaScore(prev => prev + 15);
+
+        // Update snap array
+        const nextSnapped = [...colSnapped];
+        nextSnapped[block.c] = true;
+        setColSnapped(nextSnapped);
+
+        // Check overall completion
+        const allCorrect = nextSnapped.every((snap, index) => {
+          if (index < cols) return snap;
+          return true;
+        });
+
+        if (allCorrect) {
+          handleWordCompleted(updatedBoard);
+          return;
+        }
+      }
+    } else {
+      // Place as stacked block/obstacle above current stack
+      playWrongSound();
+      if (block.r === 0) {
+        // Game Over trigger if it stacks out
+        setShakeBoard(true);
+        setTimeout(() => setShakeBoard(false), 500);
+        playSound('閣來！');
+        
+        // Deduct lives or clear board to retry
+        setDnaScore(prev => Math.max(0, prev - 25));
+        resetWordRound();
+        return;
+      }
+
+      updatedBoard[block.r][block.c] = {
+        letter: block.letter,
+        colorClass: block.colorClass,
+        isSpecial: false,
+        isCorrect: false
+      };
+    }
+
+    setBoard(updatedBoard);
+    spawnNext();
+  };
+
+  const spawnNext = () => {
+    // Generate new block
+    const targetLetters = currentTarget.letters;
+    const next = getRandomBlock(targetLetters);
+
+    setFallingBlock({
+      ...nextBlock,
+      r: 0,
+      c: Math.floor(cols / 2)
+    });
+    setNextBlock(next);
+  };
+
+  // Word spelling complete handler
+  const handleWordCompleted = (finalBoard: (PlacedBlock | null)[][]) => {
+    // Animate glowing border
+    setBoard(finalBoard);
+    setFallingBlock(null);
+
+    // Speak full word beautifully
+    setTimeout(() => {
+      playSound(currentTarget.name, currentTarget.tailo);
+    }, 200);
+
+    // DNA bonus
+    setDnaScore(prev => prev + 100);
+    // Fill Energy
+    const nextEnergy = Math.min(100, energy + 25);
+    setEnergy(nextEnergy);
+
+    // If Energy 100%, complete game!
+    if (nextEnergy >= 100) {
+      setTimeout(() => {
+        setGameState('win');
+        saveGameResult(true);
+      }, 1500);
+    } else {
+      // Go to next word
+      setTimeout(() => {
+        setLevel(prev => prev + 1);
+        setCurrentIndex(prev => (prev + 1) % LAB_FOODS.length);
+      }, 2000);
+    }
+  };
+
+  // Game complete logging
+  const saveGameResult = (isWin: boolean) => {
+    const finalScore = dnaScore;
+    if (finalScore > highScore) {
+      setHighScore(finalScore);
+      localStorage.setItem('taiyu_lab_high', finalScore.toString());
+    }
+
+    // Save learning log record
+    const dateStr = new Date().toLocaleDateString();
+    const stars = isWin ? (finalScore >= 350 ? 5 : finalScore >= 200 ? 4 : 3) : 1;
+    const newRecord = {
+      date: dateStr,
+      gameName: '臺羅拼音方塊研究所',
+      score: finalScore,
+      stars: stars
+    };
+
+    const stored = localStorage.getItem('tai_lo_records');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        localStorage.setItem('tai_lo_records', JSON.stringify([newRecord, ...parsed]));
+      } catch (e) {
+        localStorage.setItem('tai_lo_records', JSON.stringify([newRecord]));
+      }
+    } else {
+      localStorage.setItem('tai_lo_records', JSON.stringify([newRecord]));
+    }
+  };
+
+  const startNewGame = () => {
+    setFoodList([...LAB_FOODS].sort(() => Math.random() - 0.5));
+    setDnaScore(128);
+    setLevel(3);
+    setEnergy(30);
+    setCurrentIndex(0);
+    setGameState('playing');
+    setTimeout(() => resetWordRound(), 50);
+  };
+
+  // Item M: Mutation tool - convert current falling block to a needed target letter
+  const handleUseItemM = () => {
+    if (gameState !== 'playing' || !fallingBlock) return;
+    const targetLetters = currentTarget.letters;
+    // Find unplaced letter or choose random target letter
+    const needed = targetLetters.find((_, idx) => !colSnapped[idx]) || targetLetters[0];
+    
+    let colorClass = 'bg-emerald-500 border-emerald-300 shadow-[0_0_12px_#10b981] text-white';
+    if (needed === '-') colorClass = 'bg-cyan-500 border-cyan-300 shadow-[0_0_12px_#06b6d4] text-white';
+    else if (needed.match(/[āíìîā̃éêēóō]/) || needed === 'ê' || needed === 'ō') {
+      colorClass = 'bg-amber-500 border-amber-300 shadow-[0_0_12px_#f59e0b] text-white';
+    }
+
+    setFallingBlock({
+      ...fallingBlock,
+      letter: needed,
+      colorClass,
+      isSpecial: false
+    });
+    playSound('變形！');
+  };
+
+  // Item P: Pronunciation & hint tool
+  const handleUseItemP = () => {
+    playSound(currentTarget.name, currentTarget.tailo);
+  };
+
+  return (
+    <GameShell onHome={onHome}>
+      {/* HEADER SECTION - Beautiful dark glowing laboratory styling */}
+      <div className="flex flex-col lg:flex-row justify-between items-stretch gap-4 select-none mb-4">
+        {/* Left Laboratory Title Block */}
+        <div className="flex-1 bg-gradient-to-r from-[#030712] via-[#0B1528] to-[#030712] border-2 border-cyan-500/30 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(6,182,212,0.15)] relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r from-cyan-500 via-emerald-500 to-purple-500" />
+          
+          <div className="flex items-center gap-4">
+            {/* Bubbling beaker graphic */}
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-xl bg-cyan-950/40 border border-cyan-400/40 shadow-[0_0_12px_rgba(34,211,238,0.3)] shrink-0">
+              <span className="text-3xl animate-bounce">🧪</span>
+              <div className="absolute top-1 right-2 w-2.5 h-2.5 rounded-full bg-emerald-400/80 animate-ping" />
+            </div>
+
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-cyan-100 tracking-wider flex items-center gap-1.5 font-sans">
+                臺羅拼音方塊研究所
+                <span className="text-cyan-400 text-xs py-0.5 px-2 rounded-full border border-cyan-500/30 font-mono">LAB</span>
+              </h1>
+              <p className="text-xs text-emerald-400 font-bold tracking-widest mt-0.5">
+                ✦ 鹿港美食篇 ✦
+              </p>
+            </div>
+          </div>
+
+          {/* DNA Helix decoration on right */}
+          <div className="hidden md:flex flex-col gap-0.5 text-cyan-500/20 text-xs font-mono select-none">
+            <span>🧬 A=T</span>
+            <span>🧬 C≡G</span>
+          </div>
+        </div>
+
+        {/* HUD block - DNA, Level, Audio/Pause controls */}
+        <div className="flex items-center gap-4 px-6 py-4 bg-[#030712] border-2 border-purple-500/30 rounded-2xl text-white font-mono shrink-0 justify-between shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-purple-400 font-extrabold uppercase tracking-widest">🧬 DNA</span>
+            <span className="text-xl font-black text-purple-300 tracking-wider">
+              {dnaScore}
+            </span>
+          </div>
+
+          <div className="h-8 w-[1.5px] bg-slate-800" />
+
+          <div className="flex flex-col">
+            <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-widest">Level</span>
+            <span className="text-xl font-black text-emerald-300">
+              {level}
+            </span>
+          </div>
+
+          <div className="h-8 w-[1.5px] bg-slate-800" />
+
+          {/* Retro action buttons items [M] [P] (Figure 2 top right corner) */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleUseItemM}
+              className="px-3 py-1.5 rounded-lg bg-emerald-950/80 border-2 border-emerald-400 text-sm text-emerald-300 hover:text-white hover:bg-emerald-800 active:scale-95 transition-all cursor-pointer font-mono font-black shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+              title="M 道具：變形方塊 (將方塊轉為所需字母)"
+            >
+              M
+            </button>
+            <button
+              onClick={handleUseItemP}
+              className="px-3 py-1.5 rounded-lg bg-cyan-950/80 border-2 border-cyan-400 text-sm text-cyan-300 hover:text-white hover:bg-cyan-800 active:scale-95 transition-all cursor-pointer font-mono font-black shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+              title="P 道具：發音提示 (重播放音與拆解提示)"
+            >
+              P
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CORE LABORATORY CONTENT (Left learning info, center board, right study controls) */}
+      <div className="flex flex-col xl:flex-row gap-4 items-stretch select-none">
+        
+        {/* Left Side: Learn Goals, Helper & Steaming bowl (Figure 2) */}
+        <div className="w-full xl:w-[320px] shrink-0 bg-[#02050D] border-2 border-cyan-500/20 rounded-2xl p-5 text-white flex flex-col justify-between shadow-[0_0_15px_rgba(6,182,212,0.05)]">
+          
+          <div className="space-y-5">
+            {/* Target item */}
+            <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/40">
+              <span className="text-xs font-black text-cyan-400 tracking-wider block mb-1">🎯 學習目標</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-yellow-300 tracking-wide">{currentTarget.tailo}</span>
+                <span className="text-sm text-slate-300 font-bold">({currentTarget.name})</span>
+              </div>
+            </div>
+
+            {/* Knowledge block with steaming bowl icon */}
+            <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 relative">
+              <span className="text-xs font-black text-emerald-400 tracking-wider block mb-2">💡 小知識</span>
+              <div className="flex gap-3 items-start">
+                <p className="text-xs text-slate-200 leading-relaxed flex-1 font-medium">
+                  {currentTarget.desc}
+                </p>
+
+                {/* Steam bowl icon */}
+                <div className="w-12 h-12 rounded-xl bg-emerald-950 flex items-center justify-center border border-emerald-400/50 shrink-0 shadow-md">
+                  <span className="text-2xl animate-pulse">🍜</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tai-lo spelled helper components */}
+            <div className="p-4 rounded-xl bg-purple-950/30 border border-purple-500/40">
+              <span className="text-xs font-black text-purple-300 tracking-wider block mb-2.5">📖 臺羅小幫手</span>
+              <div className="space-y-2 max-h-[170px] overflow-y-auto pr-1">
+                {currentTarget.helper.map((hlp, idx) => (
+                  <div key={idx} className="flex gap-2 text-xs items-center leading-normal">
+                    <span className="w-7 h-6 rounded-md flex items-center justify-center font-mono font-black text-xs bg-slate-900 border-2 border-yellow-400/80 text-yellow-300 shadow-sm shrink-0">
+                      {hlp.char}
+                    </span>
+                    <span className="text-xs text-slate-400 font-extrabold min-w-[38px]">{hlp.type}：</span>
+                    <span className="text-xs text-slate-200 truncate flex-1 font-medium">{hlp.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Dinosaur scientist mascot */}
+          <div className="mt-6 flex items-end gap-3 bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+            {/* Speech bubble */}
+            <div className="relative bg-cyan-950/60 border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 leading-normal flex-1 mb-2 font-bold shadow-md">
+              <div className="absolute bottom-[-6px] right-4 w-3 h-3 bg-[#0a1526] border-b border-r border-cyan-500/50 rotate-45" />
+              來拼出「<span className="font-extrabold text-yellow-300">{currentTarget.tailo}</span>」！完成一行就能獲得能量！
+            </div>
+
+            {/* Dinosaur scientist */}
+            <div className="w-16 h-20 shrink-0 relative">
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 80 100">
+                <path d="M 15 80 Q 2 85 5 95 Q 18 90 20 80 Z" fill="#22C55E" />
+                <ellipse cx="38" cy="72" rx="16" ry="20" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="1.2" />
+                <ellipse cx="38" cy="70" rx="13" ry="17" fill="#22C55E" />
+                <ellipse cx="38" cy="42" rx="14" ry="12" fill="#22C55E" />
+                <path d="M 32 47 Q 38 52 44 47" fill="none" stroke="#15803D" strokeWidth="1.5" />
+                <circle cx="31" cy="40" r="4.5" fill="#0F172A" />
+                <circle cx="45" cy="40" r="4.5" fill="#0F172A" />
+                <circle cx="32" cy="39" r="1.2" fill="#FFF" />
+                <circle cx="46" cy="39" r="1.2" fill="#FFF" />
+                <rect x="23" y="34" width="30" height="11" rx="4" fill="rgba(6,182,212,0.3)" stroke="#06B6D4" strokeWidth="1.5" />
+                <line x1="23" y1="39" x2="16" y2="39" stroke="#06B6D4" strokeWidth="1.5" />
+                <line x1="53" y1="39" x2="60" y2="39" stroke="#06B6D4" strokeWidth="1.5" />
+                <path d="M 28 58 L 38 72 L 48 58 Z" fill="#FFF" />
+                <rect x="37" y="58" width="2" height="14" fill="#000" opacity="0.3" />
+                <rect x="28" y="65" width="20" height="14" rx="2" fill="#1E293B" stroke="#475569" strokeWidth="1.5" />
+                <rect x="31" y="67" width="14" height="10" rx="1" fill="#06B6D4" opacity="0.8" />
+                <circle cx="26" cy="72" r="3" fill="#15803D" />
+                <circle cx="50" cy="72" r="3" fill="#15803D" />
+                <ellipse cx="28" cy="91" rx="5" ry="3" fill="#15803D" />
+                <ellipse cx="48" cy="91" rx="5" ry="3" fill="#15803D" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Section: Main Interactive Block Board (Figure 2 right panel) */}
+        <div className="flex-1 bg-[#010308] border-2 border-cyan-500/30 rounded-2xl p-5 flex flex-col md:flex-row gap-5 items-stretch relative min-h-[520px]">
+          
+          {/* Subtle grid pattern background */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none rounded-2xl" />
+
+          {/* NEXT block queue displaying on the left of grid (matches Figure 2) */}
+          <div className="flex flex-row md:flex-col items-center justify-center md:justify-start gap-4 p-4 bg-slate-950/80 border border-slate-800 rounded-2xl md:w-32 shrink-0 shadow-lg">
+            <span className="text-xs text-cyan-400 font-black uppercase tracking-widest font-mono">NEXT</span>
+            
+            {/* Visual Next Block preview frame */}
+            <div className="w-16 h-16 rounded-xl bg-black/60 border-2 border-cyan-500/30 flex items-center justify-center relative overflow-hidden shadow-inner">
+              <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center font-mono font-black text-xl text-white shadow-md ${nextBlock.colorClass}`}>
+                {nextBlock.letter}
+              </div>
+            </div>
+
+            {/* Instruction tooltip */}
+            <div className="hidden md:flex flex-col gap-2 text-slate-400 text-xs text-center font-bold font-mono leading-normal mt-4">
+              <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">← A / D →</span>
+              <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">↓ S 下降</span>
+              <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">[Space] 瞬降</span>
+            </div>
+          </div>
+
+          {/* Core Falling Blocks Grid Frame */}
+          <div className="flex-1 flex flex-col justify-between relative">
+            
+            {/* The actual falling grid canvas */}
+            <div 
+              className={`flex-1 border-2 border-cyan-500/40 rounded-2xl bg-black/90 p-2 relative overflow-hidden transition-all duration-300 min-h-[420px] shadow-[0_0_20px_rgba(6,182,212,0.1)] ${
+                shakeBoard ? 'animate-shake' : ''
+              }`}
+            >
+              {/* Outer grid columns dividers lines for layout references */}
+              <div className="absolute inset-0 flex justify-between pointer-events-none">
+                {[...Array(cols)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="h-full border-r border-slate-900/60 first:border-0 last:border-0" 
+                    style={{ width: `${100 / cols}%` }}
+                  />
+                ))}
+              </div>
+
+              {/* Grid content rendering */}
+              <div className="absolute inset-2 flex flex-col justify-between h-[96%]">
+                {[...Array(rows)].map((_, r) => {
+                  const isTargetRow = r === rows - 1;
+                  return (
+                    <div key={r} className="flex-1 flex">
+                      {[...Array(cols)].map((_, c) => {
+                        // Cell snap check
+                        const isCellSparkling = sparkleCol === c && r === rows - 1;
+
+                        // Content checks
+                        let cellContent = board[r]?.[c];
+                        let isFalling = !!(fallingBlock && fallingBlock.r === r && fallingBlock.c === c);
+                        let activeBlock = isFalling ? fallingBlock : cellContent;
+                        let isCorrect = !isFalling && !!cellContent?.isCorrect;
+
+                        return (
+                          <div 
+                            key={c} 
+                            className={`flex-1 flex items-center justify-center p-0.5 border-[0.5px] border-slate-950/30 relative ${
+                              isTargetRow
+                                ? 'bg-[#0a231c]/60 border-t-2 border-emerald-500/40'
+                                : ''
+                            }`}
+                          >
+                            {/* TARGET PLACEHOLDER ROW RENDER (Dashed guides on Row 9 - Large text as in Figure 2/3) */}
+                            {isTargetRow && !isCorrect && (
+                              <div className="absolute inset-0.5 rounded-lg border-2 border-dashed border-emerald-400/60 flex items-center justify-center bg-emerald-950/30 select-none pointer-events-none">
+                                <span className="text-emerald-300 font-mono font-black text-xl md:text-2xl tracking-wider drop-shadow">
+                                  {currentTarget.letters[c]}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Active block element rendering (Large crisp font text-2xl md:text-3xl) */}
+                            {activeBlock && (
+                              <motion.div
+                                layoutId={isFalling ? `falling_${activeBlock.letter}` : undefined}
+                                className={`w-full h-full rounded-xl border-2 flex items-center justify-center font-mono font-black text-xl md:text-2xl select-none shadow-lg transition-all ${
+                                  activeBlock.colorClass
+                                } ${
+                                  isTargetRow && isCorrect
+                                    ? 'bg-emerald-500 border-emerald-300 shadow-[0_0_16px_#10b981] scale-100 z-10'
+                                    : 'scale-95'
+                                }`}
+                              >
+                                {activeBlock.letter}
+                              </motion.div>
+                            )}
+
+                            {/* Correct target glowing border indicator */}
+                            {isTargetRow && colSnapped[c] && (
+                              <div className="absolute inset-0 rounded-xl border-2 border-emerald-400 shadow-[0_0_12px_#10b981] pointer-events-none animate-pulse" />
+                            )}
+
+                            {/* Sparkle burst animations on correctness */}
+                            {isCellSparkling && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                                <Sparkles className="w-10 h-10 text-yellow-300 animate-ping absolute" />
+                                <div className="w-5 h-5 rounded-full bg-white animate-ping" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Target row horizontal pointer decoration line (Figure 2 "目標行" arrow tag) */}
+              <div 
+                className="absolute left-[-2px] md:left-[-14px] bottom-[3.5%] z-20 flex items-center pointer-events-none"
+              >
+                <div className="px-2 py-1 rounded-r-lg bg-cyan-500 text-white font-black text-xs uppercase tracking-wide flex items-center gap-1 shadow-[0_0_12px_rgba(6,182,212,0.6)]">
+                  <span>目標行</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Overlay Completed word visual flash */}
+              {colSnapped.every((snap, idx) => idx < cols ? snap : true) && (
+                <div className="absolute inset-0 bg-emerald-950/30 backdrop-blur-[1px] flex flex-col items-center justify-center z-20">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1.1, opacity: 1 }}
+                    className="p-6 rounded-3xl bg-black/95 border-2 border-emerald-400 text-center flex flex-col items-center gap-2 shadow-[0_0_30px_#10b981]"
+                  >
+                    <span className="text-4xl animate-bounce">✨</span>
+                    <h3 className="text-xl font-black text-emerald-400">完成拼音！</h3>
+                    <p className="text-2xl font-mono text-yellow-300 tracking-widest mt-1 font-bold">
+                      {currentTarget.tailo}
+                    </p>
+                    <p className="text-sm text-slate-200 font-bold">
+                      {currentTarget.name}
+                    </p>
+                  </motion.div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Touch controls beneath grid */}
+            <div className="flex justify-around items-center gap-3 mt-4">
+              <button
+                onClick={moveLeft}
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 text-slate-200 flex justify-center items-center cursor-pointer transition-all active:scale-95 shadow-md"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={moveDown}
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 text-slate-200 flex justify-center items-center cursor-pointer transition-all active:scale-95 shadow-md"
+              >
+                <ArrowDown className="w-5 h-5" />
+              </button>
+              <button
+                onClick={moveRight}
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 text-slate-200 flex justify-center items-center cursor-pointer transition-all active:scale-95 shadow-md"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <button
+                onClick={dropInstantly}
+                className="px-5 py-3 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-wider cursor-pointer transition-all active:scale-95 shadow-lg shadow-cyan-600/30 shrink-0"
+              >
+                瞬降
+              </button>
+            </div>
+
+            {/* Energy progress bar bottom row (Figure 2) */}
+            <div className="mt-4 p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl shadow-md">
+              <div className="flex justify-between items-center text-xs text-slate-300 font-black font-mono mb-1.5 tracking-wider">
+                <span>ENERGY</span>
+                <span className="text-cyan-300 font-mono font-black text-base">{energy}%</span>
+              </div>
+              <div className="w-full h-4 rounded-full bg-slate-900 border border-slate-800 overflow-hidden relative shadow-inner">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-cyan-400 shadow-[0_0_12px_#06b6d4]"
+                  style={{ width: `${energy}%` }}
+                  animate={{ width: `${energy}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* PAUSE AND START SCENARIO OVERLAYS */}
+      {gameState === 'paused' && (
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center z-40">
+          <div className="p-8 rounded-3xl border-2 border-purple-500/40 bg-slate-950/95 max-w-sm flex flex-col items-center gap-4 shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-3xl animate-pulse">
+              ⏸️
+            </div>
+            <h3 className="font-black text-white text-2xl tracking-wider">實驗室暫停中</h3>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              拼音拼圖研究尚未完成！點擊下方按鈕或按下【P】鍵重返研究所。
+            </p>
+            <button
+              onClick={() => setGameState('playing')}
+              className="w-full mt-2 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-white font-extrabold text-sm shadow-lg shadow-cyan-500/20 transition-all active:scale-95 cursor-pointer"
+            >
+              繼續研究
+            </button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'start' && (
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center text-center z-40">
+          <div className="p-8 rounded-3xl border-2 border-cyan-500/40 bg-slate-950/95 max-w-md flex flex-col items-center gap-5 shadow-2xl">
+            {/* Laboratory Flask animated icon */}
+            <div className="w-20 h-20 rounded-full bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 text-4xl animate-pulse relative">
+              🧪
+              <div className="absolute inset-0 rounded-full border border-dashed border-cyan-300/40 animate-spin" style={{ animationDuration: '6s' }} />
+            </div>
+
+            <div>
+              <h3 className="font-black text-white text-2xl tracking-wider">臺羅拼音方塊研究所</h3>
+              <p className="text-emerald-400 text-xs font-mono font-bold tracking-widest mt-1">✦ LUKANG FOOD SECTOR ✦</p>
+            </div>
+
+            <div className="text-slate-400 text-xs leading-relaxed space-y-2 text-left bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+              <p className="flex items-start gap-1.5">
+                <span className="text-cyan-400">1.</span>
+                <span>臺羅字母方塊將從上方落下，點擊下方或方向鍵移動它。</span>
+              </p>
+              <p className="flex items-start gap-1.5">
+                <span className="text-cyan-400">2.</span>
+                <span>將正確的字母對齊到對應的<strong>目標行</strong>，消除多餘雜質並鎖定答案。</span>
+              </p>
+              <p className="flex items-start gap-1.5">
+                <span className="text-cyan-400">3.</span>
+                <span>如果不小心卡住，可善用隨機出現的 <strong>紫色彩筆 (✎)</strong> 掃除障礙！</span>
+              </p>
+              <p className="flex items-start gap-1.5">
+                <span className="text-cyan-400">4.</span>
+                <span>收集 100% 能量完成美食星盤配對！</span>
+              </p>
+            </div>
+
+            <button
+              onClick={startNewGame}
+              className="w-full py-3 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-extrabold text-sm shadow-lg shadow-cyan-500/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              開始研究
+            </button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'win' && (
+        <div className="absolute inset-0 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center text-center z-40">
+          <div className="p-8 rounded-3xl border-2 border-emerald-500/40 bg-slate-950/95 max-w-sm flex flex-col items-center gap-5 shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/15 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 text-3xl animate-bounce">
+              🏆
+            </div>
+            
+            <div>
+              <h3 className="font-black text-white text-2xl tracking-wider">拼音大師誕生！</h3>
+              <p className="text-emerald-400 text-xs font-mono font-bold mt-1">RESEARCH COMPLETED SUCCESSFULLY</p>
+            </div>
+
+            <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 w-full text-center">
+              <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block">FINAL SCORE</span>
+              <span className="text-3xl font-black text-yellow-300 font-mono">{dnaScore} DNA</span>
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={startNewGame}
+                className="flex-1 py-3 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-black text-xs transition-all active:scale-95 cursor-pointer"
+              >
+                重新挑戰
+              </button>
+              <button
+                onClick={onNext}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+              >
+                下一關卡
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </GameShell>
+  );
+}

@@ -1,0 +1,8 @@
+{
+  "name": "台語互動學習網",
+  "description": "泰宇出版 台語互動學習網 - 包含語音、單字、互動遊戲與教學紀錄的台語學習平台",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

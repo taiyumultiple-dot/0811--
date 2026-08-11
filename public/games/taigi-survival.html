@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>臺羅宇宙生存戰：鹿港美食宇宙</title>
+<style>
+  :root{
+    --bg-deep:#04060f;
+    --bg-panel:#0a1024;
+    --cyan:#22e2f0;
+    --cyan-dim:#0e5a63;
+    --orange:#ff9d2e;
+    --green:#3ddc84;
+    --red:#ff5f6d;
+    --text:#e7f6ff;
+    --text-dim:#7f93b0;
+    --font-ui: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-mono: "Consolas", "Courier New", monospace;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{
+    margin:0; padding:0; height:100%; background:#000;
+    font-family:var(--font-ui); color:var(--text);
+    overscroll-behavior:none;
+  }
+  #app{
+    width:100%; height:100%; min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 50% 0%, #0b1230 0%, #04060f 60%, #000 100%);
+  }
+  .stage{
+    position:relative;
+    width:100%;
+    max-width:1280px;
+    aspect-ratio:16/9;
+    max-height:100vh;
+    background:var(--bg-deep);
+    overflow:hidden;
+    border-radius:8px;
+    box-shadow:0 0 60px rgba(34,226,240,0.15);
+    touch-action:none;
+    user-select:none;
+  }
+  @media (max-width:760px){
+    .stage{ max-height:none; aspect-ratio:9/16; }
+  }
+
+  /* ---------- 共用 ---------- */
+  .screen{ position:absolute; inset:0; display:none; }
+  .screen.active{ display:flex; }
+  button{
+    font-family:var(--font-ui); cursor:pointer; border:none; outline:none;
+  }
+  .btn{
+    background:linear-gradient(180deg,#123246,#0a1c2b);
+    border:2px solid var(--cyan); color:var(--cyan);
+    padding:10px 22px; border-radius:999px; font-weight:700; font-size:15px;
+    box-shadow:0 0 12px rgba(34,226,240,0.25);
+    transition:transform .12s ease, box-shadow .12s ease;
+    white-space:nowrap;
+  }
+  .btn:active{ transform:scale(0.94); }
+  .btn.primary{ background:linear-gradient(180deg,#ff9d2e,#c8730f); border-color:#ffb85c; color:#1b0e00; box-shadow:0 0 18px rgba(255,157,46,0.4);}
+  .btn.small{ padding:6px 12px; font-size:12px; }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .scrollbox{ overflow-y:auto; scrollbar-width:thin; }
+
+  /* ---------- 首頁 ---------- */
+  #home-screen{
+    flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    text-align:center; padding:24px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(34,226,240,0.08), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,157,46,0.08), transparent 40%),
+      var(--bg-deep);
+  }
+  .home-title{
+    font-size:clamp(24px,4.5vw,42px); font-weight:900; letter-spacing:2px;
+    color:var(--cyan); text-shadow:0 0 18px rgba(34,226,240,0.6);
+    margin:0;
+  }
+  .home-sub{ color:var(--orange); font-weight:700; letter-spacing:3px; font-size:clamp(12px,2vw,16px); margin:0;}
+  .home-desc{
+    max-width:560px; color:var(--text-dim); font-size:13px; line-height:1.7;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.2);
+    border-radius:14px; padding:16px 20px; text-align:left;
+    max-height:38vh; overflow-y:auto;
+  }
+  .home-desc b{ color:var(--text); }
+  .home-desc ul{ margin:6px 0; padding-left:18px; }
+  .ship-emoji{ font-size:46px; filter:drop-shadow(0 0 10px rgba(34,226,240,.7)); }
+
+  /* ---------- 遊戲畫面 ---------- */
+  #game-screen{ position:absolute; inset:0; }
+  canvas#gameCanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  .hud{ position:absolute; pointer-events:none; z-index:5; font-family:var(--font-mono); }
+  .hud .panel{
+    pointer-events:auto;
+    background:rgba(4,10,25,0.82); border:1px solid rgba(34,226,240,0.45);
+    border-radius:14px; padding:8px 12px; box-shadow:0 0 14px rgba(34,226,240,0.15);
+  }
+
+  .hud-top-left{ top:10px; left:10px; width:min(42vw,190px); }
+  .hud-top-left .label{ font-size:10px; color:var(--cyan); letter-spacing:1px; }
+  .hud-top-left .big{ font-size:clamp(18px,3vw,26px); font-weight:900; color:var(--orange); }
+  .hud-top-left .big.time-warning{ color:var(--red); animation:timePulse 0.6s infinite; }
+  @keyframes timePulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
+  .hud-top-left .keyword-row{ margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.08);}
+  .hud-top-left .keyword{ font-size:clamp(14px,2.4vw,18px); font-weight:900; color:#fff; }
+
+  .hud-top-center{
+    top:10px; left:50%; transform:translateX(-50%);
+    width:min(72vw,560px); text-align:center;
+  }
+  .hud-top-center .prompt{ font-size:clamp(13px,2.2vw,17px); font-weight:800; color:#fff; line-height:1.35; }
+  .hud-top-center .theme{ font-size:11px; color:var(--cyan); letter-spacing:2px; margin-top:2px; }
+  .hud-top-center .prompt-btns{ display:flex; justify-content:center; gap:8px; margin-top:8px; }
+
+  .hud-top-right-mini{
+    top:10px; right:10px; display:flex; gap:8px; align-items:center;
+    pointer-events:auto;
+  }
+  .hud-top-right-mini .panel{ padding:0; }
+  .hud-top-right{
+    top:56px; right:10px; display:flex; flex-direction:column; gap:6px; align-items:flex-end;
+    width:min(40vw,190px);
+  }
+  .hud-top-right .row{ display:flex; align-items:center; gap:8px; justify-content:space-between; width:100%; }
+  .hud-top-right .lbl{ font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+  .hud-top-right .val{ font-weight:900; color:var(--cyan); font-size:15px; }
+  .hearts{ letter-spacing:2px; font-size:15px; }
+  .combo-tag{ color:var(--orange); font-weight:900; }
+  .icon-btn{
+    width:30px; height:30px; border-radius:50%; background:rgba(34,226,240,0.08);
+    border:1px solid rgba(34,226,240,0.5); color:var(--cyan); font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  select#langSelect{
+    background:rgba(4,10,25,0.9); color:var(--cyan); border:1px solid rgba(34,226,240,0.5);
+    border-radius:8px; font-size:11px; padding:2px 4px;
+  }
+
+  .hud-bottom-left{ bottom:10px; left:10px; width:min(60vw,300px); font-size:10px; color:var(--text-dim); line-height:1.7;}
+  .hud-bottom-left .lg-row{ display:flex; align-items:center; gap:6px; }
+  .lg-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+
+  .hud-bottom-right{ bottom:10px; right:10px; text-align:right; }
+  .hud-bottom-right .lvl{ color:var(--orange); font-weight:900; font-size:14px; }
+
+  .powerup-tray{
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    display:flex; gap:6px; pointer-events:none;
+  }
+  .powerup-chip{
+    background:rgba(4,10,25,0.85); border:1px solid rgba(255,157,46,0.5); color:var(--orange);
+    font-size:10px; padding:4px 8px; border-radius:8px; opacity:0.9;
+  }
+
+  .feedback-toast{
+    position:absolute; top:38%; left:50%; transform:translate(-50%,-50%) scale(0.9);
+    background:rgba(4,10,25,0.92); border:2px solid var(--cyan); border-radius:16px;
+    padding:14px 22px; text-align:center; min-width:220px; max-width:70vw;
+    opacity:0; transition:opacity .18s ease, transform .18s ease; pointer-events:none; z-index:20;
+  }
+  .feedback-toast.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .feedback-toast.correct{ border-color:var(--green); box-shadow:0 0 26px rgba(61,220,132,0.5); }
+  .feedback-toast.wrong{ border-color:var(--red); box-shadow:0 0 26px rgba(255,95,109,0.5); }
+  .feedback-toast .ft-title{ font-size:20px; font-weight:900; }
+  .feedback-toast.correct .ft-title{ color:var(--green); }
+  .feedback-toast.wrong .ft-title{ color:var(--red); }
+  .feedback-toast .ft-body{ font-size:13px; color:var(--text); margin-top:6px; }
+  .feedback-toast .ft-tailo{ font-family:var(--font-mono); color:var(--orange); font-size:15px; margin-top:2px; }
+  .feedback-toast .ft-audio{ font-size:11px; color:var(--text-dim); margin-top:6px; }
+
+  .pause-overlay{
+    position:absolute; inset:0; background:rgba(0,0,0,0.72); z-index:30;
+    display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  }
+  .pause-overlay.show{ display:flex; }
+  .pause-overlay h2{ color:var(--cyan); letter-spacing:4px; }
+
+  .dict-panel{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:rgba(4,10,25,0.95); border:2px solid var(--orange); border-radius:16px;
+    padding:14px 20px; text-align:center; z-index:25; display:none; min-width:220px;
+    box-shadow:0 0 24px rgba(255,157,46,.45);
+  }
+  .dict-panel.show{ display:block; }
+  .dict-panel .row{ display:flex; justify-content:space-between; gap:14px; font-size:13px; margin:4px 0; }
+  .dict-panel .row span:first-child{ color:var(--text-dim); }
+  .dict-panel .row span:last-child{ color:#fff; font-weight:700; }
+
+  /* ---------- 結算畫面 ---------- */
+  #result-screen{
+    flex-direction:column; align-items:center; padding:20px; gap:14px; overflow-y:auto;
+    background:var(--bg-deep);
+  }
+  #result-screen h2{ color:var(--orange); letter-spacing:3px; margin:4px 0 0; }
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:720px;
+  }
+  @media (max-width:600px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat-card{
+    background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.25); border-radius:12px;
+    padding:10px; text-align:center;
+  }
+  .stat-card .k{ font-size:10px; color:var(--text-dim); }
+  .stat-card .v{ font-size:18px; font-weight:900; color:var(--cyan); margin-top:2px; }
+  .review-wrap{ width:100%; max-width:900px; max-height:32vh; overflow:auto; border:1px solid rgba(34,226,240,0.25); border-radius:12px; }
+  table.review{ width:100%; border-collapse:collapse; font-size:12px; }
+  table.review th, table.review td{ padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:left; white-space:nowrap; }
+  table.review th{ position:sticky; top:0; background:#0a1024; color:var(--cyan); }
+  table.review td.ok{ color:var(--green); font-weight:700; }
+  table.review td.no{ color:var(--red); font-weight:700; }
+  .result-btns{ display:flex; gap:12px; margin-top:6px; }
+
+  .visually-hidden{ position:absolute; width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="stage" id="stage">
+
+    <!-- ============ 首頁 ============ -->
+    <div class="screen active" id="home-screen">
+      <div class="ship-emoji">🚀</div>
+      <h1 class="home-title">臺羅宇宙生存戰</h1>
+      <p class="home-sub">鹿港美食宇宙</p>
+      <div class="home-desc scrollbox">
+        <b>玩法說明：</b>限時 <b>60 秒</b>，題庫隨機抽出 50 題，題目使用<b>華語</b>出題（畫面文字＋語音），你要操控太空船撞擊顯示<b>台語漢字＋臺羅拼音</b>的正確隕石。時間到立即結算分數；答錯會扣生命、中斷連擊，生命歸零也會提早結束。撞到灰色岩石只會讓船稍微減速，不算答錯。
+        <ul>
+          <li>桌機：WASD／方向鍵移動，滑鼠移動可跟隨游標，Space 暫停，R 重播題目，M 靜音切換</li>
+          <li>手機／平板：手指拖曳太空船，點擊按鈕重播題目</li>
+          <li>連續答對可提升分數倍率，連續 10 題進入「台語鬧熱模式」</li>
+        </ul>
+      </div>
+      <button class="btn primary" id="btnStart" style="font-size:18px;padding:14px 40px;">開始任務</button>
+      <button class="btn small" id="btnHowTo">操作方式 ／ 圖例</button>
+    </div>
+
+    <!-- ============ 遊戲畫面 ============ -->
+    <div class="screen" id="game-screen">
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="hud hud-top-left">
+        <div class="panel">
+          <div class="label">剩餘時間 TIME LEFT</div>
+          <div class="big" id="survivalTime">0.00s</div>
+          <div class="keyword-row">
+            <div class="label">本題</div>
+            <div class="keyword" id="keywordLabel">－</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud hud-top-center">
+        <div class="panel">
+          <div class="prompt" id="promptText">請找出「麵茶」的台語說法</div>
+          <div class="theme">台語主題：鹿港美食</div>
+          <div class="prompt-btns">
+            <button class="btn small" id="btnPlayPrompt">▶ 播放題目</button>
+            <button class="btn small" id="btnReplayPrompt">↻ 重播題目 (R)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud hud-top-right-mini">
+        <select id="langSelect" title="語言選單">
+          <option value="zh">中文</option>
+        </select>
+        <button class="icon-btn" id="btnRestartMini" title="重新開始">↺</button>
+        <button class="icon-btn" id="btnPauseMini" title="暫停(Space)">⏸</button>
+        <button class="icon-btn" id="btnSound" title="音效開關(M)">🔊</button>
+      </div>
+
+      <div class="hud hud-top-right">
+        <div class="panel" style="width:100%;">
+          <div class="row"><span class="lbl">⭐ 分數 SCORE</span><span class="val" id="scoreVal">0</span></div>
+          <div class="row"><span class="lbl">❤ 生命 LIFE</span><span class="hearts" id="livesVal">❤❤❤</span></div>
+          <div class="row"><span class="lbl">⚡ 連擊 COMBO</span><span class="combo-tag" id="comboVal">x1</span></div>
+        </div>
+      </div>
+
+      <div class="hud hud-bottom-left">
+        <div class="panel">
+          <div class="lg-row"><span class="lg-dot" style="background:var(--orange);"></span> 題目與語音＝華語，答案隕石＝台語＋臺羅</div>
+          <div class="lg-row"><span class="lg-dot" style="background:#3b4a63;border:1px solid var(--cyan);"></span> 撞擊後才判定正誤（作答前皆同色）</div>
+          <div class="lg-row"><span class="lg-dot" style="background:#666;"></span> 灰色岩石＝純障礙物　🔆提示金幣＝線索</div>
+        </div>
+      </div>
+
+      <div class="hud hud-bottom-right">
+        <div class="panel">
+          <div class="lbl" style="color:var(--text-dim);font-size:10px;">難度等級</div>
+          <div class="lvl" id="levelVal">1</div>
+        </div>
+      </div>
+
+      <div class="powerup-tray" id="powerupTray"></div>
+
+      <div class="feedback-toast" id="feedbackToast">
+        <div class="ft-title" id="ftTitle">答對了！</div>
+        <div class="ft-body" id="ftBody">麵茶的台語是</div>
+        <div class="ft-tailo" id="ftTailo">mī-tê</div>
+        <div class="ft-audio" id="ftAudio"></div>
+      </div>
+
+      <div class="dict-panel" id="dictPanel">
+        <div class="row"><span>華語</span><span id="dictMandarin">－</span></div>
+        <div class="row"><span>台語漢字</span><span id="dictHanji">－</span></div>
+        <div class="row"><span>臺羅拼音</span><span id="dictTailo">－</span></div>
+      </div>
+
+      <div class="pause-overlay" id="pauseOverlay">
+        <h2>已暫停</h2>
+        <button class="btn primary" id="btnResume">繼續任務</button>
+        <button class="btn" id="btnQuitToHome">返回首頁</button>
+      </div>
+    </div>
+
+    <!-- ============ 結算畫面 ============ -->
+    <div class="screen" id="result-screen">
+      <h2>任務結算</h2>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="review-wrap scrollbox">
+        <table class="review">
+          <thead>
+            <tr>
+              <th>華語題目</th><th>你撞擊的答案</th><th>正確台語漢字</th><th>正確臺羅拼音</th><th>是否答對</th><th>學習提示</th>
+            </tr>
+          </thead>
+          <tbody id="reviewBody"></tbody>
+        </table>
+      </div>
+      <div class="result-btns">
+        <button class="btn primary" id="btnRetry">再玩一次</button>
+        <button class="btn" id="btnHome">返回首頁</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ======================================================================
+   一、題庫資料（可持續擴充至 50 題以上，格式固定，直接在陣列中新增物件即可）
+   ====================================================================== */
+const QUESTION_BANK = [
+  { id:1, category:"華語選台語", mandarinPrompt:"請找出「麵茶」的台語說法。", keyword:"麵茶",
+    correct:{ hanji:"麵茶", tailo:"mī-tê", audio:"audio/q01.mp3" },
+    distractors:[ {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"} ],
+    explanation:"麵茶的台語說作 mī-tê。" },
+
+  { id:2, category:"華語選台語", mandarinPrompt:"請找出「牛舌餅」的台語說法。", keyword:"牛舌餅",
+    correct:{ hanji:"牛舌餅", tailo:"gû-tsi̍h-piánn", audio:"audio/q02.mp3" },
+    distractors:[ {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"肉包",tailo:"bah-pau"}, {hanji:"粉粿",tailo:"hún-kué"} ],
+    explanation:"牛舌餅的台語說作 gû-tsi̍h-piánn。" },
+
+  { id:3, category:"華語選台語", mandarinPrompt:"請找出「湯圓湯」的台語說法。", keyword:"湯圓湯",
+    correct:{ hanji:"圓仔湯", tailo:"înn-á-thng", audio:"audio/q03.mp3" },
+    distractors:[ {hanji:"麵線糊",tailo:"mī-suànn-kôo"}, {hanji:"芋丸",tailo:"ōo-uân"}, {hanji:"麵茶",tailo:"mī-tê"} ],
+    explanation:"湯圓的台語漢字是「圓仔湯」，說作 înn-á-thng。" },
+
+  { id:4, category:"華語選台語", mandarinPrompt:"請找出「麻粩」的台語說法。", keyword:"麻粩",
+    correct:{ hanji:"麻粩", tailo:"muâ-láu", audio:"audio/q04.mp3" },
+    distractors:[ {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"} ],
+    explanation:"麻粩的台語說作 muâ-láu。" },
+
+  { id:5, category:"華語選台語", mandarinPrompt:"請找出「芋丸」的台語說法。", keyword:"芋丸",
+    correct:{ hanji:"芋丸", tailo:"ōo-uân", audio:"audio/q05.mp3" },
+    distractors:[ {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"肉包",tailo:"bah-pau"}, {hanji:"粉粿",tailo:"hún-kué"} ],
+    explanation:"芋丸的台語說作 ōo-uân。" },
+
+  { id:6, category:"華語選台語", mandarinPrompt:"請找出「肉包」的台語說法。", keyword:"肉包",
+    correct:{ hanji:"肉包", tailo:"bah-pau", audio:"audio/q06.mp3" },
+    distractors:[ {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"麻粩",tailo:"muâ-láu"} ],
+    explanation:"肉包的台語說作 bah-pau。" },
+
+  { id:7, category:"華語選台語", mandarinPrompt:"請找出「粉粿」的台語說法。", keyword:"粉粿",
+    correct:{ hanji:"粉粿", tailo:"hún-kué", audio:"audio/q07.mp3" },
+    distractors:[ {hanji:"芋丸",tailo:"ōo-uân"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"}, {hanji:"麵茶",tailo:"mī-tê"} ],
+    explanation:"粉粿的台語說作 hún-kué。" },
+
+  { id:8, category:"華語選台語", mandarinPrompt:"請找出「糯米炸」的台語說法。", keyword:"糯米炸",
+    correct:{ hanji:"秫米糋", tailo:"tsu̍t-bí-tsìnn", audio:"audio/q08.mp3" },
+    distractors:[ {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"} ],
+    explanation:"糯米炸的台語漢字是「秫米糋」，說作 tsu̍t-bí-tsìnn。" },
+
+  { id:9, category:"華語選台語", mandarinPrompt:"請找出「糖葫蘆」的台語說法。", keyword:"糖葫蘆",
+    correct:{ hanji:"李仔攕", tailo:"lí-á-tshiám", audio:"audio/q09.mp3" },
+    distractors:[ {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"肉包",tailo:"bah-pau"} ],
+    explanation:"糖葫蘆的台語漢字是「李仔攕」，說作 lí-á-tshiám。" },
+
+  { id:10, category:"華語選台語", mandarinPrompt:"請找出「三輪車」的台語說法。", keyword:"三輪車",
+    correct:{ hanji:"三輪車", tailo:"sann-lián-tshia", audio:"audio/q10.mp3" },
+    distractors:[ {hanji:"火車",tailo:"hué-tshia"}, {hanji:"高鐵",tailo:"ko-thih"}, {hanji:"汽車",tailo:"ki-tshia"} ],
+    explanation:"三輪車的台語說作 sann-lián-tshia。" },
+
+  { id:11, category:"華語選台語", mandarinPrompt:"請找出「牙刷」的台語說法。", keyword:"牙刷",
+    correct:{ hanji:"齒抿仔", tailo:"khí-bín-á", audio:"audio/q11.mp3" },
+    distractors:[ {hanji:"齒膏",tailo:"khí-ko"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"跋桮",tailo:"pua̍h-pue"} ],
+    explanation:"牙刷的台語漢字是「齒抿仔」，說作 khí-bín-á。" },
+
+  { id:12, category:"華語選台語", mandarinPrompt:"請找出「牙膏」的台語說法。", keyword:"牙膏",
+    correct:{ hanji:"齒膏", tailo:"khí-ko", audio:"audio/q12.mp3" },
+    distractors:[ {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"鋩角",tailo:"mê-kak"}, {hanji:"葵扇",tailo:"khuê-sìnn"} ],
+    explanation:"牙膏的台語漢字是「齒膏」，說作 khí-ko。" },
+
+  { id:13, category:"華語選台語", mandarinPrompt:"請找出「扇子」的台語說法。", keyword:"扇子",
+    correct:{ hanji:"葵扇", tailo:"khuê-sìnn", audio:"audio/q13.mp3" },
+    distractors:[ {hanji:"旗袍",tailo:"kî-phâu"}, {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"三輪車",tailo:"sann-lián-tshia"} ],
+    explanation:"扇子的台語漢字是「葵扇」，說作 khuê-sìnn。" },
+
+  { id:14, category:"華語選台語", mandarinPrompt:"請找出「擲筊」的台語說法。", keyword:"擲筊",
+    correct:{ hanji:"跋桮", tailo:"pua̍h-pue", audio:"audio/q14.mp3" },
+    distractors:[ {hanji:"拜拜",tailo:"pài-pài"}, {hanji:"祈求",tailo:"kî-kiû"}, {hanji:"好耍",tailo:"tshit-thô"} ],
+    explanation:"擲筊的台語漢字是「跋桮」，說作 pua̍h-pue。" },
+
+  { id:15, category:"華語選台語", mandarinPrompt:"請找出「鹿港」的台語說法。", keyword:"鹿港",
+    correct:{ hanji:"鹿港", tailo:"Lo̍k-káng", audio:"audio/q15.mp3" },
+    distractors:[ {hanji:"府城",tailo:"Hú-siânn"}, {hanji:"阿里山",tailo:"A-lí-san"}, {hanji:"臺南",tailo:"Tâi-lâm"} ],
+    explanation:"鹿港的台語說作 Lo̍k-káng。" },
+
+  { id:16, category:"華語選台語", mandarinPrompt:"請找出「老街」的台語說法。", keyword:"老街",
+    correct:{ hanji:"老街", tailo:"lāu-kue", audio:"audio/q16.mp3" },
+    distractors:[ {hanji:"老厝",tailo:"lāu-tshù"}, {hanji:"古蹟",tailo:"kóo-tsik"}, {hanji:"市場",tailo:"tshī-tiûnn"} ],
+    explanation:"老街的台語說作 lāu-kue。" },
+
+  { id:17, category:"華語選台語", mandarinPrompt:"請找出「拜拜」的台語說法。", keyword:"拜拜",
+    correct:{ hanji:"拜拜", tailo:"pài-pài", audio:"audio/q17.mp3" },
+    distractors:[ {hanji:"跋桮",tailo:"pua̍h-pue"}, {hanji:"祈求",tailo:"kî-kiû"}, {hanji:"好耍",tailo:"tshit-thô"} ],
+    explanation:"拜拜的台語說作 pài-pài。" },
+
+  { id:18, category:"華語選台語", mandarinPrompt:"請找出「旗袍」的台語說法。", keyword:"旗袍",
+    correct:{ hanji:"旗袍", tailo:"kî-phâu", audio:"audio/q18.mp3" },
+    distractors:[ {hanji:"洋裝",tailo:"iûnn-tsong"}, {hanji:"外套",tailo:"guā-thò"}, {hanji:"草帽",tailo:"tsháu-bō-á"} ],
+    explanation:"旗袍的台語說作 kî-phâu。" },
+
+  { id:19, category:"華語選台語", mandarinPrompt:"請找出「全家福」的台語說法。", keyword:"全家福",
+    correct:{ hanji:"全家福", tailo:"tsuân-ka-hok", audio:"audio/q19.mp3" },
+    distractors:[ {hanji:"家庭旅遊",tailo:"ka-tîng lí-iû"}, {hanji:"百年老厝",tailo:"pah-nî lāu-tshù"}, {hanji:"出名",tailo:"tshut-miâ"} ],
+    explanation:"全家福的台語說作 tsuân-ka-hok。" },
+
+  { id:20, category:"華語選台語", mandarinPrompt:"請找出「伴手禮」的台語說法。", keyword:"伴手禮",
+    correct:{ hanji:"等路", tailo:"tán-lōo", audio:"audio/q20.mp3" },
+    distractors:[ {hanji:"好料",tailo:"hó-liāu"}, {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"紀念",tailo:"kì-liām"} ],
+    explanation:"伴手禮的台語漢字是「等路」，說作 tán-lōo。" },
+
+  { id:21, category:"華語選台語", mandarinPrompt:"請找出「高鐵」的台語說法。", keyword:"高鐵",
+    correct:{ hanji:"高鐵", tailo:"ko-thih", audio:"audio/q21.mp3" },
+    distractors:[ {hanji:"火車",tailo:"hué-tshia"}, {hanji:"三輪車",tailo:"sann-lián-tshia"}, {hanji:"台灣好行",tailo:"Tâi-uân hó-hîng"} ],
+    explanation:"高鐵的台語說作 ko-thih。" },
+
+  { id:22, category:"華語選台語", mandarinPrompt:"請找出「阿公」的台語說法。", keyword:"阿公",
+    correct:{ hanji:"阿公", tailo:"a-kong", audio:"audio/q22.mp3" },
+    distractors:[ {hanji:"考試",tailo:"khó-tshì"}, {hanji:"順利",tailo:"sūn-lī"}, {hanji:"過暝",tailo:"kuè-mî"} ],
+    explanation:"阿公的台語說作 a-kong。" },
+
+  { id:23, category:"華語選台語", mandarinPrompt:"請找出「考試」的台語說法。", keyword:"考試",
+    correct:{ hanji:"考試", tailo:"khó-tshì", audio:"audio/q23.mp3" },
+    distractors:[ {hanji:"阿公",tailo:"a-kong"}, {hanji:"順利",tailo:"sūn-lī"}, {hanji:"祈求",tailo:"kî-kiû"} ],
+    explanation:"考試的台語說作 khó-tshì。" },
+
+  { id:24, category:"華語選台語", mandarinPrompt:"請找出「鹿港麵線糊」的台語說法。", keyword:"鹿港麵線糊",
+    correct:{ hanji:"鹿港麵線糊", tailo:"Lo̍k-káng mī-suànn-kôo", audio:"audio/q24.mp3" },
+    distractors:[ {hanji:"麵茶冰",tailo:"mī-tê-ping"}, {hanji:"粉粿",tailo:"hún-kué"}, {hanji:"肉包",tailo:"bah-pau"} ],
+    explanation:"鹿港麵線糊的台語說作 Lo̍k-káng mī-suànn-kôo。" },
+
+  { id:25, category:"華語選台語", mandarinPrompt:"請找出「麵茶冰」的台語說法。", keyword:"麵茶冰",
+    correct:{ hanji:"麵茶冰", tailo:"mī-tê-ping", audio:"audio/q25.mp3" },
+    distractors:[ {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"粉粿",tailo:"hún-kué"}, {hanji:"鹿港麵線糊",tailo:"Lo̍k-káng mī-suànn-kôo"} ],
+    explanation:"麵茶冰的台語說作 mī-tê-ping。" }
+
+  // 若要繼續擴充到 50 題，只要依照上面同樣的物件格式，
+  // 在此陣列中繼續新增 { id, category, mandarinPrompt, keyword, correct, distractors, explanation } 即可，
+  // 不需要更動下方任何遊戲邏輯程式碼。
+];
+
+/* ======================================================================
+   二、共用工具
+   ====================================================================== */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+/* ======================================================================
+   三、語音（國語題目 TTS ＋ 台語音檔，音檔缺席時安全降級）
+   ====================================================================== */
+const PHONETIC_MAP = {
+  '肉圓': '嘛完',
+  '豆花': '島輝',
+  '鹹粥': '嫌九',
+  '潤餅': '潤比呀',
+  '月餅': '尾比呀',
+  '串炸': '川雜',
+  '碗粿': '碗貴',
+  '蔥油餅': '聰遊比呀',
+  '全部配對成功！': '龍部配對星功！',
+  '麵茶': '米得',
+  '牛舌餅': '古幾比呀',
+  '圓仔湯': '因呀湯',
+  '麻粩': '摸老',
+  '芋丸': '歐丸',
+  '肉包': '巴包',
+  '粉粿': '昏貴',
+  '秫米糋': '術米金',
+  '李仔攕': '離呀籤',
+  '齒抿仔': '企抿呀',
+  '齒膏': '企高',
+  '糕仔餅': '高呀比呀',
+  '葵扇': '葵星',
+  '跋桮': '撥杯',
+  '鋩角': '迷角',
+  '鹿港': '落港',
+  '三輪車': '沙聯車',
+  '鹿港麵線糊': '落港米線口',
+  '麵茶冰': '米得冰',
+  '老街': '撈貴',
+  '拜拜': '拜拜',
+  '旗袍': '奇袍',
+  '全家福': '全家服',
+  '等路': '膽路',
+  '高鐵': '高踢',
+  '聽起來真趣味，我想欲食秫米糋佮圓仔湯。': '聽起來金促尾，瓦熊美甲術米金哈因呀湯。',
+  '咱會使食李仔攕、坐三輪車踅老街。': '藍誒塞甲離呀籤、賊沙聯車誰老街。',
+  '我想欲去拜拜，祈求我考試順利。': '瓦熊北企拜拜，其求瓦考習新利。',
+  '恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊。': '林阿公賢卡意落港A摸老，藍加美寡膽路顛企勝伊。',
+  '足𠢕！': '糾高！',
+  '真正厲害！': '金加利害！',
+  '閣來！': '閣來！',
+  '答著矣！': '答對啊！',
+  '台語真輪轉！': '台語金論轉！',
+  '任務開始：請收集 ': '莉務開使，請修集 ',
+  '任務開始：請收集': '莉務開使，請修集',
+  '接下來，請收集 ': '接落來，請修集 ',
+  '接下來，請收集': '接落來，請修集',
+  '注意看！這是 ': '住意看！幾系 ',
+  '注意看！這是': '住意看！幾系',
+  '不著矣': '美丟啊',
+  '錢無夠': '吉某高',
+  '買矣': '尾啊',
+  '請買': '請尾',
+  '伴手禮買好囉！': '膽路尾賀囉！',
+  '「鹽酥雞，一包三十，卡緊來喔！」聽起來是咧賣啥物？': '鹽酥雞，一包沙雜，卡緊來喔！聽起來是咧賣啥物？',
+  '「香腸頭，香腸頭，一支二十喔！」是咧賣啥物？': '香腸頭，香腸頭，幾機幾雜喔！是咧賣啥物？',
+  '「珍珠奶茶，真濃真好喝，來一杯喔！」是咧賣啥物？': '珍珠奶茶，金濃金賀利，來一杯喔！是咧賣啥物？',
+  '「地瓜球，QQ甜甜，一包二十五！」是咧賣啥物？': '地瓜球，QQ甜甜，一包哩雜高！是咧賣啥物？',
+  '「大腸包小腸，澎湃夠味，欲食無？」是咧賣啥物？': '大腸包小腸，澎湃夠味，美甲某？是咧賣啥物？',
+  '「臭豆腐，外酥內軟，燒燙燙上桌！」是咧賣啥物？': '臭豆腐，外酥內軟，燒燙燙上桌！是咧賣啥物？',
+  '鹽酥雞，一包三十，卡緊來喔！': '鹽酥雞，一包沙雜，卡緊來喔！',
+  '香腸頭，香腸頭，一支二十喔！': '香腸頭，香腸頭，幾機幾雜喔！',
+  '珍珠奶茶，真濃真好喝，來一杯喔！': '珍珠奶茶，金濃金賀利，來一杯喔！',
+  '地瓜球，QQ甜甜，一包二十五！': '地瓜球，QQ甜甜，一包哩雜高！',
+  '大腸包小腸，澎湃夠味，欲食無？': '大腸包小腸，澎湃夠味，美甲某？',
+  '臭豆腐，外酥內軟，燒燙燙上桌！': '臭豆腐，外酥內軟，燒燙燙上桌！',
+  '咱對藍田海邊出發，欲去藍田老街，應該向佗位行？': '藍對藍田海邊出發，北企藍田老街，應概向多位行？',
+  '離開老街，欲去頂藍田小村，應該向佗位行？': '離魁老街，北企頂藍田小村，應概向多位行？',
+  '對小村欲去藍田燈塔，應該向佗位行？': '對小村北企藍田燈塔，應概向多位行？',
+  '咱欲去泡溫泉，應該向佗位行較近？': '藍北企泡溫泉，應概向多位行卡近？',
+  '上尾一站欲去觀海步道，應該向佗位行？': '匈尾一站北企觀海步道，應概向多位行？',
+  '女伴：「遮 ê 溫泉氣氛真好，你欲袂欲來去泡湯？」': '遮A溫泉氣氛金賀，哩美美來企泡湯？',
+  '女伴：「你捌泡過海景溫泉無？」': '哩巴泡貴海景溫泉某？',
+  '女伴：「月娘遮爾媠，欲毋欲紮相機來翕相？」': '威娘家尼水，美美砸相機來合相？',
+  '女伴：「泡了了後，欲毋欲鬥陣去食寡宵夜？」': '泡利利奧，美美逗頂企甲掛宵夜？',
+  '你欲去金門出差，愛先去佗位辦理登機手續？': '哩北企金門出差，愛嫌企多位辦理登機手續？',
+  '落機了後，欲提行李，應該去佗位？': '落機利奧，北鐵行李，應概企多位？',
+  '欲入去管制區進前，愛先過佗位？': '北利企管制區頂尖，愛嫌貴多位？',
+  '飛行機欲起飛矣，愛去佗位等待上機？': '北型機北起飛阿，愛企多位等待上機？',
+  '我食著真濟好食的點心。': '我甲丟金解厚甲A點心。',
+  '我向店家問路，才知影老街的歷史。': '我向店家問路，才甲因老街A歷史。',
+  '我參觀老街的風景，拍照做紀念。': '我參觀老街A風景，拍照做紀念。',
+  '我佮朋友蹉老街，逐間店仔攏看。': '我嘎朋友車老街，大鋼店阿攏看。',
+  '日頭漸斜，我歡喜轉去厝。': '日頭漸斜，我歡喜顛企醋。',
+  '鹿仔': '陸阿',
+  '草仔': '草阿',
+  '山頭': '山頭',
+  '花仔': '揮阿',
+  '石頭': '九逃',
+  '天空': '聽框',
+  '海邊': '海冰',
+  '樹仔': '秋阿',
+  '鳳梨酥': '王來收',
+  '牛軋糖': '牛角糖',
+  '茶葉蛋': '得修冷',
+  '芒果乾': '酸阿官',
+  '花生糖': '花星糖',
+  '太陽餅': '太擁比呀',
+  '肉乾': '罵官',
+  '綠豆糕': '力豆糕',
+  '咖啡': '咖逼',
+  '手工餅乾': '手工比呀官',
+  '興': '星',
+  '無': '某',
+  '步': '波',
+  '皮': '輝',
+  '毛': '摸',
+  '肚': '度',
+  '鐵': '踢',
+  '籃': '那',
+  '柳': '柳',
+  '菇': '孤',
+  '去': '企',
+  '雅': '雅',
+  '魚': '黑',
+  '曾': '章',
+  '出': '促',
+  '沙': '沙',
+  '字': '力',
+  '語': '紀',
+  '鴨': '啊',
+  '衣': '一',
+  '有': '烏',
+  '會': '誒',
+  '蚵': '喔',
+  '黑': '凹',
+  '愛': '愛',
+  '後': '奧',
+  '寫': '寫',
+  '手': '修',
+  '花': '揮',
+  '話': '威',
+  '水': '水',
+  '餡': '含',
+  '圓': '圓',
+  '園': '輝',
+  '嬰': '應',
+  '惡': '喔',
+  '姆': '姆',
+  '黃': '黃',
+  '玻璃': '波雷',
+  '碎碎': '普普',
+  '阿母': '阿姆',
+  '媽媽': '媽媽',
+  '刀仔': '多阿',
+  '桃仔': '逃阿',
+  '貓仔': '喵阿',
+  '囉唆': '囉唆',
+  '哥哥': '郭郭',
+  '汽車': '器車',
+  '鵝仔': '鵝阿',
+  '牙齒': '呀企',
+  '書包': '書包',
+  '菜頭': '菜頭',
+  '雪文': '沙文',
+  '日頭': '利頭',
+  '魚仔': '黑阿',
+  '阿伯': '阿北',
+  '醫生': '醫生',
+  '溫池': '溫底',
+  '鞋仔': '誒阿',
+  '蚵仔': '喔阿',
+  '烏車': '喔車',
+  '愛國': '愛國',
+  '後日': '奧利',
+  '寫字': '寫力',
+  '手指': '秀幾',
+  '歡喜': '框黑',
+  '畫地': '威得',
+  '衛生': '威星',
+  '三領': '沙娘',
+  '圓仔': '因阿',
+  '園仔': '輝阿',
+  '嬰仔': '英阿',
+  '噢噢': '喔喔',
+  '不是': '美系',
+  '黃色': '黃學',
+  '亂嚷': '弄落',
+  '人來': '郎來',
+  '人情': '任情',
+  '代誌': '代吉',
+  '十日': '雜母',
+  '半仔': '波阿',
+  '印色': '因學',
+  '味色': '微學',
+  '報音': '波因',
+  '天地': '填底',
+  '姆仔': '姆阿',
+  '姑姑': '估估',
+  '娃仔': '挖阿',
+  '字兒': '利阿',
+  '尋找': '切阿',
+  '山仔': '沙阿',
+  '工作': '康奎',
+  '年仔': '尼阿',
+  '庄腳': '曾卡',
+  '度過': '度估',
+  '後面': '奧比呀',
+  '手巾': '秀金',
+  '手環': '秀寬',
+  '拼盤': '辦阿',
+  '春管': '寸官',
+  '歹人': '拍郎',
+  '毛刷': '摸擦',
+  '準備': '俊逼',
+  '漂亮': '水阿',
+  '烏鴉': '喔阿',
+  '無閒': '某應',
+  '牛兒': '牛阿',
+  '生日': '誰力',
+  '田園': '纏泥',
+  '畫畫': '威阿',
+  '病仔': '便阿',
+  '皮包': '輝阿',
+  '矮子': '誒阿',
+  '窗仔': '湯阿',
+  '笳苳': '加冬',
+  '茄苳': '加冬',
+  '箭仔': '金阿',
+  '籃仔': '那阿',
+  '老師': '老蘇',
+  '老爸': '老北',
+  '肉粽': '罵髒',
+  '色樣': '雅學',
+  '花朵': '輝阿',
+  '袂窳': '美百',
+  '說話': '威喔哈',
+  '議論': '義倫',
+  '車讚': '車沾',
+  '這些': '加誒',
+  '這呢': '家尼',
+  '這時': '幾嘛',
+  '醫院': '一印',
+  '開花': '魁輝',
+  '間存': '更存',
+  '雅子': '雅組',
+  '雅量': '雅良',
+  '雨水': '厚水',
+  '順利': '順力',
+  '頭殼': '頭殼',
+  '鴨子': '阿姐',
+  '麵線': '米線',
+  '黃仔': '恩阿',
+  '黑色': '喔學',
+  '咱來食麵茶。': '藍來甲米得',
+  '這碗麵茶真芳。': '幾碗米得金芳',
+  '我欲買牛舌餅。': '瓦美尾古幾比呀',
+  '牛舌餅是鹿港的名產。': '古幾比呀是落港A名產',
+  '圓仔湯食起來甜甜。': '因呀湯甲起來甜甜',
+  '咱正有一碗圓仔湯。': '藍正有幾碗因呀湯',
+  '阿媽買麻粩轉來。': '阿媽尾摸老顛來',
+  '麻粩是鹿港的傳統點心。': '摸老是落港A傳統點心',
+  '這包麻粩欲送予阿公。': '幾包摸老美勝伊阿公',
+  '我欲食一粒肉圓。': '瓦美甲幾粒嘛完',
+  '鹿港的肉圓真好食。': '落港A嘛完金厚甲',
+  '麵線糊食起來燒燒。': '米線口甲起來燒燒',
+  '咱去老街食豆花。': '藍企撈貴甲島輝',
+  '我買兩包糕仔餅。': '瓦尾兩包高呀比呀',
+  '這碗粉粿冰真清涼。': '幾碗昏貴冰金清涼',
+  '咱坐三輪車踅老街。': '藍賊沙聯車誰撈貴',
+  '老街有真濟傳統小食。': '撈貴有金解傳統小食',
+  '我欲買等路轉去。': '瓦美尾膽路顛企',
+  '食飽了後，咱去拜拜。': '甲飽利奧，藍企拜拜',
+  '鹿港的美食閣芳閣好食。': '落港A美食閣芳閣厚甲',
+  '好料': '吼溜',
+  '家庭旅遊': '嘎停里優',
+  '府城': '虎仙',
+  '洋裝': '用宗',
+  '火車': '灰恰',
+  '老厝': '撈處',
+  '考試': '考係',
+  '阿公': '阿工',
+  '麵線糊': '米線口',
+};
+
+const Speech = {
+  enabled:true,
+  speakMandarin(text){
+    if(!this.enabled) return;
+    if(!('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-TW';
+      u.rate = 0.95;
+      u.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const v = voices.find(v=>v.lang && v.lang.toLowerCase().includes('zh'));
+      if(v) u.voice = v;
+      window.speechSynthesis.speak(u);
+    }catch(e){ /* 靜默失敗，不影響遊戲 */ }
+  },
+  stopMandarin(){
+    if('speechSynthesis' in window){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+  },
+  currentAudio:null,
+  /**
+   * 播放台語音檔。找不到檔案（尚未上傳）時，不使用國語 TTS 朗讀臺羅，
+   * 只顯示臺羅提示文字，並回呼 onDone() 讓遊戲照常繼續。
+   */
+  playTaiyu(path, onMissing, onDone){
+    this.stopTaiyu();
+    if(!this.enabled || !path){ onDone && onDone(); return; }
+    try{
+      const audio = new Audio(path);
+      this.currentAudio = audio;
+      let settled = false;
+      const finish = () => { if(!settled){ settled = true; onDone && onDone(); } };
+      audio.addEventListener('ended', finish);
+      audio.addEventListener('error', () => { onMissing && onMissing(); finish(); });
+      const p = audio.play();
+      if(p && typeof p.catch === 'function'){
+        p.catch(() => { onMissing && onMissing(); finish(); });
+      }
+      // 保底：音檔若卡住太久，仍要讓遊戲繼續
+      setTimeout(finish, 3500);
+    }catch(e){
+      onMissing && onMissing();
+      onDone && onDone();
+    }
+  },
+  speakVocabApprox(hanji, tailo){
+    if(!this.enabled || !('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+      const trueVoice = voices.find(v=>{
+        const l=(v.lang||'').toLowerCase(), n=(v.name||'').toLowerCase();
+        return l.includes('nan')||l.includes('min')||n.includes('taiwanese')||n.includes('hokkien')||n.includes('閩南')||n.includes('台語');
+      });
+      let spokenText = hanji;
+      if(!trueVoice){
+        if(PHONETIC_MAP[hanji]){
+          spokenText = PHONETIC_MAP[hanji];
+        } else {
+          const keys = Object.keys(PHONETIC_MAP).sort((a,b)=>b.length-a.length);
+          for(const k of keys){ if(spokenText.includes(k)) spokenText = spokenText.split(k).join(PHONETIC_MAP[k]); }
+        }
+      }
+      const u = new SpeechSynthesisUtterance(spokenText);
+      if(trueVoice) u.voice = trueVoice;
+      u.lang = trueVoice ? 'zh-min-nan' : 'zh-TW';
+      u.rate = 0.85; u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }catch(e){ /* 靜默失敗，不影響遊戲 */ }
+  },
+  stopTaiyu(){
+    if(this.currentAudio){
+      try{ this.currentAudio.pause(); }catch(e){}
+      this.currentAudio = null;
+    }
+  },
+  stopAll(){ this.stopMandarin(); this.stopTaiyu(); }
+};
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = () => {};
+}
+
+function synthCorrectSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.06 + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.06);
+      osc.stop(ctx.currentTime + idx * 0.06 + 0.12);
+    });
+  } catch(e) {}
+}
+
+function synthWrongSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+    osc1.frequency.setValueAtTime(180, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.22);
+    osc2.frequency.setValueAtTime(135, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.22);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    osc1.start();
+    osc2.start();
+    osc1.stop(ctx.currentTime + 0.22);
+  } catch(e) {}
+}
+
+/* ======================================================================
+   四、遊戲狀態
+   ====================================================================== */
+const state = {
+  mode:'home', // home | playing | paused | gameover
+  queue:[],           // 打亂後待出題的題目佇列
+  qIndex:-1,
+  current:null,       // 目前題目物件
+  currentStart:0,     // 目前題目開始時間戳
+  usedHintThisQ:false,
+
+  score:0,
+  lives:3,
+  combo:0,
+  maxCombo:0,
+  multiplier:1,
+  correctCount:0,
+  wrongCount:0,
+  hintCount:0,
+  survivalTime:0,
+  timeLeft:60,
+  difficultyLevel:1,
+  livelyMode:false,
+  wrongTally:{},      // { hanji: 次數 } 統計最常答錯的詞
+
+  reviewLog:[],        // 學習回顧紀錄
+
+  answeredThisQ:false, // 目前題目是否已判定成功（避免重複判定）
+
+  effects:{ radar:0, slow:0, dict:0 }, // 道具效果到期時間戳 (ms, performance.now基準)
+};
+
+let bestScore = 0;
+try{ bestScore = parseInt(localStorage.getItem('tailo_best_score')||'0',10) || 0; }catch(e){ bestScore = 0; }
+
+/* ======================================================================
+   五、畫布 / 太空船 / 星空 / 隕石
+   ====================================================================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+
+function resizeCanvas(){
+  const stage = document.getElementById('stage');
+  const rect = stage.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = Math.round(W*dpr);
+  canvas.height = Math.round(H*dpr);
+  canvas.style.width = W+'px';
+  canvas.style.height = H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', resizeCanvas);
+
+const ship = {
+  x:120, y:200, vx:0, vy:0, radius:16, angle:0,
+  slowUntil:0, // 撞到障礙岩石造成的短暫減速
+};
+
+let stars = [];
+function initStars(){
+  stars = [];
+  const count = 110;
+  for(let i=0;i<count;i++){
+    stars.push({ x:rand(0,W), y:rand(0,H), r:rand(0.4,2.2), s:rand(6,28), tw:rand(0,Math.PI*2) });
+  }
+}
+
+let asteroids = [];  // 有文字的答案隕石 {id,x,y,vx,vy,radius,hanji,tailo,isCorrect,forQ}
+let obstacles = [];  // 純障礙岩石（灰色，無文字）
+let powerupsOnField = []; // 場上道具
+let particles = [];
+
+const POWERUP_TYPES = [
+  { key:'replay', label:'閣聽一擺', emoji:'🔁' },
+  { key:'radar',  label:'臺羅雷達', emoji:'📡' },
+  { key:'dict',   label:'辭典護盾', emoji:'📖' },
+  { key:'slow',   label:'時間慢行', emoji:'🐢' },
+  { key:'bomb',   label:'排除炸彈', emoji:'💣' },
+  { key:'tone',   label:'聲調透視鏡', emoji:'🔍' },
+];
+
+/* ======================================================================
+   六、輸入控制（鍵盤 / 滑鼠 / 觸控）
+   ====================================================================== */
+const keysDown = {};
+let pointerActive = false;
+let pointerTarget = {x:120,y:200};
+
+window.addEventListener('keydown', (e)=>{
+  const k = e.key.toLowerCase();
+  keysDown[k] = true;
+  if(k===' '){ e.preventDefault(); togglePause(); }
+  if(k==='r'){ replayCurrentPrompt(); }
+  if(k==='m'){ toggleSound(); }
+});
+window.addEventListener('keyup', (e)=>{ keysDown[e.key.toLowerCase()] = false; });
+
+canvas.addEventListener('mousemove', (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  pointerTarget.x = e.clientX - rect.left;
+  pointerTarget.y = e.clientY - rect.top;
+  pointerActive = true;
+});
+canvas.addEventListener('mouseleave', ()=>{ pointerActive = false; });
+
+canvas.addEventListener('touchstart', onTouch, {passive:false});
+canvas.addEventListener('touchmove', onTouch, {passive:false});
+function onTouch(e){
+  e.preventDefault(); // 禁止畫面被觸控滑動
+  if(e.touches && e.touches.length>0){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    pointerTarget.x = t.clientX - rect.left;
+    pointerTarget.y = t.clientY - rect.top;
+    pointerActive = true;
+  }
+}
+canvas.addEventListener('touchend', ()=>{ /* 保留最後位置，維持船的位置 */ });
+
+function isMoveKeyHeld(){
+  return keysDown['w']||keysDown['a']||keysDown['s']||keysDown['d']||
+         keysDown['arrowup']||keysDown['arrowdown']||keysDown['arrowleft']||keysDown['arrowright'];
+}
+
+/* ======================================================================
+   七、UI 元件參照
+   ====================================================================== */
+const el = {
+  survivalTime: document.getElementById('survivalTime'),
+  keywordLabel: document.getElementById('keywordLabel'),
+  promptText: document.getElementById('promptText'),
+  scoreVal: document.getElementById('scoreVal'),
+  livesVal: document.getElementById('livesVal'),
+  comboVal: document.getElementById('comboVal'),
+  levelVal: document.getElementById('levelVal'),
+  feedbackToast: document.getElementById('feedbackToast'),
+  ftTitle: document.getElementById('ftTitle'),
+  ftBody: document.getElementById('ftBody'),
+  ftTailo: document.getElementById('ftTailo'),
+  ftAudio: document.getElementById('ftAudio'),
+  dictPanel: document.getElementById('dictPanel'),
+  dictMandarin: document.getElementById('dictMandarin'),
+  dictHanji: document.getElementById('dictHanji'),
+  dictTailo: document.getElementById('dictTailo'),
+  pauseOverlay: document.getElementById('pauseOverlay'),
+  powerupTray: document.getElementById('powerupTray'),
+  btnSound: document.getElementById('btnSound'),
+};
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ======================================================================
+   八、遊戲流程控制
+   ====================================================================== */
+const GAME_DURATION = 60; // 一局遊戲時間（秒）
+
+function startGame(){
+  state.mode = 'playing';
+  state.queue = buildQueue();
+  state.qIndex = -1;
+  state.score = 0; state.lives = 3; state.combo = 0; state.maxCombo = 0; state.multiplier = 1;
+  state.correctCount = 0; state.wrongCount = 0; state.hintCount = 0; state.survivalTime = 0;
+  state.timeLeft = GAME_DURATION;
+  state.difficultyLevel = 1; state.livelyMode = false; state.wrongTally = {}; state.reviewLog = [];
+  state.effects = { radar:0, slow:0, dict:0 };
+
+  ship.x = 110; ship.y = H/2; ship.vx=0; ship.vy=0;
+  asteroids = []; obstacles = []; powerupsOnField = []; particles = [];
+  initStars();
+  resizeCanvas();
+
+  showScreen('game-screen');
+  updateHUD();
+  nextQuestion();
+  lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function buildQueue(){
+  // 從題庫中隨機抽出 50 題（題庫不足 50 題時，允許重複抽取以湊滿 50 題）
+  let q = [];
+  while(q.length < 50){ q = q.concat(shuffle(QUESTION_BANK)); }
+  return q.slice(0, 50);
+}
+
+function nextQuestion(){
+  state.qIndex++;
+  if(state.qIndex >= state.queue.length){ state.qIndex = 0; }
+  state.current = state.queue[state.qIndex];
+  state.currentStart = performance.now();
+  state.usedHintThisQ = false;
+  state.answeredThisQ = false;
+
+  asteroids = [];
+  spawnAsteroidsForCurrentQuestion();
+
+  el.keywordLabel.textContent = state.current.keyword;
+  el.promptText.textContent = state.current.mandarinPrompt;
+
+  Speech.speakMandarin(state.current.mandarinPrompt);
+}
+
+function currentDistractorCount(){
+  // 難度提升時增加干擾隕石數量（對應規格「難度2：出現5個答案」）
+  return state.difficultyLevel >= 2 ? 4 : 3;
+}
+
+function spawnAsteroidsForCurrentQuestion(){
+  const q = state.current;
+  const needed = currentDistractorCount();
+  let pool = shuffle(q.distractors.slice());
+  // 若題庫本身干擾詞不足，從其他題目借用干擾詞湊數
+  if(pool.length < needed){
+    const extra = shuffle(QUESTION_BANK
+      .filter(o=>o.id!==q.id)
+      .map(o=>o.correct))
+      .filter(d=>d.hanji!==q.correct.hanji && !pool.find(p=>p.hanji===d.hanji));
+    pool = pool.concat(extra);
+  }
+  const chosen = [q.correct].concat(pool.slice(0, needed));
+  const items = shuffle(chosen);
+  items.forEach((it,idx)=>{
+    asteroids.push(makeAsteroid(it, it.hanji===q.correct.hanji));
+  });
+}
+
+function makeAsteroid(item, isCorrect){
+  const speedBase = 55 + state.difficultyLevel*14;
+  return {
+    id: Math.random().toString(36).slice(2),
+    x: W + rand(40,220),
+    y: rand(70, H-70),
+    vx: -rand(speedBase*0.85, speedBase*1.15),
+    vy: rand(-8,8),
+    radius: rand(34,42),
+    hanji: item.hanji,
+    tailo: item.tailo,
+    isCorrect: !!isCorrect,
+    angle: rand(0,Math.PI*2),
+    rot: rand(-0.6,0.6),
+    wobble: rand(0,Math.PI*2),
+    state:'neutral', // neutral | correct | wrong-reveal
+  };
+}
+
+function maybeSpawnObstacle(dt){
+  obstacleTimer -= dt;
+  if(obstacleTimer<=0){
+    obstacleTimer = rand(1.6,3.0);
+    if(obstacles.length < 3){
+      obstacles.push({
+        x:W+rand(30,200), y:rand(40,H-40),
+        vx:-rand(70,130), vy:rand(-20,20),
+        radius:rand(16,26), angle:rand(0,Math.PI*2), rot:rand(-1,1),
+      });
+    }
+  }
+}
+let obstacleTimer = 1.5;
+
+function maybeSpawnPowerup(dt){
+  powerupTimer -= dt;
+  if(powerupTimer<=0){
+    powerupTimer = rand(7,13);
+    if(powerupsOnField.length < 2){
+      const type = POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
+      powerupsOnField.push({
+        x:W+rand(20,120), y:rand(60,H-60), vx:-rand(60,90), vy:0,
+        radius:16, type, pulse:0,
+      });
+    }
+  }
+}
+let powerupTimer = 6;
+
+/* ---- 玩家答題判定 ---- */
+function handleAsteroidHit(ast){
+  if(state.answeredThisQ) return; // 防止同一題重複判定
+
+  if(ast.isCorrect){
+    state.answeredThisQ = true;
+    spawnBurst(ast.x, ast.y, '#3ddc84');
+    ast.state = 'correct';
+    // 揭曉時刻：其餘同題隕石一併標示為錯誤答案（不會事先用顏色透露正誤）
+    asteroids.forEach(a=>{
+      if(a.id!==ast.id){ a.state='wrong-reveal'; a.vx=0; a.vy=0; a.rot=0; }
+    });
+
+    const elapsed = (performance.now()-state.currentStart)/1000;
+    let gained = 100;
+    if(elapsed<=5) gained += 50;
+    if(!state.usedHintThisQ) gained += 30;
+    gained = Math.round(gained * state.multiplier);
+    state.score += gained;
+    state.correctCount++;
+    state.combo++;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
+
+    if(state.combo>=10 && !state.livelyMode){ state.livelyMode = true; }
+    if(state.combo>=5) state.multiplier = 3;
+    else if(state.combo>=3) state.multiplier = 2;
+    else state.multiplier = 1;
+
+    state.difficultyLevel = clamp(1+Math.floor(state.score/300), 1, 5);
+
+    logReview(true, ast);
+    showFeedback(true, ast, `+${gained} 分`);
+    synthCorrectSound();
+    playCorrectAudio(ast);
+
+    setTimeout(()=>{ asteroids = []; if(state.mode==='playing') nextQuestion(); }, 1300);
+  } else {
+    asteroids = asteroids.filter(a=>a.id!==ast.id);
+    spawnBurst(ast.x, ast.y, '#ff5f6d');
+    synthWrongSound();
+    state.wrongCount++;
+    state.combo = 0; state.multiplier = 1;
+    state.wrongTally[ast.hanji] = (state.wrongTally[ast.hanji]||0)+1;
+    state.lives = Math.max(0, state.lives-1);
+    logReview(false, ast);
+    showFeedback(false, ast, '再試一次');
+    playCorrectAudio(state.current.correct, true);
+
+    if(state.lives<=0){
+      setTimeout(()=>endGame(), 900);
+    } else {
+      // 補上一顆同題的干擾隕石，維持挑戰
+      setTimeout(()=>{
+        if(state.mode==='playing' && !state.answeredThisQ){
+          const q = state.current;
+          const pool = q.distractors.filter(d=>d.hanji!==ast.hanji);
+          const pick = pool[Math.floor(Math.random()*pool.length)] || q.distractors[0];
+          asteroids.push(makeAsteroid(pick, false));
+        }
+      }, 700);
+    }
+  }
+  updateHUD();
+}
+
+function handleObstacleHit(ob){
+  obstacles = obstacles.filter(o=>o!==ob);
+  spawnBurst(ob.x, ob.y, '#8a8f9c');
+  ship.slowUntil = performance.now() + 900; // 短暫減速，不算答錯
+}
+
+function handlePowerupPick(pu){
+  powerupsOnField = powerupsOnField.filter(p=>p!==pu);
+  activatePowerup(pu.type.key);
+}
+
+function activatePowerup(key){
+  const now = performance.now();
+  if(key==='replay'){
+    replayCurrentPrompt();
+  } else if(key==='radar'){
+    state.effects.radar = now + 3000;
+  } else if(key==='dict'){
+    state.effects.dict = now + 3000;
+    showDictPanel();
+  } else if(key==='slow'){
+    state.effects.slow = now + 5000;
+  } else if(key==='bomb'){
+    const wrongOnes = asteroids.filter(a=>!a.isCorrect);
+    shuffle(wrongOnes).slice(0,2).forEach(a=>{
+      spawnBurst(a.x,a.y,'#ff5f6d');
+      asteroids = asteroids.filter(x=>x.id!==a.id);
+    });
+  } else if(key==='tone'){
+    state.effects.radar = now + 3000; // 聲調透視鏡：以高亮強調正確答案文字（同雷達視覺，另加標記）
+    state.effects.tone = now + 3000;
+  }
+}
+
+function showDictPanel(){
+  const q = state.current;
+  el.dictMandarin.textContent = q.keyword;
+  el.dictHanji.textContent = q.correct.hanji;
+  el.dictTailo.textContent = q.correct.tailo;
+  el.dictPanel.classList.add('show');
+  setTimeout(()=>{ el.dictPanel.classList.remove('show'); }, 3000);
+}
+
+function logReview(isCorrect, hitAsteroid){
+  state.reviewLog.push({
+    mandarinPrompt: state.current.mandarinPrompt,
+    hitHanji: hitAsteroid.hanji,
+    hitTailo: hitAsteroid.tailo,
+    correctHanji: state.current.correct.hanji,
+    correctTailo: state.current.correct.tailo,
+    isCorrect,
+    explanation: state.current.explanation,
+  });
+}
+
+function showFeedback(isCorrect, ast, extra){
+  el.feedbackToast.classList.remove('correct','wrong');
+  el.feedbackToast.classList.add(isCorrect?'correct':'wrong', 'show');
+  el.ftTitle.textContent = isCorrect ? '答對了！' : '這毋是喔！';
+  if(isCorrect){
+    el.ftBody.textContent = `${state.current.keyword}的台語是`;
+    el.ftTailo.textContent = state.current.correct.tailo + `（${state.current.correct.hanji}）`;
+  } else {
+    el.ftBody.textContent = `正確答案是「${state.current.correct.hanji}」`;
+    el.ftTailo.textContent = state.current.correct.tailo;
+  }
+  el.ftAudio.textContent = extra || '';
+  clearTimeout(showFeedback._t);
+  showFeedback._t = setTimeout(()=>{ el.feedbackToast.classList.remove('show'); }, 1400);
+}
+
+function playCorrectAudio(item, isFeedbackOnly){
+  el.ftAudio.textContent = '';
+  Speech.playTaiyu(item.audio, ()=>{
+    // 找不到音檔：改用近似音朗讀作為過渡，真音檔上傳後會自動優先播放
+    el.ftAudio.textContent = '▶ 臺羅：' + item.tailo;
+    Speech.speakVocabApprox(item.hanji, item.tailo);
+  }, ()=>{ /* 播放結束或安全逾時，遊戲繼續 */ });
+}
+
+function replayCurrentPrompt(){
+  if(!state.current) return;
+  Speech.speakMandarin(state.current.mandarinPrompt);
+}
+
+function spawnBurst(x,y,color){
+  for(let i=0;i<14;i++){
+    particles.push({
+      x,y, vx:rand(-160,160), vy:rand(-160,160), life:0.5, maxLife:0.5, color,
+      size:rand(2,4.5),
+    });
+  }
+}
+
+/* ======================================================================
+   九、暫停 / 音效開關
+   ====================================================================== */
+function togglePause(){
+  if(state.mode==='playing'){
+    state.mode='paused';
+    el.pauseOverlay.classList.add('show');
+    Speech.stopAll();
+  } else if(state.mode==='paused'){
+    state.mode='playing';
+    el.pauseOverlay.classList.remove('show');
+    lastFrameTime = performance.now();
+  }
+}
+function toggleSound(){
+  Speech.enabled = !Speech.enabled;
+  el.btnSound.textContent = Speech.enabled ? '🔊' : '🔇';
+  if(!Speech.enabled) Speech.stopAll();
+}
+
+/* ======================================================================
+   十、結算
+   ====================================================================== */
+function endGame(){
+  state.mode = 'gameover';
+  Speech.stopAll();
+  if(state.score > bestScore){
+    bestScore = state.score;
+    try{ localStorage.setItem('tailo_best_score', String(bestScore)); }catch(e){}
+  }
+  renderResult();
+  showScreen('result-screen');
+  // 回報分數給外層 React（progressStore / 教師後台會據此更新）
+  try{
+    const answered = state.correctCount + state.wrongCount;
+    const accuracy = answered > 0 ? Math.round((state.correctCount / answered) * 100) : 0;
+    window.parent.postMessage({
+      type: 'TAIYU_GAME_RESULT',
+      gameKey: 'game1',
+      score: state.score,
+      accuracy,
+    }, window.location.origin);
+  }catch(e){ /* 不在 iframe 中執行時（例如獨立開啟測試）忽略即可 */ }
+}
+
+function renderResult(){
+  const grid = document.getElementById('statGrid');
+  const stats = [
+    ['遊玩時間', Math.min(state.survivalTime,GAME_DURATION).toFixed(2)+'s'],
+    ['本次總分', state.score],
+    ['個人最高分', bestScore],
+    ['正確題數', state.correctCount],
+    ['錯誤題數', state.wrongCount],
+    ['最高連擊', state.maxCombo],
+    ['使用提示次數', state.hintCount],
+    ['最常答錯的詞語', topWrongWord()],
+  ];
+  grid.innerHTML = stats.map(([k,v])=>`
+    <div class="stat-card"><div class="k">${k}</div><div class="v">${v}</div></div>
+  `).join('');
+
+  const body = document.getElementById('reviewBody');
+  body.innerHTML = state.reviewLog.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.mandarinPrompt)}</td>
+      <td>${escapeHtml(r.hitHanji)}／${escapeHtml(r.hitTailo)}</td>
+      <td>${escapeHtml(r.correctHanji)}</td>
+      <td>${escapeHtml(r.correctTailo)}</td>
+      <td class="${r.isCorrect?'ok':'no'}">${r.isCorrect?'答對':'答錯'}</td>
+      <td>${escapeHtml(r.explanation)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:#7f93b0;">尚無作答紀錄</td></tr>';
+}
+function topWrongWord(){
+  const keys = Object.keys(state.wrongTally);
+  if(keys.length===0) return '－';
+  keys.sort((a,b)=>state.wrongTally[b]-state.wrongTally[a]);
+  return keys[0];
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ======================================================================
+   十一、HUD 更新
+   ====================================================================== */
+function updateHUD(){
+  el.scoreVal.textContent = state.score;
+  el.livesVal.textContent = '❤'.repeat(Math.max(0,state.lives)) + '♡'.repeat(Math.max(0,3-state.lives));
+  el.comboVal.textContent = 'x'+state.multiplier + (state.combo>0 ? `（${state.combo}連擊）` : '');
+  el.levelVal.textContent = state.difficultyLevel;
+  updateTimeHUD();
+}
+
+/* ======================================================================
+   十二、主要遊戲迴圈
+   ====================================================================== */
+let lastFrameTime = performance.now();
+
+function gameLoop(now){
+  requestAnimationFrame(gameLoop);
+  if(state.mode!=='playing') { lastFrameTime = now; return; }
+  let dt = (now - lastFrameTime)/1000;
+  dt = Math.min(dt, 0.05);
+  lastFrameTime = now;
+
+  state.survivalTime += dt;
+  state.timeLeft -= dt;
+  if(state.timeLeft <= 0){
+    state.timeLeft = 0;
+    updateTimeHUD();
+    endGame();
+    return;
+  }
+
+  updateShip(dt, now);
+  updateEntities(dt, now);
+  checkCollisions();
+  render(now);
+
+  // HUD 每幀刷新倒數時間即可，其餘事件觸發時更新
+  updateTimeHUD();
+}
+
+function updateTimeHUD(){
+  el.survivalTime.textContent = Math.max(0,state.timeLeft).toFixed(1)+'s';
+  el.survivalTime.classList.toggle('time-warning', state.timeLeft <= 10);
+}
+
+function updateShip(dt, now){
+  const slowed = now < ship.slowUntil;
+  const speed = (slowed ? 130 : 260);
+
+  if(isMoveKeyHeld()){
+    let dx=0, dy=0;
+    if(keysDown['w']||keysDown['arrowup']) dy -= 1;
+    if(keysDown['s']||keysDown['arrowdown']) dy += 1;
+    if(keysDown['a']||keysDown['arrowleft']) dx -= 1;
+    if(keysDown['d']||keysDown['arrowright']) dx += 1;
+    const len = Math.hypot(dx,dy) || 1;
+    ship.x += (dx/len) * speed * dt;
+    ship.y += (dy/len) * speed * dt;
+  } else if(pointerActive){
+    const ease = slowed ? 0.045 : 0.12;
+    ship.x += (pointerTarget.x - ship.x) * ease;
+    ship.y += (pointerTarget.y - ship.y) * ease;
+  }
+  ship.x = clamp(ship.x, ship.radius, W-ship.radius);
+  ship.y = clamp(ship.y, ship.radius, H-ship.radius);
+}
+
+function updateEntities(dt, now){
+  const slowMul = now < state.effects.slow ? 0.5 : 1;
+
+  asteroids.forEach(a=>{
+    if(a.state==='neutral'){
+      a.x += a.vx*dt*slowMul; a.y += a.vy*dt*slowMul + Math.sin(now/500+a.wobble)*0.15;
+      a.angle += a.rot*dt;
+    }
+  });
+  asteroids = asteroids.filter(a=>a.x > -80);
+
+  obstacles.forEach(o=>{ o.x += o.vx*dt*slowMul; o.y += o.vy*dt*slowMul; o.angle += o.rot*dt; });
+  obstacles = obstacles.filter(o=>o.x > -60);
+
+  powerupsOnField.forEach(p=>{ p.x += p.vx*dt; p.pulse += dt*4; });
+  powerupsOnField = powerupsOnField.filter(p=>p.x > -40);
+
+  particles.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; p.vx*=0.92; p.vy*=0.92; });
+  particles = particles.filter(p=>p.life>0);
+
+  maybeSpawnObstacle(dt);
+  maybeSpawnPowerup(dt);
+
+  stars.forEach(s=>{ s.x -= s.s*dt; if(s.x<0){ s.x = W; s.y = rand(0,H); } });
+}
+
+function checkCollisions(){
+  if(state.answeredThisQ) return;
+  for(const a of asteroids){
+    const d = Math.hypot(a.x-ship.x, a.y-ship.y);
+    if(d < a.radius*0.7 + ship.radius*0.8){ handleAsteroidHit(a); break; }
+  }
+  for(const o of obstacles.slice()){
+    const d = Math.hypot(o.x-ship.x, o.y-ship.y);
+    if(d < o.radius + ship.radius*0.8){ handleObstacleHit(o); }
+  }
+  for(const p of powerupsOnField.slice()){
+    const d = Math.hypot(p.x-ship.x, p.y-ship.y);
+    if(d < p.radius + ship.radius*0.8){ handlePowerupPick(p); }
+  }
+}
+
+/* ======================================================================
+   十三、繪圖
+   ====================================================================== */
+function render(now){
+  ctx.clearRect(0,0,W,H);
+
+  // 背景漸層
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#050915'); g.addColorStop(1,'#01030a');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  drawBackgroundDecor();
+
+  // 星星
+  stars.forEach(s=>{
+    const alpha = 0.5+0.5*Math.sin(now/400+s.tw);
+    ctx.fillStyle = `rgba(200,230,255,${alpha.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  });
+
+  drawObstacles();
+  drawPowerups();
+  drawAsteroids(now);
+  drawParticles();
+  drawShip(now);
+}
+
+function drawBackgroundDecor(){
+  // 左側：遠方螺旋星系（裝飾用，簡化畫法）
+  ctx.save();
+  ctx.translate(W*0.12, H*0.28);
+  const galaxyR = Math.min(W,H)*0.16;
+  const gg = ctx.createRadialGradient(0,0,0,0,0,galaxyR);
+  gg.addColorStop(0,'rgba(180,140,255,0.28)');
+  gg.addColorStop(0.5,'rgba(120,90,200,0.14)');
+  gg.addColorStop(1,'rgba(120,90,200,0)');
+  ctx.fillStyle = gg;
+  ctx.beginPath(); ctx.arc(0,0,galaxyR,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(210,190,255,0.35)'; ctx.lineWidth = 1.4;
+  for(let arm=0; arm<2; arm++){
+    ctx.beginPath();
+    for(let t=0;t<=1;t+=0.05){
+      const ang = t*Math.PI*2.4 + arm*Math.PI;
+      const r = t*galaxyR;
+      const px = Math.cos(ang)*r, py = Math.sin(ang)*r*0.6;
+      if(t===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 右下：帶環行星（裝飾用）
+  ctx.save();
+  ctx.translate(W*0.92, H*0.88);
+  const pr = Math.min(W,H)*0.09;
+  const pg = ctx.createRadialGradient(-pr*0.3,-pr*0.3,pr*0.1, 0,0,pr);
+  pg.addColorStop(0,'#e8b98a'); pg.addColorStop(1,'#8a4a2a');
+  ctx.fillStyle = pg;
+  ctx.beginPath(); ctx.arc(0,0,pr,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(230,200,160,0.6)'; ctx.lineWidth = pr*0.12;
+  ctx.beginPath(); ctx.ellipse(0,0,pr*1.7,pr*0.45,-0.3,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  // 遠方小行星（裝飾用）
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = '#3a5a8f';
+  ctx.beginPath(); ctx.arc(W*0.05,H*0.85,Math.min(W,H)*0.035,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawShip(now){
+  ctx.save();
+  ctx.translate(ship.x, ship.y);
+  const glow = state.livelyMode ? '#ffb85c' : '#22e2f0';
+
+  // 尾焰（畫在船體之前，讓船體疊在上面）
+  const flameLen = 26+Math.sin(now/60)*6;
+  const flameGrad = ctx.createLinearGradient(-10,0,-10-flameLen,0);
+  flameGrad.addColorStop(0, state.livelyMode? 'rgba(255,184,92,0.95)':'rgba(120,200,255,0.95)');
+  flameGrad.addColorStop(1, 'rgba(80,160,255,0)');
+  ctx.fillStyle = flameGrad;
+  ctx.beginPath();
+  ctx.moveTo(-9,-6); ctx.lineTo(-9-flameLen,0); ctx.lineTo(-9,6); ctx.closePath();
+  ctx.fill();
+
+  ctx.shadowColor = glow; ctx.shadowBlur = state.livelyMode?26:14;
+
+  // 船體（銀色機身＋紅色尾翼＋駕駛艙）
+  ctx.fillStyle = '#dfe6ee';
+  ctx.strokeStyle = glow; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(22,0);
+  ctx.quadraticCurveTo(6,-9, -12,-10);
+  ctx.lineTo(-6,0);
+  ctx.lineTo(-12,10);
+  ctx.quadraticCurveTo(6,9, 22,0);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // 尾翼（紅色）
+  ctx.fillStyle = '#e04a3f';
+  ctx.beginPath(); ctx.moveTo(-4,-8); ctx.lineTo(-14,-16); ctx.lineTo(-9,-4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-4,8); ctx.lineTo(-14,16); ctx.lineTo(-9,4); ctx.closePath(); ctx.fill();
+
+  // 駕駛艙窗
+  ctx.fillStyle = '#1b6fa8';
+  ctx.beginPath(); ctx.arc(6,0,4.2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.arc(7.2,-1.4,1.4,0,Math.PI*2); ctx.fill();
+
+  if(state.livelyMode){
+    ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,184,92,0.5)'; ctx.lineWidth=2; ctx.stroke();
+  }
+  ctx.restore();
+
+  // 船身標籤（臺羅號）
+  ctx.save();
+  ctx.font = 'bold 12px "Segoe UI","Microsoft JhengHei",sans-serif';
+  const labelText = '臺羅號';
+  const lw = ctx.measureText(labelText).width + 16;
+  ctx.translate(ship.x, ship.y+16);
+  ctx.fillStyle = 'rgba(4,10,25,0.85)';
+  ctx.strokeStyle = 'rgba(34,226,240,0.7)'; ctx.lineWidth = 1.4;
+  roundRectPath(-lw/2, 0, lw, 18, 9);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#22e2f0';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(labelText, 0, 9);
+  ctx.restore();
+}
+
+function drawObstacles(){
+  obstacles.forEach(o=>{
+    ctx.save();
+    ctx.translate(o.x,o.y); ctx.rotate(o.angle);
+    ctx.fillStyle = '#4b5566'; ctx.strokeStyle = '#8a8f9c'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    const spikes = 7;
+    for(let i=0;i<spikes;i++){
+      const ang = i/spikes*Math.PI*2;
+      const r = o.radius*(0.8+ (i%2?0.2:0));
+      const px = Math.cos(ang)*r, py = Math.sin(ang)*r;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function drawPowerups(){
+  const now = performance.now();
+  powerupsOnField.forEach(p=>{
+    const pulse = 1+Math.sin(p.pulse)*0.08;
+    ctx.save();
+    ctx.translate(p.x,p.y); ctx.scale(pulse,pulse);
+    ctx.fillStyle = 'rgba(255,157,46,0.15)';
+    ctx.strokeStyle = '#ff9d2e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0,0,p.radius,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.font = '18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.type.emoji, 0, 1);
+    ctx.restore();
+  });
+}
+
+function drawAsteroids(now){
+  const radarOn = now < state.effects.radar;
+  asteroids.forEach(a=>{
+    let baseColor = '#22e2f0';
+    let glowColor = 'rgba(34,226,240,0.4)';
+    let coreInner = 'rgba(70,110,150,0.55)';
+
+    if(a.state==='correct'){
+      baseColor = '#3ddc84'; glowColor = 'rgba(61,220,132,0.65)'; coreInner = 'rgba(30,90,60,0.6)';
+    } else if(a.state==='wrong-reveal'){
+      baseColor = '#ff5f6d'; glowColor = 'rgba(255,95,109,0.55)'; coreInner = 'rgba(60,70,90,0.5)';
+    } else if(radarOn && a.isCorrect){
+      // 雷達／聲調透視鏡：以「閃爍的金色外框」提示，而非直接標成綠色
+      const flick = 0.5+0.5*Math.sin(now/90);
+      glowColor = `rgba(255,215,120,${0.35+flick*0.4})`;
+      baseColor = '#ffd166';
+    }
+
+    ctx.save();
+    ctx.translate(a.x,a.y); ctx.rotate(a.angle);
+
+    ctx.shadowColor = glowColor; ctx.shadowBlur = 22;
+    const grad = ctx.createRadialGradient(-a.radius*0.3,-a.radius*0.3,a.radius*0.15, 0,0,a.radius);
+    grad.addColorStop(0, 'rgba(210,235,255,0.9)');
+    grad.addColorStop(0.35, coreInner);
+    grad.addColorStop(1, 'rgba(8,14,30,0.95)');
+    ctx.fillStyle = grad;
+    ctx.strokeStyle = baseColor; ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    const spikes = 11;
+    for(let i=0;i<spikes;i++){
+      const ang = i/spikes*Math.PI*2;
+      const r = a.radius*(0.92+ (i%2? 0.06:0));
+      const px = Math.cos(ang)*r, py = Math.sin(ang)*r;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // 文字（不隨隕石旋轉，維持可讀性）
+    ctx.save();
+    ctx.translate(a.x,a.y);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='#000'; ctx.shadowBlur=4;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px "Segoe UI","Microsoft JhengHei",sans-serif';
+    ctx.fillText(a.hanji, 0, -6);
+    ctx.fillStyle = '#8be9ff';
+    ctx.font = 'bold 11px "Consolas","Courier New",monospace';
+    ctx.fillText(a.tailo, 0, 10);
+    ctx.restore();
+
+    if(a.state==='correct'){
+      drawSpeakerGlyph(a.x + a.radius + 16, a.y - a.radius*0.3, now);
+      drawSpeechBubble(a.x + a.radius*0.4, a.y - a.radius - 16, '答對了！');
+    } else if(a.state==='wrong-reveal'){
+      drawWrongBadge(a.x + a.radius*0.6, a.y + a.radius*0.6);
+    }
+  });
+}
+
+function drawSpeechBubble(x,y,text){
+  ctx.save();
+  ctx.font = 'bold 13px "Segoe UI","Microsoft JhengHei",sans-serif';
+  const paddingX = 12, paddingY = 7;
+  const w = ctx.measureText(text).width + paddingX*2;
+  const h = 24;
+  ctx.translate(x,y);
+  ctx.fillStyle = 'rgba(10,30,20,0.92)';
+  ctx.strokeStyle = '#3ddc84'; ctx.lineWidth = 2;
+  roundRectPath(-w/2,-h,w,h,10);
+  ctx.fill(); ctx.stroke();
+  // 小尾巴
+  ctx.beginPath(); ctx.moveTo(-6,0); ctx.lineTo(6,0); ctx.lineTo(0,8); ctx.closePath();
+  ctx.fillStyle = 'rgba(10,30,20,0.92)'; ctx.fill();
+  ctx.fillStyle = '#3ddc84'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text, 0, -h/2+1);
+  ctx.restore();
+}
+function roundRectPath(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function drawSpeakerGlyph(x,y,now){
+  const pulse = 0.6+0.4*Math.sin(now/120);
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.fillStyle = `rgba(34,226,240,${pulse.toFixed(2)})`;
+  ctx.strokeStyle = '#22e2f0'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0,0,13,0,Math.PI*2); ctx.fillStyle='rgba(10,20,35,0.85)'; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#22e2f0';
+  ctx.font = '13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🔊', 0, 1);
+  ctx.restore();
+}
+function drawWrongBadge(x,y){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.fillStyle = '#ff5f6d';
+  ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(-4,-4); ctx.lineTo(4,4); ctx.moveTo(4,-4); ctx.lineTo(-4,4); ctx.stroke();
+  ctx.restore();
+}
+
+function drawParticles(){
+  particles.forEach(p=>{
+    ctx.globalAlpha = clamp(p.life/p.maxLife,0,1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+/* ======================================================================
+   十四、按鈕事件綁定
+   ====================================================================== */
+document.getElementById('btnStart').addEventListener('click', ()=>{
+  // 部分瀏覽器需在使用者互動後才能啟用語音
+  if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); }
+  startGame();
+});
+document.getElementById('btnHowTo').addEventListener('click', ()=>{
+  alert('操作方式：\n桌機 - WASD／方向鍵移動、滑鼠移動可跟隨游標、Space 暫停、R 重播題目、M 靜音切換\n手機／平板 - 手指拖曳太空船、點擊按鈕重播題目\n\n圖例：\n答案隕石：碰撞後才判定正誤（作答前一律同色）\n提示金幣：提供線索\n灰色岩石：純障礙物，撞到只會減速');
+});
+document.getElementById('btnPlayPrompt').addEventListener('click', replayCurrentPrompt);
+document.getElementById('btnReplayPrompt').addEventListener('click', replayCurrentPrompt);
+document.getElementById('btnResume').addEventListener('click', togglePause);
+document.getElementById('btnPauseMini').addEventListener('click', togglePause);
+document.getElementById('btnRestartMini').addEventListener('click', ()=>{
+  if(state.mode==='playing' || state.mode==='paused'){
+    if(confirm('要重新開始這次任務嗎？目前進度將會重置。')) startGame();
+  }
+});
+document.getElementById('btnSound').addEventListener('click', toggleSound);
+document.getElementById('btnQuitToHome').addEventListener('click', ()=>{
+  state.mode = 'home'; Speech.stopAll();
+  el.pauseOverlay.classList.remove('show');
+  showScreen('home-screen');
+});
+document.getElementById('btnRetry').addEventListener('click', startGame);
+document.getElementById('btnHome').addEventListener('click', ()=>{ showScreen('home-screen'); });
+
+/* ======================================================================
+   十五、初始化
+   ====================================================================== */
+resizeCanvas();
+initStars();
+updateHUD();
+
+})();
+</script>
+</body>
+</html>

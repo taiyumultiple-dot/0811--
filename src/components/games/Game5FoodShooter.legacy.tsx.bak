@@ -1,0 +1,1509 @@
+import { useState, useEffect, useRef } from 'react';
+import { GameShell } from './GameShell';
+import { speakTaiyu } from '../../lib/speech';
+import { playCorrectSound, playWrongSound } from '../../utils/soundEffects';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Volume2,
+  VolumeX,
+  Pause,
+  Home,
+  Bomb,
+  Heart,
+  Sparkles,
+  Target,
+  Radio,
+  ChevronRight,
+  CheckCircle2,
+  RotateCcw,
+  Award
+} from 'lucide-react';
+
+// ==========================================
+// 1. DATA TYPES & INDEPENDENT STAGE BANKS
+// ==========================================
+
+export interface Stage1Item {
+  id: number;
+  mandarin: string; // 國語詞彙
+  hanji: string;    // 台語漢字
+  tailo: string;    // 臺羅拼音
+  category: '鹿港美食' | '鹿港景點' | '鹿港文化' | '鹿港交通';
+}
+
+// ──────────────────────────────────────────
+// 第一關專用題庫：50 個鹿港美食與在地文化詞彙
+// ──────────────────────────────────────────
+export const stage1VocabularyBank: Stage1Item[] = [
+  // 1 ~ 25: 鹿港在地美食與特色茶點
+  { id: 1, mandarin: '麵茶', hanji: '麵茶', tailo: 'mī-tê', category: '鹿港美食' },
+  { id: 2, mandarin: '牛舌餅', hanji: '牛舌餅', tailo: 'gû-tsi̍h-piánn', category: '鹿港美食' },
+  { id: 3, mandarin: '圓仔湯', hanji: '圓仔湯', tailo: 'înn-á-thng', category: '鹿港美食' },
+  { id: 4, mandarin: '麻粩', hanji: '麻粩', tailo: 'muâ-láu', category: '鹿港美食' },
+  { id: 5, mandarin: '芋丸', hanji: '芋丸', tailo: 'ōo-uân', category: '鹿港美食' },
+  { id: 6, mandarin: '肉包', hanji: '肉包', tailo: 'bah-pau', category: '鹿港美食' },
+  { id: 7, mandarin: '粉粿', hanji: '粉粿', tailo: 'hún-kué', category: '鹿港美食' },
+  { id: 8, mandarin: '秫米糋', hanji: '秫米糋', tailo: 'tsu̍t-bí-tsìnn', category: '鹿港美食' },
+  { id: 9, mandarin: '李仔攕', hanji: '李仔攕', tailo: 'lí-á-tshiám', category: '鹿港美食' },
+  { id: 10, mandarin: '糕仔餅', hanji: '糕仔餅', tailo: 'ko-á-piánn', category: '鹿港美食' },
+  { id: 11, mandarin: '菜脯', hanji: '菜脯', tailo: 'tshài-póo', category: '鹿港美食' },
+  { id: 12, mandarin: '豆花', hanji: '豆花', tailo: 'tāu-hue', category: '鹿港美食' },
+  { id: 13, mandarin: '麵線糊', hanji: '麵線糊', tailo: 'mī-suànn-kôo', category: '鹿港美食' },
+  { id: 14, mandarin: '割包', hanji: '割包', tailo: 'kuah-pau', category: '鹿港美食' },
+  { id: 15, mandarin: '肉圓', hanji: '肉圓', tailo: 'bah-uân', category: '鹿港美食' },
+  { id: 16, mandarin: '蚵仔煎', hanji: '蚵仔煎', tailo: 'ô-á-tsian', category: '鹿港美食' },
+  { id: 17, mandarin: '蝦猴', hanji: '蝦猴', tailo: 'hê-kâu', category: '鹿港美食' },
+  { id: 18, mandarin: '鳳眼糕', hanji: '鳳眼糕', tailo: 'hāng-gán-ko', category: '鹿港美食' },
+  { id: 19, mandarin: '白湯圓', hanji: '白湯圓', tailo: 'peh-thng-înn', category: '鹿港美食' },
+  { id: 20, mandarin: '麥芽糖', hanji: '麥芽糖', tailo: 'be̍h-gāi-thông', category: '鹿港美食' },
+  { id: 21, mandarin: '麵粉', hanji: '麵粉', tailo: 'mī-hún', category: '鹿港美食' },
+  { id: 22, mandarin: '花生糖', hanji: '花生糖', tailo: 'hue-sing-thông', category: '鹿港美食' },
+  { id: 23, mandarin: '傳統茶點', hanji: '傳統茶點', tailo: 'truân-thóng tê-tiám', category: '鹿港美食' },
+  { id: 24, mandarin: '古早味', hanji: '古早味', tailo: 'kóo-tsá-bī', category: '鹿港美食' },
+  { id: 25, mandarin: '在地小吃', hanji: '在地小吃', tailo: 'tsāi-tē sió-tsia̍h', category: '鹿港美食' },
+
+  // 26 ~ 50: 鹿港景點、文化與交通詞彙
+  { id: 26, mandarin: '鹿港', hanji: '鹿港', tailo: 'Lo̍k-káng', category: '鹿港文化' },
+  { id: 27, mandarin: '鹿港老街', hanji: '鹿港老街', tailo: 'Lo̍k-káng lāu-kue', category: '鹿港文化' },
+  { id: 28, mandarin: '三輪車', hanji: '三輪車', tailo: 'sann-lián-tshia', category: '鹿港交通' },
+  { id: 29, mandarin: '伴手禮', hanji: '等路', tailo: 'tán-lōo', category: '鹿港文化' },
+  { id: 30, mandarin: '龍山寺', hanji: '龍山寺', tailo: 'Lîng-san-sī', category: '鹿港景點' },
+  { id: 31, mandarin: '天後宮', hanji: '天后宮', tailo: 'Thian-hōo-kiong', category: '鹿港景點' },
+  { id: 32, mandarin: '摸乳巷', hanji: '摸乳巷', tailo: 'Mng-lú-hāng', category: '鹿港景點' },
+  { id: 33, mandarin: '九曲巷', hanji: '九曲巷', tailo: 'Káu-khioh-hāng', category: '鹿港景點' },
+  { id: 34, mandarin: '文武廟', hanji: '文武廟', tailo: 'Bûn-bú-miō', category: '鹿港景點' },
+  { id: 35, mandarin: '桂花巷', hanji: '桂花巷', tailo: 'Kuì-hue-hāng', category: '鹿港景點' },
+  { id: 36, mandarin: '風神', hanji: '風神', tailo: 'hong-sîn', category: '鹿港文化' },
+  { id: 37, mandarin: '古蹟', hanji: '古蹟', tailo: 'kóo-tsiah', category: '鹿港文化' },
+  { id: 38, mandarin: '拜拜', hanji: '拜拜', tailo: 'pài-pài', category: '鹿港文化' },
+  { id: 39, mandarin: '丁家古厝', hanji: '丁家古厝', tailo: 'Ting-ka kóo-tshù', category: '鹿港景點' },
+  { id: 40, mandarin: '杉行街', hanji: '杉行街', tailo: 'Sâm-hâng-kue', category: '鹿港景點' },
+  { id: 41, mandarin: '意樓', hanji: '意樓', tailo: 'Ì-lâu', category: '鹿港景點' },
+  { id: 42, mandarin: '十宜樓', hanji: '十宜樓', tailo: 'Si̍p-gî-lâu', category: '鹿港景點' },
+  { id: 43, mandarin: '隘門', hanji: '隘門', tailo: 'Ài-mn̂g', category: '鹿港景點' },
+  { id: 44, mandarin: '金門館', hanji: '金門館', tailo: 'Kim-mn̂g-kuán', category: '鹿港景點' },
+  { id: 45, mandarin: '城隍廟', hanji: '城隍廟', tailo: 'Sîng-hông-miō', category: '鹿港景點' },
+  { id: 46, mandarin: '地藏王廟', hanji: '地藏王廟', tailo: 'Tē-tsōng-ông-miō', category: '鹿港景點' },
+  { id: 47, mandarin: '半邊井', hanji: '半邊井', tailo: 'Puànn-pian-tsínn', category: '鹿港景點' },
+  { id: 48, mandarin: '朝天宮', hanji: '朝天宮', tailo: 'Tiâu-thian-kiong', category: '鹿港景點' },
+  { id: 49, mandarin: '鹿港港口', hanji: '鹿港港口', tailo: 'Lo̍k-káng káng-kháu', category: '鹿港文化' },
+  { id: 50, mandarin: '民俗文物館', hanji: '民俗文物館', tailo: 'Bîn-sio̍k bûn-bu̍t-kuán', category: '鹿港景點' }
+];
+
+// ──────────────────────────────────────────
+// 第二關至第五關獨立專用題庫 (保留擴充)
+// ──────────────────────────────────────────
+export const stage2TransportationBank = [
+  { id: 201, mandarin: '老街石板路', hanji: '石板路', tailo: 'tsio̍h-pán-lōo', category: '老街交通' },
+  { id: 202, mandarin: '三輪車搭乘處', hanji: '三輪車搭乘處', tailo: 'sann-lián-tshia', category: '老街交通' },
+  { id: 203, mandarin: '古蹟導覽路線', hanji: '古蹟導覽', tailo: 'kóo-tsiah tō-lám', category: '老街交通' },
+];
+
+export const stage3PhonologyBank = [
+  { id: 301, mandarin: 'ph 聲母拆解', hanji: '聲母 ph', tailo: 'ph', category: '聲韻解析' },
+  { id: 302, mandarin: 'ang 韻母拆解', hanji: '韻母 ang', tailo: 'ang', category: '聲韻解析' },
+];
+
+export const stage4ToneChangeBank = [
+  { id: 401, mandarin: '麵茶變調 (mī -> mi)', hanji: '麵', tailo: 'mi', category: '變調規律' },
+];
+
+export const stage5BossMissionBank = [
+  { id: 501, mandarin: '歡迎來到鹿港品嚐美味麵茶', hanji: '歡迎來鹿港食麵茶', tailo: 'huan-gîng lâi Lo̍k-káng tsia̍h mī-tê', category: '旅行句子' },
+];
+
+// ==========================================
+// 2. FISHER-YATES SHUFFLE & QUESTION GENERATION
+// ==========================================
+
+export function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const randomIndex = Math.floor(Math.random() * (i + 1));
+    [result[i], result[randomIndex]] = [result[randomIndex], result[i]];
+  }
+  return result;
+}
+
+// 抽取第一關隨機 10 題 (不重複)
+export function createStage1Round(): Stage1Item[] {
+  return shuffleArray(stage1VocabularyBank).slice(0, 10);
+}
+
+// 動態抽取第一關干擾答案 (必定來自其餘 49 個不同詞彙，且單字絕對不重複)
+export function getStage1Distractors(correctItem: Stage1Item, count: number): Stage1Item[] {
+  const sameCategory = stage1VocabularyBank.filter(
+    item => item.id !== correctItem.id && item.hanji !== correctItem.hanji && item.category === correctItem.category
+  );
+  const otherCategories = stage1VocabularyBank.filter(
+    item => item.id !== correctItem.id && item.hanji !== correctItem.hanji && item.category !== correctItem.category
+  );
+
+  const candidates = [...shuffleArray(sameCategory), ...shuffleArray(otherCategories)];
+  
+  const selected: Stage1Item[] = [];
+  const usedHanji = new Set<string>([correctItem.hanji]);
+
+  for (const cand of candidates) {
+    if (!usedHanji.has(cand.hanji)) {
+      usedHanji.add(cand.hanji);
+      selected.push(cand);
+      if (selected.length >= count) break;
+    }
+  }
+
+  return selected;
+}
+
+export type Difficulty = 'beginner' | 'challenge' | 'expert';
+
+// 建立每一題敵機選項 (包含 1 個正確答案 + N 個不重複干擾答案)
+export function createStage1EnemyOptions(questionItem: Stage1Item, difficulty: Difficulty) {
+  let distractorCount = 3; // 初學模式：1 正確 + 3 干擾 (共 4 敵機)
+  if (difficulty === 'challenge') distractorCount = 4; // 挑戰模式：1 正確 + 4 干擾 (共 5 敵機)
+  if (difficulty === 'expert') distractorCount = 5;    // 高手模式：1 正確 + 5 干擾 (共 6 敵機)
+
+  const distractors = getStage1Distractors(questionItem, distractorCount);
+  return shuffleArray([questionItem, ...distractors]);
+}
+
+// 第一關題目執行物件
+export interface Stage1Question {
+  item: Stage1Item;
+  promptType: 'both' | 'tailoOnly' | 'hanjiOnly';
+  mandarinPrompt: string;
+  options: Stage1Item[];
+}
+
+// 生成單題配置 (隨機分配題型 A/B/C)
+export function generateStage1QuestionConfig(item: Stage1Item, difficulty: Difficulty): Stage1Question {
+  const types: Array<'both' | 'tailoOnly' | 'hanjiOnly'> = ['both', 'tailoOnly', 'hanjiOnly'];
+  const promptType = types[Math.floor(Math.random() * types.length)];
+
+  let mandarinPrompt = `請擊落「${item.mandarin}」的台語說法。`;
+  if (promptType === 'tailoOnly') {
+    mandarinPrompt = `請擊落「${item.mandarin}」的臺羅拼音。`;
+  }
+
+  const options = createStage1EnemyOptions(item, difficulty);
+
+  return {
+    item,
+    promptType,
+    mandarinPrompt,
+    options
+  };
+}
+
+// ==========================================
+// 3. INTERFACES & GAME TYPES
+// ==========================================
+
+export type GameScreen = 'home' | 'shipSelect' | 'playing' | 'paused' | 'review';
+export type ShipType = 'velociraptor' | 'triceratops' | 'trex';
+
+export interface EnemyEntity {
+  id: string;
+  itemId: number;
+  name: string;        // 台語漢字 (若 promptType === 'tailoOnly' 則為空 string)
+  tailo: string;       // 臺羅拼音 (若 promptType === 'hanjiOnly' 則為空 string)
+  rawItem: Stage1Item;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  width: number;
+  height: number;
+  isTarget: boolean;
+  flicker: number;
+  flickerColor?: string;
+  hp: number;
+  maxHp: number;
+}
+
+export interface BulletEntity {
+  id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  isEnemy: boolean;
+  isHoming?: boolean;
+}
+
+export interface ParticleEntity {
+  id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  size: number;
+  alpha: number;
+  decay: number;
+}
+
+export interface FloatingText {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+}
+
+export interface ReviewEntry {
+  questionIndex: number;
+  mandarinPrompt: string;
+  userHitName: string;
+  correctHanji: string;
+  correctTailo: string;
+  isCorrect: boolean;
+  timeSpentSec: number;
+}
+
+// 國語 TTS SpeechSynthesis 朗讀 (絕不朗讀臺羅拼音)
+function speakMandarinPrompt(text: string) {
+  if (!('speechSynthesis' in window)) return;
+  const synth = window.speechSynthesis;
+  synth.cancel();
+  // 清除任何英文或羅馬拼音字母
+  const cleanText = text.replace(/[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜîìíīâãê̍]/g, '').trim();
+  const utterance = new SpeechSynthesisUtterance(cleanText || text);
+  utterance.lang = 'zh-TW';
+  utterance.rate = 0.95;
+  synth.speak(utterance);
+}
+
+export default function Game5FoodShooter({
+  onNext,
+  onHome
+}: {
+  onNext: () => void;
+  onHome?: () => void;
+}) {
+  // Navigation & High-level State
+  const [screen, setScreen] = useState<GameScreen>('home');
+  const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
+  const [shipType, setShipType] = useState<ShipType>('velociraptor');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Stage Tracking (關卡 1: 鹿港美食星域)
+  const [currentStage, setCurrentStage] = useState(1);
+
+  // Stats
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [bombs, setBombs] = useState(3);
+  const [power, setPower] = useState(1);
+  const [energy, setEnergy] = useState(0); // 0~10
+  const [overloadActive, setOverloadActive] = useState(false);
+  const [combo, setCombo] = useState(0);
+  const [radarCount, setRadarCount] = useState(3);
+  const [timeLeft, setTimeLeft] = useState(60); // 60秒遊戲倒數計時
+
+  // Statistics for Review Modal
+  const [knowledgeErrors, setKnowledgeErrors] = useState(0);
+  const [operationalErrors, setOperationalErrors] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const [reviewEntries, setReviewEntries] = useState<ReviewEntry[]>([]);
+
+  // Round Questions (第一關隨機 10 題)
+  const [stage1Questions, setStage1Questions] = useState<Stage1Question[]>([]);
+  const [currentQIndex, setCurrentQIndex] = useState(0); // 0..9
+  const [radarActive, setRadarActive] = useState(false);
+
+  // Physics & Canvas Entities
+  const [playerX, setPlayerX] = useState(500);
+  const [invincibleTimer, setInvincibleTimer] = useState(0);
+  const [enemies, setEnemies] = useState<EnemyEntity[]>([]);
+  const [bullets, setBullets] = useState<BulletEntity[]>([]);
+  const [particles, setParticles] = useState<ParticleEntity[]>([]);
+  const [floatTexts, setFloatTexts] = useState<FloatingText[]>([]);
+
+  // Board scaling
+  const [scale, setScale] = useState(1);
+  const gameBoardRef = useRef<HTMLDivElement>(null);
+  const timeRef = useRef(0);
+  const loopRef = useRef<number | null>(null);
+  const keysPressed = useRef<Record<string, boolean>>({});
+  const qStartTimeRef = useRef(Date.now());
+  const timeLeftRef = useRef(60);
+
+  // Mutable Physics Refs to ensure zero-stale closure performance
+  const stateRef = useRef(screen);
+  const enemiesRef = useRef<EnemyEntity[]>([]);
+  const bulletsRef = useRef<BulletEntity[]>([]);
+  const particlesRef = useRef<ParticleEntity[]>([]);
+  const playerXRef = useRef(500);
+  const scoreRef = useRef(0);
+  const energyRef = useRef(0);
+  const powerRef = useRef(1);
+  const livesRef = useRef(3);
+  const comboRef = useRef(0);
+  const currentQConfigRef = useRef<Stage1Question | null>(null);
+
+  // Load High Score
+  useEffect(() => {
+    const saved = localStorage.getItem('taiyu_food_shooter_high');
+    if (saved) setHighScore(parseInt(saved, 10));
+  }, []);
+
+  const currentQIndexRef = useRef(0);
+  const stage1QuestionsRef = useRef<Stage1Question[]>([]);
+
+  // Sync state refs
+  useEffect(() => { stateRef.current = screen; }, [screen]);
+  useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
+  useEffect(() => { bulletsRef.current = bullets; }, [bullets]);
+  useEffect(() => { particlesRef.current = particles; }, [particles]);
+  useEffect(() => { playerXRef.current = playerX; }, [playerX]);
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { energyRef.current = energy; }, [energy]);
+  useEffect(() => { powerRef.current = power; }, [power]);
+  useEffect(() => { livesRef.current = lives; }, [lives]);
+  useEffect(() => { comboRef.current = combo; }, [combo]);
+
+  // Responsive Board Scale Observer
+  useEffect(() => {
+    const handleResize = () => {
+      if (gameBoardRef.current) {
+        const parentW = gameBoardRef.current.parentElement?.clientWidth || window.innerWidth;
+        const targetW = 1000;
+        setScale(Math.min(1, parentW / targetW));
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    setTimeout(handleResize, 100);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Keyboard Handlers
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keysPressed.current[e.code] = true;
+
+      if (stateRef.current !== 'playing') return;
+
+      if (e.code === 'KeyP' || e.code === 'Space') {
+        e.preventDefault();
+        setScreen(prev => (prev === 'playing' ? 'paused' : 'playing'));
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        setSoundEnabled(prev => !prev);
+      } else if (e.code === 'KeyZ') {
+        e.preventDefault();
+        fireLaser();
+      } else if (e.code === 'KeyX') {
+        e.preventDefault();
+        triggerBomb();
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        replayMandarinPrompt();
+      } else if (e.code === 'KeyH') {
+        e.preventDefault();
+        triggerRadar();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keysPressed.current[e.code] = false;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Sound Controller
+  const playTaiwaneseAudio = (text: string, tailo?: string) => {
+    if (soundEnabled) {
+      speakTaiyu(text, undefined, tailo);
+    }
+  };
+
+  const replayMandarinPrompt = () => {
+    if (!soundEnabled) return;
+    const qConfig = currentQConfigRef.current;
+    if (qConfig) {
+      speakMandarinPrompt(qConfig.mandarinPrompt);
+    }
+  };
+
+  // Start / Restart Game Session for Stage 1
+  const startStage1Session = () => {
+    setCurrentStage(1);
+
+    // 從 50 個詞彙中利用 Fisher-Yates 隨機洗牌抽取 10 個非重複項目
+    const roundItems = createStage1Round();
+    const roundConfigs = roundItems.map(item => generateStage1QuestionConfig(item, difficulty));
+
+    setStage1Questions(roundConfigs);
+    stage1QuestionsRef.current = roundConfigs;
+
+    // Initial stats according to difficulty
+    const initialLives = difficulty === 'beginner' ? 4 : 3;
+    const initialRadars = difficulty === 'beginner' ? 3 : difficulty === 'challenge' ? 2 : 1;
+    const initialBombs = difficulty === 'expert' ? 2 : 3;
+
+    setTimeLeft(60);
+    timeLeftRef.current = 60;
+
+    setScore(0);
+    setLives(initialLives);
+    setBombs(initialBombs);
+    setRadarCount(initialRadars);
+    setPower(shipType === 'triceratops' ? 2 : 1);
+    setEnergy(0);
+    setCombo(0);
+    setOverloadActive(false);
+
+    setKnowledgeErrors(0);
+    setOperationalErrors(0);
+    setMaxCombo(0);
+    setReviewEntries([]);
+
+    setCurrentQIndex(0);
+    currentQIndexRef.current = 0;
+
+    setBullets([]);
+    setParticles([]);
+    setFloatTexts([]);
+    setPlayerX(500);
+
+    setScreen('playing');
+    loadQuestion(roundConfigs[0], 0);
+  };
+
+  // Load Question Config
+  const loadQuestion = (qConfig: Stage1Question, qIndex: number) => {
+    currentQConfigRef.current = qConfig;
+    qStartTimeRef.current = Date.now();
+    setRadarActive(false);
+
+    // 播放國語題目 (絕不朗讀臺羅)
+    if (soundEnabled) {
+      speakMandarinPrompt(qConfig.mandarinPrompt);
+    }
+
+    // 排列敵機 Options - 確保每一題 (1~10題) 答案與選項位置每次都不一樣，隨機洗牌
+    const options = shuffleArray([...qConfig.options]);
+    const total = options.length;
+
+    const spacing = 820 / Math.max(1, total - 1);
+    const startX = 90 + (820 - spacing * (total - 1)) / 2;
+
+    const newEnemies: EnemyEntity[] = options.map((opt, idx) => {
+      const xPos = startX + idx * spacing;
+      const isTarget = opt.id === qConfig.item.id;
+
+      // 決定敵機外觀標籤內容 (根據題型分配: 漢字/臺羅/兩者皆有)
+      let nameLabel = opt.hanji;
+      let tailoLabel = opt.tailo;
+
+      if (qConfig.promptType === 'tailoOnly') {
+        nameLabel = ''; // 只顯示臺羅
+      } else if (qConfig.promptType === 'hanjiOnly') {
+        tailoLabel = ''; // 只顯示漢字
+      }
+
+      return {
+        id: `enemy_q${qIndex}_${idx}_${Date.now()}`,
+        itemId: opt.id,
+        name: nameLabel,
+        tailo: tailoLabel,
+        rawItem: opt,
+        x: xPos,
+        y: 140 + (idx % 2 === 0 ? 0 : 38), // 交錯高度，避免重疊
+        vx: (0.35 + Math.random() * 0.45) * (idx % 2 === 0 ? 1 : -1),
+        vy: 0,
+        width: 180,
+        height: 85,
+        isTarget,
+        flicker: 0,
+        hp: 1,
+        maxHp: 1
+      };
+    });
+
+    setEnemies(newEnemies);
+  };
+
+  // Fire Player Laser
+  const fireLaser = () => {
+    const px = playerXRef.current;
+    const curPower = powerRef.current;
+    const newBullets: BulletEntity[] = [];
+
+    if (shipType === 'velociraptor') {
+      newBullets.push(
+        { id: `b_${Date.now()}_${Math.random()}_0`, x: px, y: 500, vx: 0, vy: -12, isEnemy: false },
+        { id: `b_${Date.now()}_${Math.random()}_1`, x: px - 18, y: 505, vx: -2, vy: -11, isEnemy: false },
+        { id: `b_${Date.now()}_${Math.random()}_2`, x: px + 18, y: 505, vx: 2, vy: -11, isEnemy: false }
+      );
+    } else if (shipType === 'triceratops') {
+      newBullets.push(
+        { id: `b_${Date.now()}_${Math.random()}_0`, x: px - 8, y: 500, vx: 0, vy: -14, isEnemy: false },
+        { id: `b_${Date.now()}_${Math.random()}_1`, x: px + 8, y: 500, vx: 0, vy: -14, isEnemy: false }
+      );
+    } else {
+      newBullets.push({
+        id: `b_${Date.now()}_${Math.random()}_0`,
+        x: px,
+        y: 500,
+        vx: 0,
+        vy: -11,
+        isEnemy: false,
+        isHoming: true
+      });
+    }
+
+    if (curPower >= 2) {
+      newBullets.push({
+        id: `b_extra_${Date.now()}_${Math.random()}`,
+        x: px,
+        y: 490,
+        vx: 0,
+        vy: -13,
+        isEnemy: false
+      });
+    }
+
+    setBullets(prev => [...prev, ...newBullets]);
+  };
+
+  // Trigger Sheng-Yun Bomb
+  const triggerBomb = () => {
+    if (bombs <= 0) return;
+    setBombs(prev => prev - 1);
+
+    const qConfig = currentQConfigRef.current;
+    if (qConfig) {
+      playTaiwaneseAudio(qConfig.item.hanji, qConfig.item.tailo);
+    }
+
+    const bombParticles: ParticleEntity[] = [];
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = 2 + Math.random() * 8;
+      bombParticles.push({
+        id: `bomb_p_${Date.now()}_${i}`,
+        x: 500,
+        y: 300,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        color: i % 2 === 0 ? '#F43F5E' : '#FB923C',
+        size: 5 + Math.random() * 5,
+        alpha: 1,
+        decay: 0.02
+      });
+    }
+    setParticles(prev => [...prev, ...bombParticles]);
+    setBullets(prev => prev.filter(b => !b.isEnemy));
+    replayMandarinPrompt();
+
+    addFloatText(500, 250, '🧨 聲韻炸彈！彈幕清空！', 'text-amber-400 font-extrabold text-lg');
+  };
+
+  // Trigger Tai-Lo Radar
+  const triggerRadar = () => {
+    if (radarCount <= 0 || radarActive) return;
+    setRadarCount(prev => prev - 1);
+    setRadarActive(true);
+
+    addFloatText(500, 200, '📡 臺羅雷達啟動！正確敵機外框閃爍！', 'text-cyan-400 font-bold');
+
+    setTimeout(() => {
+      setRadarActive(false);
+    }, 3000);
+  };
+
+  // Add Floating Text
+  const addFloatText = (x: number, y: number, text: string, color: string) => {
+    const id = `ft_${Date.now()}_${Math.random()}`;
+    setFloatTexts(prev => [...prev, { id, x, y, text, color }]);
+    setTimeout(() => {
+      setFloatTexts(prev => prev.filter(f => f.id !== id));
+    }, 1200);
+  };
+
+  // Trigger Explosions
+  const triggerExplosion = (x: number, y: number, color: string) => {
+    const pArr: ParticleEntity[] = [];
+    for (let i = 0; i < 18; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = 1 + Math.random() * 6;
+      pArr.push({
+        id: `p_${Date.now()}_${Math.random()}`,
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        color,
+        size: 3 + Math.random() * 4,
+        alpha: 1,
+        decay: 0.025
+      });
+    }
+    setParticles(prev => [...prev, ...pArr]);
+  };
+
+  // Main High-Performance Game Engine Loop
+  useEffect(() => {
+    if (screen !== 'playing') {
+      if (loopRef.current) cancelAnimationFrame(loopRef.current);
+      return;
+    }
+
+    const gameTick = () => {
+      timeRef.current += 0.016;
+      setInvincibleTimer(prev => Math.max(0, prev - 0.016));
+
+      // 0. Update 60-second Countdown Timer
+      if (timeLeftRef.current > 0) {
+        timeLeftRef.current = Math.max(0, timeLeftRef.current - 0.016);
+        const sec = Math.ceil(timeLeftRef.current);
+        setTimeLeft(sec);
+
+        if (timeLeftRef.current <= 0) {
+          addFloatText(500, 250, '⏰ 時間到！1分鐘倒數結束！', 'text-amber-400 font-black text-xl');
+          setScreen('review');
+          return;
+        }
+      }
+
+      // 1. Move Player
+      let px = playerXRef.current;
+      const speed = shipType === 'trex' ? 9.5 : shipType === 'velociraptor' ? 8.5 : 6.5;
+      if (keysPressed.current['ArrowLeft'] || keysPressed.current['KeyA']) {
+        px = Math.max(80, px - speed);
+      }
+      if (keysPressed.current['ArrowRight'] || keysPressed.current['KeyD']) {
+        px = Math.min(920, px + speed);
+      }
+      setPlayerX(px);
+      playerXRef.current = px;
+
+      // 2. Move Bullets
+      let activeBullets = bulletsRef.current.map(b => {
+        if (!b.isEnemy && b.isHoming) {
+          const target = enemiesRef.current.find(e => e.isTarget);
+          if (target) {
+            const dx = target.x - b.x;
+            const vx = dx * 0.08;
+            return { ...b, x: b.x + vx, y: b.y + b.vy };
+          }
+        }
+        return { ...b, x: b.x + b.vx, y: b.y + b.vy };
+      }).filter(b => b.y > 40 && b.y < 580 && b.x > 40 && b.x < 960);
+
+      // 3. Check Bullet collisions on Player (Operational Mistakes - 被子彈擊中)
+      activeBullets.forEach(b => {
+        if (b.isEnemy) {
+          const dx = b.x - playerXRef.current;
+          const dy = b.y - 510;
+          if (Math.sqrt(dx * dx + dy * dy) < 22) {
+            activeBullets = activeBullets.filter(bullet => bullet.id !== b.id);
+            triggerExplosion(playerXRef.current, 510, '#F43F5E');
+
+            // 記錄為操作失誤 (被彈擊中)，不影響台語答錯計算
+            setOperationalErrors(prev => prev + 1);
+
+            const nextLives = Math.max(0, livesRef.current - 1);
+            setLives(nextLives);
+            livesRef.current = nextLives;
+
+            setEnergy(prev => Math.max(0, prev - 1));
+            setCombo(0);
+
+            addFloatText(playerXRef.current, 470, '💥 被彈幕擊中！', 'text-rose-500 font-black');
+
+            if (nextLives <= 0) {
+              setScreen('review');
+            }
+          }
+        }
+      });
+
+      // 4. Update Enemies Physics & Bullet Shooting
+      let activeEnemies = enemiesRef.current.map(e => {
+        let nx = e.x + e.vx;
+        let nvx = e.vx;
+
+        if (nx < 110 || nx > 890) {
+          nvx = -e.vx;
+          nx = e.x + nvx;
+        }
+
+        const shootProb = difficulty === 'expert' ? 0.012 : difficulty === 'challenge' ? 0.008 : 0.004;
+        if (Math.random() < shootProb) {
+          activeBullets.push({
+            id: `eb_${Date.now()}_${Math.random()}`,
+            x: e.x,
+            y: e.y + 25,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: difficulty === 'expert' ? 5.5 : 4.0,
+            isEnemy: true
+          });
+        }
+
+        return {
+          ...e,
+          x: nx,
+          vx: nvx,
+          flicker: Math.max(0, e.flicker - 1)
+        };
+      });
+
+      // 5. Laser Collision Check on Enemies
+      activeBullets.forEach(b => {
+        if (b.isEnemy) return;
+
+        activeEnemies.forEach(e => {
+          const exMin = e.x - e.width / 2;
+          const exMax = e.x + e.width / 2;
+          const eyMin = e.y - e.height / 2;
+          const eyMax = e.y + e.height / 2;
+
+          if (b.x > exMin && b.x < exMax && b.y > eyMin && b.y < eyMax) {
+            activeBullets = activeBullets.filter(bullet => bullet.id !== b.id);
+            const qConfig = currentQConfigRef.current;
+
+            if (e.isTarget) {
+              // 擊落正確敵機！
+              triggerExplosion(e.x, e.y, '#10B981');
+              playCorrectSound();
+              playTaiwaneseAudio(e.rawItem.hanji, e.rawItem.tailo);
+              handleQuestionCorrect(qConfig, e);
+            } else {
+              // 擊錯敵機 (知識錯誤)
+              triggerExplosion(e.x, e.y, '#EF4444');
+              playWrongSound();
+              e.flicker = 15;
+              e.flickerColor = '#EF4444';
+
+              // 知識答錯加 1，扣 50 分，能量扣 1 格，中斷連擊
+              setKnowledgeErrors(prev => prev + 1);
+              setScore(prev => Math.max(0, prev - 50));
+              setEnergy(prev => Math.max(0, prev - 1));
+              setCombo(0);
+
+              addFloatText(e.x, e.y, `-50 這毋是喔！`, 'text-rose-500 font-extrabold');
+
+              // 錯誤敵機發射干擾彈，但不扣生命，玩家仍可繼續尋找正確答案！
+              activeBullets.push({
+                id: `retal_${Date.now()}_${Math.random()}`,
+                x: e.x,
+                y: e.y + 30,
+                vx: 0,
+                vy: 4.5,
+                isEnemy: true
+              });
+            }
+          }
+        });
+      });
+
+      // 6. Update Particles
+      let activeParticles = particlesRef.current.map(p => ({
+        ...p,
+        x: p.x + p.vx,
+        y: p.y + p.vy,
+        alpha: p.alpha - p.decay
+      })).filter(p => p.alpha > 0);
+
+      bulletsRef.current = activeBullets;
+      particlesRef.current = activeParticles;
+      enemiesRef.current = activeEnemies;
+
+      setBullets(activeBullets);
+      setParticles(activeParticles);
+      setEnemies(activeEnemies);
+
+      loopRef.current = requestAnimationFrame(gameTick);
+    };
+
+    loopRef.current = requestAnimationFrame(gameTick);
+    return () => {
+      if (loopRef.current) cancelAnimationFrame(loopRef.current);
+    };
+  }, [screen, shipType, difficulty]);
+
+  // 處理答對邏輯
+  const handleQuestionCorrect = (qConfig: Stage1Question | null, hitEnemy: EnemyEntity) => {
+    if (!qConfig) return;
+
+    const timeSpent = Math.max(1, Math.round((Date.now() - qStartTimeRef.current) / 1000));
+    let gainedScore = 100 + comboRef.current * 20;
+    if (timeSpent <= 5) gainedScore += 100; // 5秒內答對加 bonus
+
+    const newScore = scoreRef.current + gainedScore;
+    const newEnergy = Math.min(10, energyRef.current + 1);
+    const newCombo = comboRef.current + 1;
+
+    setScore(newScore);
+    setEnergy(newEnergy);
+    setCombo(newCombo);
+    if (newCombo > maxCombo) setMaxCombo(newCombo);
+
+    if (newEnergy >= 10 && !overloadActive) {
+      setOverloadActive(true);
+      addFloatText(500, 280, '⚡ 臺語超載模式！火力最大化！', 'text-amber-300 font-black text-xl');
+      setTimeout(() => setOverloadActive(false), 8000);
+    }
+
+    const curQIndex = currentQIndexRef.current;
+
+    // 記錄這題學習結果
+    setReviewEntries(prev => [
+      ...prev,
+      {
+        questionIndex: curQIndex + 1,
+        mandarinPrompt: qConfig.mandarinPrompt,
+        userHitName: hitEnemy.rawItem.hanji + ' (' + hitEnemy.rawItem.tailo + ')',
+        correctHanji: qConfig.item.hanji,
+        correctTailo: qConfig.item.tailo,
+        isCorrect: true,
+        timeSpentSec: timeSpent
+      }
+    ]);
+
+    addFloatText(hitEnemy.x, hitEnemy.y - 20, `+${gainedScore} 🎯 答對了！`, 'text-emerald-400 font-black text-lg');
+
+    // 切換下一題或結束第一關 10 題
+    const nextQIdx = curQIndex + 1;
+    currentQIndexRef.current = nextQIdx;
+    setCurrentQIndex(nextQIdx);
+
+    const questionsList = stage1QuestionsRef.current;
+    if (nextQIdx < 10 && questionsList[nextQIdx]) {
+      const nextQuestionConfig = questionsList[nextQIdx];
+      setTimeout(() => {
+        loadQuestion(nextQuestionConfig, nextQIdx);
+      }, 1000);
+    } else {
+      // 完成第一關 10 題，進入結算畫面！
+      setTimeout(() => {
+        setScreen('review');
+      }, 1200);
+    }
+  };
+
+  // Mouse & Touch Handlers
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (screen !== 'playing' || !gameBoardRef.current) return;
+    const rect = gameBoardRef.current.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / scale;
+    const bounded = Math.max(80, Math.min(920, relX));
+    setPlayerX(bounded);
+    playerXRef.current = bounded;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (screen !== 'playing' || !gameBoardRef.current) return;
+    const rect = gameBoardRef.current.getBoundingClientRect();
+    const relX = (e.touches[0].clientX - rect.left) / scale;
+    const bounded = Math.max(80, Math.min(920, relX));
+    setPlayerX(bounded);
+    playerXRef.current = bounded;
+  };
+
+  return (
+    <GameShell onHome={onHome}>
+      <div className="flex flex-col gap-3 select-none">
+        {/* ========================================== */}
+        {/* 1. TOP HUD HEADER PANEL                     */}
+        {/* ========================================== */}
+        <div className="flex flex-col md:flex-row gap-3 items-stretch">
+          {/* Left HUD: Score & Lives */}
+          <div className="flex items-center gap-4 px-5 py-3 bg-[#0A081D] border-2 border-fuchsia-500/60 rounded-2xl text-white font-mono shrink-0 shadow-[0_0_15px_rgba(217,70,239,0.2)]">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-fuchsia-400 font-bold uppercase tracking-wider">SCORE</span>
+              <span className="text-xl font-bold text-amber-300 tracking-wider">
+                {String(score).padStart(6, '0')}
+              </span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-800" />
+            <div className="flex flex-col">
+              <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">HIGH</span>
+              <span className="text-xl font-bold text-amber-400 opacity-80">
+                {String(Math.max(highScore, score)).padStart(6, '0')}
+              </span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-800" />
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">LIVES</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                {[...Array(4)].map((_, i) => (
+                  <Heart
+                    key={i}
+                    className={`w-4 h-4 ${
+                      i < lives ? 'text-rose-500 fill-rose-500 animate-pulse' : 'text-slate-800'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Center Banner: Mandarin Task Display & Stage Info */}
+          <div className="flex-1 bg-gradient-to-r from-[#0C0A26] via-[#1D103D] to-[#0C0A26] border-2 border-fuchsia-500 rounded-2xl p-3.5 flex flex-col items-center justify-center text-white relative shadow-[0_0_20px_rgba(217,70,239,0.3)] overflow-hidden">
+            <div className="absolute top-0 left-0 h-[3px] bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 w-full" />
+
+            <div className="text-center z-10 w-full px-2">
+              <div className="flex items-center justify-between text-xs text-slate-300 mb-1">
+                <span className="font-bold text-fuchsia-300">
+                  關卡 {currentStage}: 鹿港美食星域 (題目：{currentQIndex + 1} / 10 題)
+                </span>
+                <div className="flex items-center gap-3 text-cyan-300 font-mono text-[11px]">
+                  <span className={`px-2.5 py-0.5 rounded-lg font-bold flex items-center gap-1 border transition-all ${
+                    timeLeft <= 10
+                      ? 'bg-rose-950/90 text-rose-400 border-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]'
+                      : 'bg-slate-900/90 text-amber-300 border-amber-500/50'
+                  }`}>
+                    ⏱️ 倒數：<strong className="text-sm">{timeLeft}s</strong>
+                  </span>
+                  <span>本關題庫：50詞</span>
+                  <span>本局隨機：10題</span>
+                  <span>COMBO: <strong className="text-amber-300 text-sm">×{combo}</strong></span>
+                </div>
+              </div>
+
+              {/* Task Text Prompt */}
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-cyan-400 font-black text-sm">國語任務：</span>
+                <span className="font-extrabold text-amber-300 text-base md:text-lg tracking-wide">
+                  {stage1Questions[currentQIndex]?.mandarinPrompt || '任務準備中...'}
+                </span>
+                {/* Replay Prompt Icon */}
+                <button
+                  onClick={replayMandarinPrompt}
+                  className="p-1 rounded-full bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/40 text-amber-300 transition-all cursor-pointer"
+                  title="重新朗讀國語題目"
+                >
+                  <Volume2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right HUD: Power Meter */}
+          <div className="flex items-center gap-4 px-5 py-3 bg-[#0A081D] border-2 border-cyan-500/60 rounded-2xl text-white font-mono shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)] justify-between">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">POWER</span>
+              <span className="text-lg font-black text-cyan-300">Level {power}</span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-800" />
+            <div className="flex gap-1">
+              {[1, 2, 3].map(step => (
+                <div
+                  key={step}
+                  className={`w-5 h-4 rounded-sm border ${
+                    step <= power
+                      ? 'bg-cyan-400 border-cyan-200 shadow-[0_0_8px_#06b6d4]'
+                      : 'bg-slate-950 border-slate-800'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ========================================== */}
+        {/* 2. MAIN GAME BOARD & ACTION RAIL           */}
+        {/* ========================================== */}
+        <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-[520px]">
+          {/* Left Action Rail Buttons */}
+          <div className="flex flex-row lg:flex-col items-center justify-around lg:justify-start gap-3 p-3 bg-[#0A081D]/90 border border-slate-800 rounded-2xl lg:w-20 shrink-0 shadow-xl">
+            {/* Pause */}
+            <button
+              onClick={() => setScreen(prev => (prev === 'playing' ? 'paused' : 'playing'))}
+              className="flex flex-col items-center gap-1 group cursor-pointer"
+            >
+              <div className="w-11 h-11 rounded-full bg-slate-900 border-2 border-fuchsia-500/60 flex items-center justify-center text-fuchsia-400 group-hover:bg-fuchsia-950/40 transition-all shadow-md">
+                <Pause className="w-5 h-5 fill-current" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-300">暫停</span>
+            </button>
+
+            {/* Sound Toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="flex flex-col items-center gap-1 group cursor-pointer"
+            >
+              <div className="w-11 h-11 rounded-full bg-slate-900 border-2 border-cyan-500/60 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-950/40 transition-all shadow-md">
+                {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5 text-rose-400" />}
+              </div>
+              <span className="text-[10px] font-bold text-slate-300">音效</span>
+            </button>
+
+            {/* Replay Prompt */}
+            <button
+              onClick={replayMandarinPrompt}
+              className="flex flex-col items-center gap-1 group cursor-pointer"
+            >
+              <div className="w-11 h-11 rounded-full bg-slate-900 border-2 border-amber-500/60 flex items-center justify-center text-amber-400 group-hover:bg-amber-950/40 transition-all shadow-md">
+                <Radio className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-300">重播</span>
+            </button>
+
+            {/* Radar Hint */}
+            <button
+              onClick={triggerRadar}
+              disabled={radarCount <= 0}
+              className={`flex flex-col items-center gap-1 group cursor-pointer ${
+                radarCount <= 0 ? 'opacity-40' : ''
+              }`}
+            >
+              <div className="w-11 h-11 rounded-full bg-slate-900 border-2 border-cyan-400/60 flex items-center justify-center text-cyan-300 group-hover:bg-cyan-950/40 transition-all shadow-md">
+                <Target className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-300">雷達 ({radarCount})</span>
+            </button>
+
+            {/* Bomb */}
+            <button
+              onClick={triggerBomb}
+              disabled={bombs <= 0}
+              className={`flex flex-col items-center gap-1 group cursor-pointer ${
+                bombs <= 0 ? 'opacity-40' : ''
+              }`}
+            >
+              <div className="w-11 h-11 rounded-full bg-slate-900 border-2 border-amber-500/60 flex items-center justify-center text-amber-400 group-hover:bg-amber-950/40 transition-all shadow-md">
+                <Bomb className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-300">炸彈 ({bombs})</span>
+            </button>
+
+            {/* Home */}
+            <button onClick={onHome} className="flex flex-col items-center gap-1 group cursor-pointer">
+              <div className="w-11 h-11 rounded-full bg-slate-900 border-2 border-purple-500/60 flex items-center justify-center text-purple-400 group-hover:bg-purple-950/40 transition-all shadow-md">
+                <Home className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-300">首頁</span>
+            </button>
+          </div>
+
+          {/* Central Canvas Board Area */}
+          <div className="flex-1 bg-gradient-to-b from-[#09071B] via-[#120D2F] to-[#04030B] border-4 border-fuchsia-500/40 rounded-3xl overflow-hidden relative shadow-2xl min-h-[500px] select-none">
+            {/* Background grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(217,70,239,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(217,70,239,0.05)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-40" />
+
+            {/* Lukang floating arches in cosmic background */}
+            <div className="absolute left-6 top-12 opacity-30 text-fuchsia-400 font-black text-2xl tracking-widest border-2 border-fuchsia-400 p-2 rounded-lg pointer-events-none">
+              鹿港老街
+            </div>
+            <div className="absolute right-6 top-12 opacity-30 text-cyan-400 font-black text-2xl tracking-widest border-2 border-cyan-400 p-2 rounded-lg pointer-events-none">
+              天後宮
+            </div>
+
+            {/* Scaled Interactive Arena */}
+            <div
+              ref={gameBoardRef}
+              className="absolute top-0 left-0 w-[1000px] h-[550px] origin-top-left"
+              style={{ transform: `scale(${scale})` }}
+              onMouseMove={handleMouseMove}
+              onTouchMove={handleTouchMove}
+              onClick={fireLaser}
+            >
+              {/* --- LASERS & PARTICLES SVG OVERLAY --- */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-20">
+                {/* Player Bullets (Green) */}
+                {bullets.map(b => (
+                  <g key={b.id}>
+                    <line
+                      x1={b.x}
+                      y1={b.y}
+                      x2={b.x + b.vx}
+                      y2={b.y + b.vy}
+                      stroke={overloadActive ? '#F59E0B' : '#10B981'}
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1={b.x}
+                      y1={b.y}
+                      x2={b.x + b.vx}
+                      y2={b.y + b.vy}
+                      stroke="#FFF"
+                      strokeWidth="1.5"
+                    />
+                  </g>
+                ))}
+
+                {/* Enemy Bullets (Red) */}
+                {bullets.map(
+                  b =>
+                    b.isEnemy && (
+                      <circle
+                        key={b.id}
+                        cx={b.x}
+                        cy={b.y}
+                        r="5"
+                        fill="#F43F5E"
+                        stroke="#FFF"
+                        strokeWidth="1"
+                      />
+                    )
+                )}
+
+                {/* Particles */}
+                {particles.map(p => (
+                  <circle
+                    key={p.id}
+                    cx={p.x}
+                    cy={p.y}
+                    r={p.size}
+                    fill={p.color}
+                    opacity={p.alpha}
+                  />
+                ))}
+              </svg>
+
+              {/* --- FLOATING TEXTS --- */}
+              <AnimatePresence>
+                {floatTexts.map(ft => (
+                  <motion.div
+                    key={ft.id}
+                    initial={{ opacity: 0, y: ft.y, scale: 0.8 }}
+                    animate={{ opacity: 1, y: ft.y - 30, scale: 1.1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.7 }}
+                    className={`absolute pointer-events-none px-3 py-1 bg-black/90 border border-slate-700 rounded-full select-none z-30 -translate-x-1/2 ${ft.color}`}
+                    style={{ left: `${ft.x}px` }}
+                  >
+                    {ft.text}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* --- ENEMY SHIPS (Large frame and clear text labels) --- */}
+              {enemies.map(e => {
+                const isFlickering = e.flicker > 0;
+                const isRadarHighlighted = radarActive && e.isTarget;
+
+                return (
+                  <div
+                    key={e.id}
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center select-none transition-transform duration-100 ${
+                      isRadarHighlighted ? 'scale-110' : ''
+                    }`}
+                    style={{
+                      left: `${e.x}px`,
+                      top: `${e.y}px`,
+                      width: `${e.width}px`,
+                      height: `${e.height}px`,
+                      zIndex: 10
+                    }}
+                  >
+                    {/* Ship Base Outer Hull */}
+                    <div
+                      className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
+                        isFlickering
+                          ? 'bg-rose-600/50 shadow-[0_0_25px_#F43F5E]'
+                          : isRadarHighlighted
+                          ? 'bg-amber-500/40 border-2 border-amber-300 shadow-[0_0_20px_#F59E0B]'
+                          : 'bg-indigo-950/90 border-2 border-cyan-400/80 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                      }`}
+                    />
+
+                    {/* Ship Graphic SVG */}
+                    <svg className="w-full h-full overflow-visible" viewBox="0 0 175 85">
+                      <path
+                        d="M 20 45 L 45 12 L 130 12 L 155 45 L 125 65 L 50 65 Z"
+                        fill={isFlickering ? '#991B1B' : '#1E1B4B'}
+                        stroke={isRadarHighlighted ? '#F59E0B' : '#06B6D4'}
+                        strokeWidth="2.5"
+                      />
+                      <circle cx="55" cy="42" r="5" fill="#06B6D4" />
+                      <circle cx="87" cy="42" r="5" fill="#A855F7" />
+                      <circle cx="120" cy="42" r="5" fill="#06B6D4" />
+                    </svg>
+
+                    {/* Hanji & Tailo Labels (Large frame & bold fonts as requested in image 2) */}
+                    <div className="absolute bottom-[-38px] px-5 py-2.5 rounded-2xl bg-slate-950/95 border-2 border-cyan-400 flex flex-col items-center shadow-[0_4px_22px_rgba(0,0,0,0.9)] text-center min-w-[170px] z-20">
+                      {e.name && (
+                        <span className="text-xl md:text-2xl font-black text-white tracking-wider whitespace-nowrap drop-shadow-md">
+                          {e.name}
+                        </span>
+                      )}
+                      {e.tailo && (
+                        <span className="text-sm md:text-base font-mono text-amber-300 font-extrabold mt-0.5 tracking-wide whitespace-nowrap">
+                          {e.tailo}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* --- PLAYER SPACESHIP --- */}
+              <div
+                className="absolute -translate-x-1/2 bottom-[40px] select-none pointer-events-none z-20 flex flex-col items-center"
+                style={{
+                  left: `${playerX}px`,
+                  width: '100px',
+                  height: '100px'
+                }}
+              >
+                {invincibleTimer > 0 && (
+                  <div className="absolute inset-0 rounded-full border-2 border-amber-400 animate-ping" />
+                )}
+
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100">
+                  <path d="M 35 80 Q 38 95 38 98 Q 40 95 40 80 Z" fill="#10B981" />
+                  <path d="M 60 80 Q 63 95 63 98 Q 65 95 65 80 Z" fill="#10B981" />
+                  <path
+                    d="M 15 70 L 35 55 L 65 55 L 85 70 L 75 78 L 25 78 Z"
+                    fill="#15803D"
+                    stroke="#22C55E"
+                    strokeWidth="2"
+                  />
+                  <ellipse cx="50" cy="65" rx="16" ry="10" fill="#166534" stroke="#22C55E" strokeWidth="2" />
+                  <g transform="translate(50, 42)">
+                    <ellipse cx="0" cy="4" rx="12" ry="10" fill="#22C55E" />
+                    <circle cx="-5" cy="1" r="3" fill="#0F172A" />
+                    <circle cx="5" cy="1" r="3" fill="#0F172A" />
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            {/* --- BOTTOM SHENG-YUN ENERGY BAR --- */}
+            <div className="absolute bottom-3 left-6 right-6 flex items-center gap-3 bg-black/80 border border-fuchsia-500/50 p-2.5 rounded-2xl z-30">
+              <span className="text-xs font-bold text-fuchsia-300 shrink-0">聲韻能量</span>
+              <div className="flex-1 flex gap-1 h-3 bg-slate-900 rounded-full p-0.5 border border-slate-800 overflow-hidden">
+                {[...Array(10)].map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex-1 rounded-sm transition-all duration-300 ${
+                      idx < energy
+                        ? overloadActive
+                          ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_#F59E0B]'
+                          : 'bg-fuchsia-500 shadow-[0_0_6px_#D946EF]'
+                        : 'bg-slate-950'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs font-mono font-bold text-amber-300 shrink-0">{energy} / 10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================== */}
+      {/* 3. MODALS: HOME / PAUSE / REVIEW           */}
+      {/* ========================================== */}
+
+      {/* HOME / START SCREEN */}
+      {screen === 'home' && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-[#0D0A24] border-2 border-fuchsia-500 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-[0_0_30px_rgba(217,70,239,0.4)] text-white text-center flex flex-col items-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-fuchsia-500/20 border-2 border-fuchsia-400 flex items-center justify-center mb-4 text-fuchsia-300 shadow-lg">
+              <Sparkles className="w-8 h-8" />
+            </div>
+
+            <h1 className="text-2xl md:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-fuchsia-300 to-cyan-300 mb-1">
+              《臺羅戰機：鹿港美食防衛戰》
+            </h1>
+            <p className="text-sm text-cyan-300 font-bold mb-6">
+              第一關：鹿港美食星域 (聽國語、辨台語與臺羅，閃避彈幕並擊落目標！)
+            </p>
+
+            {/* Ship Selection */}
+            <div className="w-full mb-6 text-left">
+              <label className="text-xs font-bold text-purple-300 block mb-2">選擇玩家戰機：</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  {
+                    type: 'velociraptor',
+                    name: '迅猛龍號',
+                    desc: '散射型 (廣角)'
+                  },
+                  {
+                    type: 'triceratops',
+                    name: '三角龍號',
+                    desc: '雷射型 (高護盾)'
+                  },
+                  {
+                    type: 'trex',
+                    name: '暴龍號',
+                    desc: '追蹤型 (高速度)'
+                  }
+                ].map(s => (
+                  <button
+                    key={s.type}
+                    onClick={() => setShipType(s.type as ShipType)}
+                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                      shipType === s.type
+                        ? 'bg-fuchsia-950/80 border-fuchsia-400 text-white shadow-lg'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-sm font-bold text-amber-300">{s.name}</div>
+                    <div className="text-[10px] text-slate-300 mt-1">{s.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty Selection */}
+            <div className="w-full mb-6 text-left">
+              <label className="text-xs font-bold text-purple-300 block mb-2">選擇遊戲難度：</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'beginner', name: '初學模式', detail: '1正+2干擾 / 4生命' },
+                  { id: 'challenge', name: '挑戰模式', detail: '1正+4干擾 / 3生命' },
+                  { id: 'expert', name: '高手模式', detail: '1正+5干擾 / 3生命' }
+                ].map(d => (
+                  <button
+                    key={d.id}
+                    onClick={() => setDifficulty(d.id as Difficulty)}
+                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                      difficulty === d.id
+                        ? 'bg-cyan-950/80 border-cyan-400 text-white shadow-lg'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-sm font-bold text-cyan-300">{d.name}</div>
+                    <div className="text-[10px] text-slate-300 mt-1">{d.detail}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={startStage1Session}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-cyan-500 font-black text-lg tracking-wider text-white shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              🚀 進入第一關：鹿港美食星域
+            </button>
+          </motion.div>
+        </div>
+      )}
+
+      {/* PAUSE MODAL */}
+      {screen === 'paused' && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0D0A24] border-2 border-fuchsia-500 rounded-3xl p-6 max-w-sm w-full text-center text-white">
+            <h2 className="text-xl font-bold mb-4 text-amber-300">遊戲暫停中</h2>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setScreen('playing')}
+                className="py-3 rounded-xl bg-fuchsia-600 font-bold cursor-pointer"
+              >
+                繼續遊戲
+              </button>
+              <button
+                onClick={() => setScreen('home')}
+                className="py-3 rounded-xl bg-slate-800 font-bold cursor-pointer"
+              >
+                返回主選單
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REVIEW / SETTLEMENT MODAL (第一關通關與學習成果) */}
+      {screen === 'review' && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-[#0D0A24] border-2 border-fuchsia-500 rounded-3xl p-6 md:p-8 max-w-3xl w-full shadow-2xl text-white my-8"
+          >
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-fuchsia-500/20 border border-fuchsia-400 text-fuchsia-300 font-bold text-xs mb-2">
+                <Award className="w-4 h-4 text-amber-400" />
+                第一關：鹿港美食星域 通關成果
+              </div>
+              <h2 className="text-2xl font-black text-amber-300 mb-1">第一關學習任務結算</h2>
+              <p className="text-xs text-slate-400">本局隨機抽取 10 個題目的完整作答與正解記錄</p>
+            </div>
+
+            {/* Top Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-400 block">最終得分</span>
+                <span className="text-xl font-black text-amber-300">{score}</span>
+              </div>
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-400 block">完成題數</span>
+                <span className="text-xl font-black text-emerald-400">{reviewEntries.length} / 10</span>
+              </div>
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-400 block">知識答錯 (擊錯敵機)</span>
+                <span className="text-xl font-black text-rose-400">{knowledgeErrors} 次</span>
+              </div>
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-400 block">操作失誤 (被彈擊中)</span>
+                <span className="text-xl font-black text-amber-400">{operationalErrors} 次</span>
+              </div>
+            </div>
+
+            {/* Learning Review Table */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 mb-6 max-h-[260px] overflow-y-auto">
+              <h3 className="text-xs font-bold text-cyan-300 mb-3">第一關作答記錄與正解朗讀：</h3>
+              <div className="flex flex-col gap-2">
+                {reviewEntries.map((re, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-2"
+                  >
+                    <div>
+                      <div className="font-bold text-amber-300 mb-0.5">
+                        第 {re.questionIndex} 題：{re.mandarinPrompt}
+                      </div>
+                      <div className="text-slate-300">
+                        正確台語：<span className="text-emerald-400 font-bold">{re.correctHanji}</span> (
+                        <span className="text-amber-300 font-mono">{re.correctTailo}</span>)
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => playTaiwaneseAudio(re.correctHanji, re.correctTailo)}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      台語朗讀
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action buttons as explicitly requested: 重玩第一關 / 進入第二關 */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={startStage1Session}
+                className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 font-black text-center text-white cursor-pointer shadow-lg hover:brightness-110 flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                重玩第一關 (重新抽10題)
+              </button>
+              <button
+                onClick={() => {
+                  alert('進入第二關「老街交通航道」！已載入第二關專用題庫！');
+                  startStage1Session(); // 進入下一關流程
+                }}
+                className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 font-black text-center text-white cursor-pointer shadow-lg hover:brightness-110 flex items-center justify-center gap-2"
+              >
+                進入第二關：老街交通航道
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </GameShell>
+  );
+}

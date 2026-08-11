@@ -1,0 +1,2349 @@
+import { useEffect, useState, useRef } from 'react';
+import { speakTaiyu } from '../../lib/speech';
+import {
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  ChevronRight,
+  Star,
+  Sparkles,
+  Heart,
+  Zap,
+  Maximize2,
+  Minimize2,
+  Play,
+  Award,
+  Shield,
+  Eye,
+  Clock,
+  Trash2,
+  ListRestart,
+  BookOpen,
+  Info,
+  Compass,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { GameShell } from './GameShell';
+
+// Lukang Delicacies Game Topics
+interface SurvivalQuestion {
+  id: string;
+  category: number;
+  categoryName: string;
+  name: string;
+  prompt: string;
+  speakText?: string;
+  correctAnswers: string[];
+  incorrectAnswers: string[];
+  sequence?: string[];
+  tip: string;
+}
+
+// 一局遊戲的限時秒數（時間到即結算分數）
+const GAME_DURATION = 60;
+
+const LUKANG_DATA_MAP: { [key: string]: { tailo: string; mandarin: string } } = {
+  '麵茶': { tailo: 'mī-tê', mandarin: '麵茶' },
+  '圓仔湯': { tailo: 'înn-á-thng', mandarin: '湯圓' },
+  '麻粩': { tailo: 'muâ-láu', mandarin: '麻粩' },
+  '牛舌餅': { tailo: 'gû-tsi̍h-piánn', mandarin: '牛舌餅' },
+  '芋丸': { tailo: 'ōo-uân', mandarin: '芋丸' },
+  '肉包': { tailo: 'bah-pau', mandarin: '肉包' },
+  '粉粿': { tailo: 'hún-kué', mandarin: '粉粿' },
+  '秫米糋': { tailo: 'tsu̍t-bí-tsìnn', mandarin: '糯米炸' },
+  '李仔攕': { tailo: 'lí-á-tshiám', mandarin: '糖葫蘆' },
+  '齒抿仔': { tailo: 'khí-bín-á', mandarin: '牙刷' },
+  '齒膏': { tailo: 'khí-ko', mandarin: '牙膏' },
+  '糕仔餅': { tailo: 'ko-á-piánn', mandarin: '糕餅' },
+  '葵扇': { tailo: 'khuê-sìnn', mandarin: '扇子' },
+  '跋桮': { tailo: 'pua̍h-pue', mandarin: '擲筊' },
+  '鋩角': { tailo: 'mê-kak', mandarin: '細節' },
+  '細節': { tailo: 'mê-kak', mandarin: '細節' },
+  '鹿港': { tailo: 'Lo̍k-káng', mandarin: '鹿港' },
+  '三輪車': { tailo: 'sann-lián-tshia', mandarin: '三輪車' },
+  '鹿港麵線糊': { tailo: 'Lo̍k-káng mī-suànn-kôo', mandarin: '鹿港麵線糊' },
+  '麵茶冰': { tailo: 'mī-tê-ping', mandarin: '麵茶冰' },
+  '老街': { tailo: 'lāu-kue', mandarin: '老街' },
+  '拜拜': { tailo: 'pài-pài', mandarin: '拜拜' },
+  '旗袍': { tailo: 'kî-phâu', mandarin: '旗袍' },
+  '全家福': { tailo: 'tsuân-ka-hok', mandarin: '全家福' },
+  '等路': { tailo: 'tán-lōo', mandarin: '伴手禮' },
+  '高鐵': { tailo: 'ko-thih', mandarin: '高鐵' },
+  '阿公': { tailo: 'a-kong', mandarin: '阿公' },
+  '考試': { tailo: 'khó-tshì', mandarin: '考試' },
+  '順利': { tailo: 'sūn-lī', mandarin: '順利' },
+  '過暝': { tailo: 'kuè-mî', mandarin: '過夜' },
+  '祈求': { tailo: 'kî-kiû', mandarin: '祈求' },
+  '府城': { tailo: 'Hú-siânn', mandarin: '府城' },
+  '阿里山': { tailo: 'A-lí-san', mandarin: '阿里山' },
+  '臺南': { tailo: 'Tâi-lâm', mandarin: '臺南' },
+  '火車': { tailo: 'hué-tshia', mandarin: '火車' },
+  '機車': { tailo: 'ki-tshia', mandarin: '機車' },
+  '老厝': { tailo: 'lāu-tshù', mandarin: '老房子' },
+  '古蹟': { tailo: 'kóo-tsik', mandarin: '古蹟' },
+  '市場': { tailo: 'tshī-tiûnn', mandarin: '市場' },
+  '好耍': { tailo: 'tshit-thô', mandarin: '好玩' },
+  '洋裝': { tailo: 'iûnn-tsong', mandarin: '洋裝' },
+  '外套': { tailo: 'guā-thò', mandarin: '外套' },
+  '草帽': { tailo: 'tsháu-bō-á', mandarin: '草帽' },
+  '家庭旅遊': { tailo: 'ka-tîng lí-iû', mandarin: '家庭旅遊' },
+  '百年老厝': { tailo: 'pah-nî lāu-tshù', mandarin: '百年老屋' },
+  '出名': { tailo: 'tshut-miâ', mandarin: '出名' },
+  '好料': { tailo: 'hó-liāu', mandarin: '好料（好東西）' },
+  '紀念': { tailo: 'kì-liām', mandarin: '紀念' },
+  '台灣好行': { tailo: 'Tâi-uân hó-hîng', mandarin: '台灣好行' },
+};
+
+// For "聽音選漢字" questions (category 1), the player hears/sees the Mandarin word
+// as the task, and must pick out the correct Taiwanese Hokkien term (with Tai-lo
+// pronunciation shown) among the falling options. Other categories keep their
+// original Tai-lo based behaviour since they teach romanization directly.
+const getMandarinFor = (hokkienText: string): string => LUKANG_DATA_MAP[hokkienText]?.mandarin || hokkienText;
+
+const SURVIVAL_QUESTION_POOL: SurvivalQuestion[] = [
+  // 第一類：聽音選漢字
+  {
+    id: 'q1',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '麵茶',
+    prompt: '聽音任務：收集 mī-tê 的漢字',
+    speakText: 'mī-tê',
+    correctAnswers: ['麵茶'],
+    incorrectAnswers: ['麻粩', '圓仔湯', '牛舌餅'],
+    tip: 'mī-tê 的正確漢字是「麵茶」！'
+  },
+  {
+    id: 'q2',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '牛舌餅',
+    prompt: '聽音任務：收集 gû-tsi̍h-piánn 的漢字',
+    speakText: 'gû-tsi̍h-piánn',
+    correctAnswers: ['牛舌餅'],
+    incorrectAnswers: ['糕仔餅', '肉包', '粉粿'],
+    tip: 'gû-tsi̍h-piánn 的正確漢字是「牛舌餅」！'
+  },
+  {
+    id: 'q3',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '圓仔湯',
+    prompt: '聽音任務：收集 înn-á-thng 的漢字',
+    speakText: 'înn-á-thng',
+    correctAnswers: ['圓仔湯'],
+    incorrectAnswers: ['麵線糊', '芋丸', '麵茶'],
+    tip: 'înn-á-thng 的正確漢字是「圓仔湯」！'
+  },
+  {
+    id: 'q4',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '麻粩',
+    prompt: '聽音任務：收集 muâ-láu 的漢字',
+    speakText: 'muâ-láu',
+    correctAnswers: ['麻粩'],
+    incorrectAnswers: ['李仔攕', '牛舌餅', '秫米糋'],
+    tip: 'muâ-láu 的正確漢字是「麻粩」！'
+  },
+  {
+    id: 'q5',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '芋丸',
+    prompt: '聽音任務：收集 ōo-uân 的漢字',
+    speakText: 'ōo-uân',
+    correctAnswers: ['芋丸'],
+    incorrectAnswers: ['圓仔湯', '肉包', '粉粿'],
+    tip: 'ōo-uân 的正確漢字是「芋丸」！'
+  },
+  {
+    id: 'q6',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '肉包',
+    prompt: '聽音任務：收集 bah-pau 的漢字',
+    speakText: 'bah-pau',
+    correctAnswers: ['肉包'],
+    incorrectAnswers: ['糕仔餅', '牛舌餅', '麻粩'],
+    tip: 'bah-pau 的正確漢字是「肉包」！'
+  },
+  {
+    id: 'q7',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '粉粿',
+    prompt: '聽音任務：收集 hún-kué 的漢字',
+    speakText: 'hún-kué',
+    correctAnswers: ['粉粿'],
+    incorrectAnswers: ['芋丸', '秫米糋', '麵茶'],
+    tip: 'hún-kué 的正確漢字是「粉粿」！'
+  },
+  {
+    id: 'q8',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '秫米糋',
+    prompt: '聽音任務：收集 tsu̍t-bí-tsìnn 的漢字',
+    speakText: 'tsu̍t-bí-tsìnn',
+    correctAnswers: ['秫米糋'],
+    incorrectAnswers: ['李仔攕', '圓仔湯', '糕仔餅'],
+    tip: 'tsu̍t-bí-tsìnn 的正確漢字是「秫米糋」！'
+  },
+  {
+    id: 'q9',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '李仔攕',
+    prompt: '聽音任務：收集 lí-á-tshiám 的漢字',
+    speakText: 'lí-á-tshiám',
+    correctAnswers: ['李仔攕'],
+    incorrectAnswers: ['牛舌餅', '麻粩', '肉包'],
+    tip: 'lí-á-tshiám 的正確漢字是「李仔攕」！'
+  },
+  {
+    id: 'q10',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '齒抿仔',
+    prompt: '聽音任務：收集 khí-bín-á 的漢字',
+    speakText: 'khí-bín-á',
+    correctAnswers: ['齒抿仔'],
+    incorrectAnswers: ['齒膏', '葵扇', '鋩角'],
+    tip: 'khí-bín-á 的正確漢字是「齒抿仔」！'
+  },
+  {
+    id: 'q11',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '齒膏',
+    prompt: '聽音任務：收集 khí-ko 的漢字',
+    speakText: 'khí-ko',
+    correctAnswers: ['齒膏'],
+    incorrectAnswers: ['齒抿仔', '糕仔餅', '跋桮'],
+    tip: 'khí-ko 的正確漢字是「齒膏」！'
+  },
+  {
+    id: 'q12',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '糕仔餅',
+    prompt: '聽音任務：收集 ko-á-piánn 的漢字',
+    speakText: 'ko-á-piánn',
+    correctAnswers: ['糕仔餅'],
+    incorrectAnswers: ['牛舌餅', '粉粿', '麵茶'],
+    tip: 'ko-á-piánn 的正確漢字是「糕仔餅」！'
+  },
+  {
+    id: 'q13',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '葵扇',
+    prompt: '聽音任務：收集 khuê-sìnn 的漢字',
+    speakText: 'khuê-sìnn',
+    correctAnswers: ['葵扇'],
+    incorrectAnswers: ['旗袍', '齒抿仔', '三輪車'],
+    tip: 'khuê-sìnn 的正確漢字是「葵扇」！'
+  },
+  {
+    id: 'q14',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '跋桮',
+    prompt: '聽音任務：收集 pua̍h-pue 的漢字',
+    speakText: 'pua̍h-pue',
+    correctAnswers: ['跋桮'],
+    incorrectAnswers: ['拜拜', '祈求', '過暝'],
+    tip: 'pua̍h-pue 的正確漢字是「跋桮」！'
+  },
+  {
+    id: 'q15',
+    category: 1,
+    categoryName: '聽音選漢字',
+    name: '鋩角',
+    prompt: '聽音任務：收集 mê-kak 的正確意思',
+    speakText: 'mê-kak',
+    correctAnswers: ['細節'],
+    incorrectAnswers: ['特色', '紀念', '行李'],
+    tip: 'mê-kak（鋩角）的意思是「細節」！'
+  },
+
+  // 第二類：看漢字選臺羅
+  {
+    id: 'q16',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '鹿港',
+    prompt: '情境任務：我們要去彰化著名的老街旅行，請找出「鹿港」的台語說法',
+    speakText: '我們要去彰化著名的老街旅行，請找出鹿港的台語說法',
+    correctAnswers: ['鹿港'],
+    incorrectAnswers: ['府城', '阿里山', '臺南'],
+    tip: '「鹿港」的臺羅是 Lo̍k-káng！'
+  },
+  {
+    id: 'q17',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '三輪車',
+    prompt: '情境任務：老街觀光可以搭乘的復古交通工具，請找出「三輪車」的台語說法',
+    speakText: '老街觀光可以搭乘的復古交通工具，請找出三輪車的台語說法',
+    correctAnswers: ['三輪車'],
+    incorrectAnswers: ['火車', '高鐵', '機車'],
+    tip: '「三輪車」的臺羅是 sann-lián-tshia！'
+  },
+  {
+    id: 'q18',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '鹿港麵線糊',
+    prompt: '情境任務：來到鹿港一定要吃的招牌小吃，請找出「鹿港麵線糊」的台語說法',
+    speakText: '來到鹿港一定要吃的招牌小吃，請找出鹿港麵線糊的台語說法',
+    correctAnswers: ['鹿港麵線糊'],
+    incorrectAnswers: ['麵茶冰', '粉粿', '肉包'],
+    tip: '「鹿港麵線糊」是 Lo̍k-káng mī-suànn-kôo！'
+  },
+  {
+    id: 'q19',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '麵茶冰',
+    prompt: '情境任務：把麵茶做成冰品消暑，請找出「麵茶冰」的台語說法',
+    speakText: '把麵茶做成冰品消暑，請找出麵茶冰的台語說法',
+    correctAnswers: ['麵茶冰'],
+    incorrectAnswers: ['圓仔湯', '粉粿', '鹿港麵線糊'],
+    tip: '「麵茶冰」的臺羅是 mī-tê-ping！'
+  },
+  {
+    id: 'q20',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '老街',
+    prompt: '情境任務：鹿港最熱鬧的觀光徒步區，請找出「老街」的台語說法',
+    speakText: '鹿港最熱鬧的觀光徒步區，請找出老街的台語說法',
+    correctAnswers: ['老街'],
+    incorrectAnswers: ['老厝', '古蹟', '市場'],
+    tip: '「老街」的臺羅是 lāu-kue！'
+  },
+  {
+    id: 'q21',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '拜拜',
+    prompt: '情境任務：到廟裡向神明祭拜，請找出「拜拜」的台語說法',
+    speakText: '到廟裡向神明祭拜，請找出拜拜的台語說法',
+    correctAnswers: ['拜拜'],
+    incorrectAnswers: ['跋桮', '祈求', '好耍'],
+    tip: '「拜拜」的臺羅是 pài-pài！'
+  },
+  {
+    id: 'q22',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '旗袍',
+    prompt: '情境任務：老街拍照常見的復古服裝，請找出「旗袍」的台語說法',
+    speakText: '老街拍照常見的復古服裝，請找出旗袍的台語說法',
+    correctAnswers: ['旗袍'],
+    incorrectAnswers: ['洋裝', '外套', '草帽'],
+    tip: '「旗袍」的臺羅是 kî-phâu！'
+  },
+  {
+    id: 'q23',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '全家福',
+    prompt: '情境任務：全家人穿旗袍一起拍的紀念照，請找出「全家福」的台語說法',
+    speakText: '全家人穿旗袍一起拍的紀念照，請找出全家福的台語說法',
+    correctAnswers: ['全家福'],
+    incorrectAnswers: ['家庭旅遊', '百年老厝', '出名'],
+    tip: '「全家福」的臺羅是 tsuân-ka-hok！'
+  },
+  {
+    id: 'q24',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '等路',
+    prompt: '情境任務：離開鹿港前買回去送人的伴手禮，請找出「等路」的台語說法',
+    speakText: '離開鹿港前買回去送人的伴手禮，請找出等路的台語說法',
+    correctAnswers: ['等路'],
+    incorrectAnswers: ['好料', '李仔攕', '紀念'],
+    tip: '「等路（伴手禮）」的臺羅是 tán-lōo！'
+  },
+  {
+    id: 'q25',
+    category: 2,
+    categoryName: '國語情境選台語',
+    name: '高鐵',
+    prompt: '情境任務：最快抵達彰化的交通方式，請找出「高鐵」的台語說法',
+    speakText: '最快抵達彰化的交通方式，請找出高鐵的台語說法',
+    correctAnswers: ['高鐵'],
+    incorrectAnswers: ['火車', '三輪車', '台灣好行'],
+    tip: '「高鐵」的臺羅是 ko-thih！'
+  },
+
+  // 第三類：聲母、韻母與聲調拆解
+  {
+    id: 'q26',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'mī',
+    prompt: '聲韻任務：請依序收集「麵茶」第一個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「麵茶」第一個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['m', 'i', '第七調'],
+    incorrectAnswers: ['b', 'e', '第二調', '第五調', '第八調', 'p', 't', 'ts', 'a', 'o'],
+    sequence: ['m', 'i', '第七調'],
+    tip: 'mī 的聲韻拆解順序為: m ➔ i ➔ 第七調！'
+  },
+  {
+    id: 'q27',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'tê',
+    prompt: '聲韻任務：請依序收集「麵茶」第二個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「麵茶」第二個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['t', 'e', '第五調'],
+    incorrectAnswers: ['th', 'i', '第七調', '第二調', '第八調', 'ts', 'k', 'a', 'o'],
+    sequence: ['t', 'e', '第五調'],
+    tip: 'tê 的聲韻拆解順序為: t ➔ e ➔ 第五調！'
+  },
+  {
+    id: 'q28',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'gû',
+    prompt: '聲韻任務：請依序收集「牛舌餅」第一個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「牛舌餅」第一個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['g', 'u', '第五調'],
+    incorrectAnswers: ['k', 'oo', '第二調', '第七調', '第三調', 'h', 'ts', 'i', 'a'],
+    sequence: ['g', 'u', '第五調'],
+    tip: 'gû 的聲韻拆解順序為: g ➔ u ➔ 第五調！'
+  },
+  {
+    id: 'q29',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'tsi̍h',
+    prompt: '聲韻任務：請依序收集「牛舌餅」第二個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「牛舌餅」第二個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['ts', 'ih', '第八調'],
+    incorrectAnswers: ['tsh', 'it', '第四調', '第七調', '第二調', 's', 'p', 'ip', 'ik'],
+    sequence: ['ts', 'ih', '第八調'],
+    tip: 'tsi̍h 的聲韻拆解順序為: ts ➔ ih ➔ 第八調！'
+  },
+  {
+    id: 'q30',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'piánn',
+    prompt: '聲韻任務：請依序收集「牛舌餅」第三個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「牛舌餅」第三個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['p', 'iann', '第二調'],
+    incorrectAnswers: ['ph', 'inn', '第五調', '第七調', '第八調', 'b', 'm', 'iang', 'ian'],
+    sequence: ['p', 'iann', '第二調'],
+    tip: 'piánn 的聲韻拆解順序為: p ➔ iann ➔ 第二調！'
+  },
+  {
+    id: 'q31',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'înn',
+    prompt: '聲韻任務：請依序收集「湯圓」第一個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「湯圓」第一個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['零聲母', 'inn', '第五調'],
+    incorrectAnswers: ['n', 'in', '第二調', '第七調', '第八調', 't', 'ts', 'iann', 'un'],
+    sequence: ['零聲母', 'inn', '第五調'],
+    tip: 'înn 的聲韻拆解順序為: 零聲母 ➔ inn ➔ 第五調！'
+  },
+  {
+    id: 'q32',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'muâ',
+    prompt: '聲韻任務：請依序收集「麻粩」第一個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「麻粩」第一個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['m', 'ua', '第五調'],
+    incorrectAnswers: ['b', 'uai', '第七調', '第二調', '第三調', 'p', 'l', 'ui', 'o'],
+    sequence: ['m', 'ua', '第五調'],
+    tip: 'muâ 的聲韻拆解順序為: m ➔ ua ➔ 第五調！'
+  },
+  {
+    id: 'q33',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'láu',
+    prompt: '聲韻任務：請依序收集「麻粩」第二個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「麻粩」第二個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['l', 'au', '第二調'],
+    incorrectAnswers: ['n', 'ua', '第三調', '第五調', '第七調', 't', 'k', 'ui', 'ia'],
+    sequence: ['l', 'au', '第二調'],
+    tip: 'láu 的聲韻拆解順序為: l ➔ au ➔ 第二調！'
+  },
+  {
+    id: 'q34',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'bah',
+    prompt: '聲韻任務：請依序收集「肉包」第一個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「肉包」第一個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['b', 'ah', '第四調'],
+    incorrectAnswers: ['p', 'a', '第八調', '第一調', '第七調', 'm', 'k', 'at', 'ak'],
+    sequence: ['b', 'ah', '第四調'],
+    tip: 'bah 的聲韻拆解順序為: b ➔ ah ➔ 第四調！'
+  },
+  {
+    id: 'q35',
+    category: 3,
+    categoryName: '聲韻拆解',
+    name: 'tsu̍t',
+    prompt: '聲韻任務：請依序收集「糯米炸」第一個音節所需要的聲母、韻母與聲調',
+    speakText: '聲韻任務：請依序收集「糯米炸」第一個音節所需要的聲母、韻母與聲調',
+    correctAnswers: ['ts', 'ut', '第八調'],
+    incorrectAnswers: ['tsh', 'u', '第四調', '第七調', '第二調', 's', 'k', 'un', 'at'],
+    sequence: ['ts', 'ut', '第八調'],
+    tip: 'tsu̍t 的聲韻拆解順序為: ts ➔ ut ➔ 第八調！'
+  },
+
+  // 第四類：聲調與調號位置
+  {
+    id: 'q36',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'guai第五調',
+    prompt: '聲調任務：guai 加上第五調，哪一個寫法正確？',
+    correctAnswers: ['guâi'],
+    incorrectAnswers: ['gûai', 'guaî', 'guāi'],
+    tip: 'a、o、e優先標調，故 guai 加上第五調為 guâi！'
+  },
+  {
+    id: 'q37',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'uai第七調',
+    prompt: '聲調任務：uai 加上第七調，哪一個寫法正確？',
+    correctAnswers: ['uāi'],
+    incorrectAnswers: ['ūai', 'uaī', 'uâi'],
+    tip: 'a、o、e優先標調，故 uai 加上第七調為 uāi！'
+  },
+  {
+    id: 'q38',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'iau第二調',
+    prompt: '聲調任務：iau 加上第二調，哪一個寫法正確？',
+    correctAnswers: ['iáu'],
+    incorrectAnswers: ['íau', 'iaú', 'iâu'],
+    tip: 'a、o、e優先標調，故 iau 加上第二調為 iáu！'
+  },
+  {
+    id: 'q39',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'ui第五調',
+    prompt: '聲調任務：ui 加上第五調，哪一個寫法正確？',
+    correctAnswers: ['uî'],
+    incorrectAnswers: ['ûi', 'ūi', 'uí'],
+    tip: '只有 i、u 組合時，標在後面的母音上，故為 uî！'
+  },
+  {
+    id: 'q40',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'oo第二調',
+    prompt: '聲調任務：oo 加上第二調，哪一個寫法正確？',
+    correctAnswers: ['óo'],
+    incorrectAnswers: ['oó', 'ôo', 'ōo'],
+    tip: 'oo 為複母音，調號標在前一個 o 上，故為 óo！'
+  },
+  {
+    id: 'q41',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'mī的聲調',
+    prompt: '聲調任務：mī 是第幾調？',
+    correctAnswers: ['第七調'],
+    incorrectAnswers: ['第二調', '第三調', '第五調'],
+    tip: 'mī 的調號是橫線，屬於第七調！'
+  },
+  {
+    id: 'q42',
+    category: 4,
+    categoryName: '聲調與調號位置',
+    name: 'tsi̍h的聲調',
+    prompt: '聲調任務：gû-tsi̍h-piánn 中，tsi̍h 是第幾調？',
+    correctAnswers: ['第八調'],
+    incorrectAnswers: ['第四調', '第五調', '第七調'],
+    tip: 'tsi̍h 的調號是直粗線，且以入聲 h 結尾，屬於第八調！'
+  },
+
+  // 第五類：入聲與變調
+  {
+    id: 'q43',
+    category: 5,
+    categoryName: '入聲與變調',
+    name: 'bah的入聲尾',
+    prompt: '入聲任務：肉包 bah-pau 中，bah 以哪一個入聲尾結束？',
+    correctAnswers: ['-h'],
+    incorrectAnswers: ['-p', '-t', '-k'],
+    tip: 'bah 的入聲尾是 -h！'
+  },
+  {
+    id: 'q44',
+    category: 5,
+    categoryName: '入聲與變調',
+    name: 'tsu̍t的入聲尾',
+    prompt: '入聲任務：秫米糋 tsu̍t-bí-tsìnn 中，tsu̍t 的入聲尾是哪一個？',
+    correctAnswers: ['-t'],
+    incorrectAnswers: ['-p', '-k', '-h'],
+    tip: 'tsu̍t 的入聲尾是 -t！'
+  },
+  {
+    id: 'q45',
+    category: 5,
+    categoryName: '入聲與變調',
+    name: '阿公的本調',
+    prompt: '變調任務：「阿公」寫出字典本調時，應收集哪一個答案？',
+    correctAnswers: ['a-kong'],
+    incorrectAnswers: ['ā-kong', 'á-kong', 'à-kong'],
+    tip: '「阿公」的字典本調是第一調：a-kong！'
+  },
+  {
+    id: 'q46',
+    category: 5,
+    categoryName: '入聲與變調',
+    name: '阿公的實際讀音',
+    prompt: '變調任務：「阿公」在詞語中實際讀讀音（變調）為哪一個？',
+    correctAnswers: ['ā-kong'],
+    incorrectAnswers: ['a-kong', 'â-kong', 'à-kong'],
+    tip: '「阿」本調為第一調，在詞語前變調讀作第七調：ā-kong！'
+  },
+
+  // 第六類：鹿港旅行情境任務
+  {
+    id: 'q47',
+    category: 6,
+    categoryName: '鹿港旅行情境任務',
+    name: '鹿港點心任務',
+    prompt: '情境任務：我想吃「糯米炸」和「湯圓」，請依序收集它們的台語說法',
+    speakText: '我想吃糯米炸和湯圓，請依序收集它們的台語說法',
+    correctAnswers: ['秫米糋', '圓仔湯'],
+    incorrectAnswers: ['麵茶', '麻粩', '牛舌餅'],
+    sequence: ['秫米糋', '圓仔湯'],
+    tip: '「聽起來真趣味，我想欲食秫米糋佮圓仔湯。」正確順序是：秫米糋 ➔ 圓仔湯！'
+  },
+  {
+    id: 'q48',
+    category: 6,
+    categoryName: '鹿港旅行情境任務',
+    name: '老街旅行任務',
+    prompt: '情境任務：我們可以吃「糖葫蘆」、坐「三輪車」逛「老街」，請依序收集它們的台語說法',
+    speakText: '我們可以吃糖葫蘆、坐三輪車逛老街，請依序收集它們的台語說法',
+    correctAnswers: ['李仔攕', '三輪車', '老街'],
+    incorrectAnswers: ['高鐵', '圓仔湯', '齒膏'],
+    sequence: ['李仔攕', '三輪車', '老街'],
+    tip: '「咱會使食李仔攕、坐三輪車踅老街。」正確順序是：李仔攕 ➔ 三輪車 ➔ 老街！'
+  },
+  {
+    id: 'q49',
+    category: 6,
+    categoryName: '鹿港旅行情境任務',
+    name: '拜拜祈願任務',
+    prompt: '情境任務：我想去拜拜，祈求考試順利，請依序收集它們的台語說法',
+    speakText: '我想去拜拜，祈求考試順利，請依序收集它們的台語說法',
+    correctAnswers: ['拜拜', '考試', '順利'],
+    incorrectAnswers: ['旗袍', '過暝', '全家福'],
+    sequence: ['拜拜', '考試', '順利'],
+    tip: '「我想欲去拜拜，祈求我考試順利。」正確順序是：拜拜 ➔ 考試 ➔ 順利！'
+  },
+  {
+    id: 'q50',
+    category: 6,
+    categoryName: '鹿港旅行情境任務',
+    name: '購買等路任務',
+    prompt: '情境任務：阿公很喜歡鹿港的麻粩，我們買一些伴手禮回去送他，請依序收集它們的台語說法',
+    speakText: '阿公很喜歡鹿港的麻粩，我們買一些伴手禮回去送他，請依序收集它們的台語說法',
+    correctAnswers: ['阿公', '鹿港', '麻粩', '等路'],
+    incorrectAnswers: ['圓仔湯', '齒抿仔', '高鐵', '旗袍'],
+    sequence: ['阿公', '鹿港', '麻粩', '等路'],
+    tip: '「恁阿公誠意鹿港的麻粩，咱才買寡等路轉去送伊。」正確順序是：阿公 ➔ 鹿港 ➔ 麻粩 ➔ 等路！'
+  }
+];
+
+function sampleQuestions(): SurvivalQuestion[] {
+  // 60 秒限時模式：從題庫中隨機抽取 50 題（若題庫超過 50 題，只取其中 50 題；
+  // 目前題庫剛好 50 題，等於隨機打亂全部題目的出題順序）。
+  const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+  return shuffle(SURVIVAL_QUESTION_POOL).slice(0, 50);
+}
+
+interface ShipType {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  color: string;
+  exhaustColor: string;
+  speedMultiplier: number;
+  hitRadius: number;
+  bonusLives: number;
+}
+
+const SHIP_CHARACTERS: ShipType[] = [
+  {
+    id: 'tailo_1',
+    name: '臺羅一號',
+    desc: '標準型飛船，操縱靈活、平衡穩定。',
+    icon: '🚀',
+    color: '#06b6d4',
+    exhaustColor: '#38bdf8',
+    speedMultiplier: 1.0,
+    hitRadius: 22,
+    bonusLives: 0,
+  },
+  {
+    id: 'swift_lo',
+    name: '極速閃電號',
+    desc: '船身輕盈，移速快20%，碰撞半徑更小！',
+    icon: '⚡',
+    color: '#a855f7',
+    exhaustColor: '#c084fc',
+    speedMultiplier: 1.25,
+    hitRadius: 17,
+    bonusLives: 0,
+  },
+  {
+    id: 'armor_lo',
+    name: '重武裝防護號',
+    desc: '裝甲厚實，初始自帶額外1顆生命與防護罩。',
+    icon: '🛡️',
+    color: '#10b981',
+    exhaustColor: '#34d399',
+    speedMultiplier: 0.85,
+    hitRadius: 25,
+    bonusLives: 1,
+  },
+];
+
+interface BoosterType {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+}
+
+const BOOSTERS: BoosterType[] = [
+  { id: 'shield', name: '辭典護盾', desc: '開局獲得 1 個護盾，可抵擋 1 次碰撞失誤', icon: '🛡️' },
+  { id: 'radar', name: '台語雷達', desc: '開局自動標記當前正確答案，降低辨識難度', icon: '📡' },
+  { id: 'slow', name: '時間慢行', desc: '所有隕石移動速度永久減緩 15%', icon: '🌀' },
+];
+
+// Synth sounds using Web Audio API
+const playSfx = (type: 'correct' | 'wrong' | 'click' | 'victory' | 'combo' | 'coin' | 'powerup' | 'lively') => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const now = ctx.currentTime;
+
+    if (type === 'click') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } else if (type === 'correct') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+      osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'combo') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now); // D5
+      osc.frequency.setValueAtTime(783.99, now + 0.06); // G5
+      osc.frequency.setValueAtTime(1174.66, now + 0.12); // D6
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (type === 'coin') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(987.77, now); // B5
+      osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.22);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } else if (type === 'powerup') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'lively') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.linearRampToValueAtTime(1200, now + 0.4);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'victory') {
+      const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.50];
+      notes.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.frequency.setValueAtTime(freq, now + idx * 0.08);
+        g.gain.setValueAtTime(0.1, now + idx * 0.08);
+        g.gain.linearRampToValueAtTime(0, now + idx * 0.08 + 0.25);
+        o.start(now + idx * 0.08);
+        o.stop(now + idx * 0.08 + 0.25);
+      });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+export default function Game1FoodMatch({
+  onNext,
+  onHome,
+}: {
+  onNext: () => void;
+  onHome?: () => void;
+}) {
+  // Config States before clicking start
+  const [gameMode, setGameMode] = useState<'teaching' | 'challenge'>('teaching');
+  const [selectedShipId, setSelectedShipId] = useState<string>('tailo_1');
+  const [selectedBoosterId, setSelectedBoosterId] = useState<string>('shield');
+  const [highContrast, setHighContrast] = useState<boolean>(true);
+
+  // Interactive UI views
+  const [immersiveMode, setImmersiveMode] = useState<boolean>(false);
+  const [topicIndex, setTopicIndex] = useState<number>(0);
+  const [gameState, setGameState] = useState<'intro' | 'playing' | 'gameover' | 'victory' | 'timeup'>('intro');
+
+  // Stats
+  const [score, setScore] = useState<number>(0);
+  const [combo, setCombo] = useState<number>(0);
+  const [lives, setLives] = useState<number>(3);
+  const [survivalTime, setSurvivalTime] = useState<number>(0);
+  const [difficulty, setDifficulty] = useState<number>(1);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+
+  // Power up indicators
+  const [shieldActive, setShieldActive] = useState<boolean>(false);
+  const [radarActive, setRadarActive] = useState<boolean>(false);
+  const [slowActive, setSlowActive] = useState<boolean>(false);
+
+  // Tâi-gî Mode Highlights
+  const [livelyMode, setLivelyMode] = useState<boolean>(false);
+  const [extremeMode, setExtremeMode] = useState<boolean>(false);
+
+  // Floating notifications / praises
+  const [praiseText, setPraiseText] = useState<string | null>(null);
+  const [alertText, setAlertText] = useState<string | null>(null);
+
+  // Learning Review Logs (Stores user logs for incorrect / correct attempts)
+  const [reviewLogs, setReviewLogs] = useState<{
+    topicName: string;
+    targetTailo: string;
+    userHit: string;
+    isCorrect: boolean;
+    tip: string;
+  }[]>([]);
+
+  const [gameQuestions, setGameQuestions] = useState<SurvivalQuestion[]>(() => {
+    return SURVIVAL_QUESTION_POOL.slice(0, 15).sort((a, b) => a.category - b.category);
+  });
+  const [seqStep, setSeqStep] = useState<number>(0);
+
+  const currentQuestion = gameQuestions[topicIndex] || SURVIVAL_QUESTION_POOL[0];
+  const activeShip = SHIP_CHARACTERS.find((s) => s.id === selectedShipId) || SHIP_CHARACTERS[0];
+
+  // Canvas Refs & Game Engine
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animFrameId = useRef<number | null>(null);
+  const keyboardState = useRef<{ [key: string]: boolean }>({});
+
+  // Physics simulation data
+  const rocketPos = useRef<{ x: number; y: number; targetY: number }>({ x: 90, y: 200, targetY: 200 });
+  const rocketAngle = useRef<number>(0);
+
+  // Entities lists
+  const asteroids = useRef<any[]>([]);
+  const powerups = useRef<any[]>([]);
+  const particles = useRef<any[]>([]);
+  const starfield = useRef<any[]>([]);
+  const nextSpawnTime = useRef<number>(0);
+  const lastTimeRef = useRef<number>(0);
+  const screenShake = useRef<number>(0);
+  const screenFlash = useRef<'red' | 'green' | 'yellow' | 'purple' | null>(null);
+
+  // Play current sound clue
+  const playClue = () => {
+    if (!soundEnabled) return;
+    if ((currentQuestion.category === 1 || currentQuestion.category === 2) && !currentQuestion.sequence) {
+      speakTaiyu(`請找出「${getMandarinFor(currentQuestion.name)}」的台語說法`);
+    } else {
+      speakTaiyu(currentQuestion.speakText || currentQuestion.name);
+    }
+  };
+
+  // Play random praise
+  const triggerRandomPraise = () => {
+    const praises = ['足𠢕！', '真正厲害！', '閣來！', '答著矣！', '台語真輪轉！'];
+    const p = praises[Math.floor(Math.random() * praises.length)];
+    setPraiseText(p);
+    speakTaiyu(p);
+    setTimeout(() => setPraiseText(null), 1500);
+  };
+
+  // Handle Game Over or Victory triggers
+  const handleGameOver = () => {
+    setGameState('gameover');
+  };
+
+  const handleVictory = () => {
+    playSfx('victory');
+    setGameState('victory');
+  };
+
+  const handleTimeUp = () => {
+    playSfx('victory');
+    setGameState('timeup');
+  };
+
+  // Initialize starfield
+  const initStarfield = (width: number, height: number) => {
+    const stars = [];
+    for (let i = 0; i < 90; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * 2 + 0.4,
+        speed: Math.random() * 1.8 + 0.4,
+        alpha: Math.random() * 0.7 + 0.3,
+      });
+    }
+    starfield.current = stars;
+  };
+
+  // Start/Restart Game
+  const startNewGame = () => {
+    const selectedQ = sampleQuestions();
+    setGameQuestions(selectedQ);
+
+    setScore(0);
+    setCombo(0);
+    setLives(3 + activeShip.bonusLives);
+    setSurvivalTime(0);
+    setDifficulty(1);
+    setTopicIndex(0);
+    setSeqStep(0);
+    setReviewLogs([]);
+    setLivelyMode(false);
+    setExtremeMode(false);
+
+    // Apply startup boosters
+    setShieldActive(selectedBoosterId === 'shield');
+    setRadarActive(selectedBoosterId === 'radar');
+    setSlowActive(false);
+
+    // Clear lists
+    asteroids.current = [];
+    powerups.current = [];
+    particles.current = [];
+    rocketPos.current = { x: 90, y: 200, targetY: 200 };
+    lastTimeRef.current = Date.now();
+    setGameState('playing');
+
+    setTimeout(() => {
+      const firstQ = selectedQ[0];
+      if ((firstQ.category === 1 || firstQ.category === 2) && !firstQ.sequence) {
+        speakTaiyu(`任務開始：請找出「${getMandarinFor(firstQ.name)}」的台語說法`);
+      } else {
+        speakTaiyu(`任務開始：請收集 ${firstQ.speakText || firstQ.name}`);
+      }
+    }, 400);
+  };
+
+  // Switch to next topic
+  const loadNextTopic = () => {
+    if (topicIndex < gameQuestions.length - 1) {
+      const nextIdx = topicIndex + 1;
+      setTopicIndex(nextIdx);
+      setSeqStep(0);
+      // 清除上一題殘留的隕石／道具，避免與新題目的答案混在一起
+      asteroids.current = [];
+      powerups.current = [];
+      const nextQ = gameQuestions[nextIdx];
+      setAlertText(`進入下一關：${nextQ.categoryName}！`);
+      setTimeout(() => setAlertText(null), 2500);
+      if ((nextQ.category === 1 || nextQ.category === 2) && !nextQ.sequence) {
+        speakTaiyu(`接下來，請找出「${getMandarinFor(nextQ.name)}」的台語說法`);
+      } else {
+        speakTaiyu(`接下來，請收集 ${nextQ.speakText || nextQ.name}`);
+      }
+    } else {
+      handleVictory();
+    }
+  };
+
+  // Add review logging helper
+  const logAttempt = (isCorrect: boolean, userHit: string) => {
+    setReviewLogs((prev) => [
+      ...prev,
+      {
+        topicName: currentQuestion.name,
+        targetTailo: currentQuestion.correctAnswers.join(' / '),
+        userHit,
+        isCorrect,
+        tip: isCorrect
+          ? '答對了！非常完美！'
+          : currentQuestion.tip,
+      },
+    ]);
+  };
+
+  // Trigger floating text particle
+  const spawnTextParticle = (x: number, y: number, text: string, color: string) => {
+    particles.current.push({
+      x,
+      y,
+      vx: 40,
+      vy: -60,
+      color,
+      size: 1,
+      life: 1.0,
+      maxLife: 1.0,
+      text,
+    });
+  };
+
+  // Key Event listeners
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keyboardState.current[e.key] = true;
+      if (e.key === ' ' && gameState === 'playing') {
+        playClue();
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keyboardState.current[e.key] = false;
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [gameState, topicIndex]);
+
+  // Handle survival timer ticking (counts up toward the GAME_DURATION time limit)
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const interval = setInterval(() => {
+      setSurvivalTime((prev) => {
+        if (prev >= GAME_DURATION) return prev; // 已經到達時限，停止累加
+
+        const nextTime = Number((prev + 0.1).toFixed(2));
+
+        // Scale difficulty with time
+        if (Math.floor(nextTime) % 15 === 0 && Math.floor(nextTime) > 0) {
+          setDifficulty((d) => Math.min(5, d + 1));
+        }
+
+        // Tâi-gî Extreme Mode kicks in after 45 seconds of survival
+        if (nextTime >= 45 && !extremeMode) {
+          setExtremeMode(true);
+          playSfx('lively');
+          setAlertText('⚠️ 台語大爆走模式開啟！隕石群瘋狂加速！');
+          setTimeout(() => setAlertText(null), 3500);
+        }
+
+        // 時間到！60 秒限時結束，結算本局分數
+        if (nextTime >= GAME_DURATION) {
+          setTimeout(() => handleTimeUp(), 0);
+          return GAME_DURATION;
+        }
+
+        return nextTime;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [gameState, extremeMode]);
+
+  // Core Game loop inside canvas
+  useEffect(() => {
+    if (gameState !== 'playing') {
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Support responsive retina displays
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const height = rect.height;
+
+    // Reset initial positions safely
+    if (rocketPos.current.y === 200 && height > 0) {
+      rocketPos.current.y = height / 2;
+      rocketPos.current.targetY = height / 2;
+    }
+
+    if (starfield.current.length === 0) {
+      initStarfield(width, height);
+    }
+
+    lastTimeRef.current = Date.now();
+
+    const render = () => {
+      const now = Date.now();
+      const dt = (now - lastTimeRef.current) / 1000;
+      lastTimeRef.current = now;
+
+      // 1. CLEAR & DRAW SCIFI NEBULA
+      ctx.fillStyle = '#02030f';
+      ctx.fillRect(0, 0, width, height);
+
+      // Apply screen shaking on collision damage
+      ctx.save();
+      if (screenShake.current > 0) {
+        const shakeX = (Math.random() - 0.5) * screenShake.current;
+        const shakeY = (Math.random() - 0.5) * screenShake.current;
+        ctx.translate(shakeX, shakeY);
+        screenShake.current *= 0.88;
+        if (screenShake.current < 0.4) screenShake.current = 0;
+      }
+
+      // Draw starry galaxy core backglow
+      const nebula = ctx.createRadialGradient(width / 2, height / 2, 60, width / 2, height / 2, width);
+      nebula.addColorStop(0, livelyMode ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 24, 60, 0.45)');
+      nebula.addColorStop(0.5, 'rgba(8, 12, 32, 0.35)');
+      nebula.addColorStop(1, '#02030f');
+      ctx.fillStyle = nebula;
+      ctx.fillRect(0, 0, width, height);
+
+      // 2. PARALLAX STARFIELD MOVEMENT
+      const speedMod = (1 + difficulty * 0.12) * (slowActive || selectedBoosterId === 'slow' ? 0.75 : 1.0);
+      starfield.current.forEach((star) => {
+        star.x -= star.speed * speedMod;
+        if (star.x < 0) {
+          star.x = width;
+          star.y = Math.random() * height;
+        }
+        ctx.fillStyle = livelyMode ? `rgba(254, 240, 138, ${star.alpha})` : `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 3. SHIP MOVEMENT (Keyboard & Glide)
+      let currentShipSpeed = 380 * activeShip.speedMultiplier * dt;
+      if (keyboardState.current['ArrowUp'] || keyboardState.current['w'] || keyboardState.current['W']) {
+        rocketPos.current.targetY = Math.max(activeShip.hitRadius + 12, rocketPos.current.targetY - currentShipSpeed);
+      }
+      if (keyboardState.current['ArrowDown'] || keyboardState.current['s'] || keyboardState.current['S']) {
+        rocketPos.current.targetY = Math.min(height - activeShip.hitRadius - 12, rocketPos.current.targetY + currentShipSpeed);
+      }
+
+      // Smooth glide to target
+      rocketPos.current.y += (rocketPos.current.targetY - rocketPos.current.y) * 0.15;
+      const tiltAngle = (rocketPos.current.targetY - rocketPos.current.y) * 0.015;
+      rocketAngle.current = Math.max(-0.25, Math.min(0.25, tiltAngle));
+
+      // 4. ENGINE FLAME PARTICLES
+      if (Math.random() < 0.7) {
+        particles.current.push({
+          x: rocketPos.current.x - 22,
+          y: rocketPos.current.y + (Math.random() - 0.5) * 10,
+          vx: -(Math.random() * 120 + 160),
+          vy: (Math.random() - 0.5) * 20,
+          color: livelyMode ? '#facc15' : activeShip.exhaustColor,
+          size: Math.random() * 6 + 4,
+          life: 0.35,
+          maxLife: 0.35,
+        });
+      }
+
+      // 5. DRAW SHIP ("臺羅號")
+      ctx.save();
+      ctx.translate(rocketPos.current.x, rocketPos.current.y);
+      ctx.rotate(rocketAngle.current);
+
+      // Shield Aura Ring
+      if (shieldActive) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(0, 0, activeShip.hitRadius + 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.07)';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Ship Wing / Tail
+      ctx.fillStyle = '#1e1b4b';
+      ctx.beginPath();
+      ctx.moveTo(-16, -16);
+      ctx.lineTo(-24, -22);
+      ctx.lineTo(-20, 0);
+      ctx.lineTo(-24, 22);
+      ctx.lineTo(-16, 16);
+      ctx.closePath();
+      ctx.fill();
+
+      // Fuselage Body Capsule
+      ctx.fillStyle = activeShip.color;
+      ctx.beginPath();
+      ctx.moveTo(-18, -12);
+      ctx.lineTo(12, -12);
+      ctx.quadraticCurveTo(30, 0, 12, 12);
+      ctx.lineTo(-18, 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cockpit Glow
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(8, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Nose cone tip
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(12, -12);
+      ctx.quadraticCurveTo(30, 0, 12, 12);
+      ctx.quadraticCurveTo(18, 0, 12, -12);
+      ctx.closePath();
+      ctx.fill();
+
+      // Label text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('臺羅號', -4, 3);
+
+      ctx.restore();
+
+      // 6. ENTITY SPAWNING (Asteroids & Floating Items)
+      if (now > nextSpawnTime.current) {
+        const rand = Math.random();
+        const spawnY = Math.random() * (height - 90) + 45;
+
+        if (rand < 0.16) {
+          // Spawn items (Shield, Radar, Coin, Slow)
+          const itemsList = ['shield', 'radar', 'coin', 'slow'];
+          const chosenItem = itemsList[Math.floor(Math.random() * itemsList.length)];
+          powerups.current.push({
+            x: width + 30,
+            y: spawnY,
+            type: chosenItem,
+            radius: 14,
+            pulse: 0,
+            angle: 0,
+          });
+        } else {
+          // Spawn educational asteroid
+          const isCorrectType = Math.random() < 0.45;
+          let label = '';
+          let subLabel = '';
+          let isCorrect = false;
+
+          const isSequential = !!currentQuestion.sequence;
+
+          if (isCorrectType) {
+            isCorrect = true;
+            if (isSequential) {
+              label = currentQuestion.sequence![seqStep];
+            } else {
+              label = currentQuestion.correctAnswers[Math.floor(Math.random() * currentQuestion.correctAnswers.length)];
+            }
+          } else {
+            isCorrect = false;
+            const targetLabel = isSequential ? currentQuestion.sequence![seqStep] : currentQuestion.correctAnswers[0];
+            const cleanIncorrects = currentQuestion.incorrectAnswers.filter(x => x !== targetLabel);
+            if (cleanIncorrects.length > 0) {
+              label = cleanIncorrects[Math.floor(Math.random() * cleanIncorrects.length)];
+            } else {
+              label = '無';
+            }
+          }
+
+          // Determine aesthetic color based on mode ("正式版本答案隕石相同外觀，撞後顯示紅綠")
+          // Teaching mode shows green / red pre-emptively, Challenge mode shows standard sci-fi neutral cyan/purple
+          let glowColor = '#8b5cf6'; // default cosmic violet
+          if (gameMode === 'teaching') {
+            glowColor = isCorrect ? '#10b981' : '#ef4444';
+          } else if (radarActive || selectedBoosterId === 'radar') {
+            // Radar booster highlights correct items with green glow anyway
+            if (isCorrect) glowColor = '#06b6d4';
+          }
+
+          asteroids.current.push({
+            id: Math.random().toString(),
+            x: width + 60,
+            y: spawnY,
+            radius: highContrast ? (Math.random() * 10 + 44) : (Math.random() * 8 + 28),
+            isCorrect,
+            label,
+            subLabel,
+            color: glowColor,
+            isMeteoricStone: label === '/',
+            speed: (Math.random() * 50 + 70) * speedMod * (extremeMode ? 1.45 : 1.0),
+            vertices: Array.from({ length: 8 }).map(() => Math.random() * 0.25 + 0.88),
+            angle: Math.random() * Math.PI,
+            rotSpeed: (Math.random() - 0.5) * 1.2,
+          });
+        }
+
+        // Dynamic spawn rate adjustment
+        const spawnDelay = Math.max(1000, 2300 - difficulty * 250) + (Math.random() * 600);
+        nextSpawnTime.current = now + spawnDelay;
+      }
+
+      // 7. PHYSICS & COLLISIONS - ASTEROIDS
+      asteroids.current.forEach((ast, index) => {
+        ast.x -= ast.speed * dt;
+        ast.angle += ast.rotSpeed * dt;
+
+        // Draw Asteroid
+        ctx.save();
+        ctx.translate(ast.x, ast.y);
+        ctx.rotate(ast.angle);
+
+        if (highContrast) {
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = ast.color;
+          ctx.strokeStyle = ast.color;
+          ctx.lineWidth = 4.0;
+          ctx.fillStyle = '#ffffff'; // Pristine solid white background for high contrast
+        } else {
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = ast.color;
+          ctx.strokeStyle = ast.color;
+          ctx.lineWidth = 2.5;
+          ctx.fillStyle = 'rgba(11, 15, 30, 0.9)';
+        }
+
+        // Draw asymmetric jagged rock
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * Math.PI) / 4;
+          const r = ast.radius * ast.vertices[i];
+          const px = Math.cos(angle) * r;
+          const py = Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw Text on Asteroid
+        ctx.save();
+        ctx.translate(ast.x, ast.y);
+        ctx.textAlign = 'center';
+
+        const labelFontSize = highContrast ? 'bold 21px sans-serif' : 'bold 16px sans-serif';
+        const subLabelFontSize = highContrast ? 'bold 16px sans-serif' : 'bold 12px monospace';
+
+        if (highContrast) {
+          ctx.fillStyle = '#0f172a'; // Deep navy/slate for maximum text readability on white!
+          ctx.shadowBlur = 0; // Disable fuzzy glow for tack-sharp crispness
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = '#000000';
+          ctx.shadowBlur = 4;
+        }
+
+        const displayLabel = ast.label;
+        const displaySub = LUKANG_DATA_MAP[ast.label]?.tailo || ast.subLabel;
+
+        if (displaySub) {
+          ctx.font = labelFontSize;
+          ctx.fillText(displayLabel, 0, highContrast ? -5 : -3);
+          
+          if (highContrast) {
+            ctx.fillStyle = '#0369a1'; // Sharp medium-blue for secondary Tai-lo spelling on white
+          } else {
+            ctx.fillStyle = '#67e8f9';
+          }
+          ctx.font = subLabelFontSize;
+          ctx.fillText(displaySub, 0, highContrast ? 15 : 9);
+        } else {
+          ctx.font = labelFontSize;
+          ctx.fillText(displayLabel, 0, highContrast ? 7 : 4);
+        }
+        ctx.restore();
+
+        // Distance Check
+        const dist = Math.hypot(ast.x - rocketPos.current.x, ast.y - rocketPos.current.y);
+        if (dist < ast.radius + activeShip.hitRadius - 4) {
+          // Collision Triggered! Remove item
+          asteroids.current.splice(index, 1);
+          const isSequential = !!currentQuestion.sequence;
+
+          // Spawn debris fragment burst
+          for (let p = 0; p < 12; p++) {
+            particles.current.push({
+              x: ast.x,
+              y: ast.y,
+              vx: (Math.random() - 0.5) * 280,
+              vy: (Math.random() - 0.5) * 280,
+              color: ast.color,
+              size: Math.random() * 4 + 2.5,
+              life: 0.45,
+              maxLife: 0.45,
+            });
+          }
+
+          // Evaluate correctness
+          if (ast.isCorrect) {
+            // Is it the precise target food?
+            const matchesCurrentTarget = isSequential
+              ? (ast.label === currentQuestion.sequence![seqStep])
+              : (currentQuestion.correctAnswers.includes(ast.label));
+            const ptsGained = matchesCurrentTarget ? 100 : 30;
+
+            // Log attempt
+            logAttempt(true, ast.label);
+
+            // Audio & state
+            playSfx(combo >= 2 ? 'combo' : 'correct');
+            setScore((s) => s + ptsGained * (livelyMode ? 2 : 1));
+            setCombo((c) => {
+              const nextCombo = c + 1;
+              if (nextCombo === 10) {
+                setLivelyMode(true);
+                playSfx('lively');
+                setAlertText('🔥 進入台語鬧熱模式！分數加倍！');
+                setTimeout(() => setAlertText(null), 3000);
+              }
+              // Speak random praise sometimes on good combos
+              if (nextCombo > 0 && nextCombo % 4 === 0) {
+                triggerRandomPraise();
+              }
+              return nextCombo;
+            });
+
+            screenFlash.current = 'green';
+            setTimeout(() => (screenFlash.current = null), 400);
+
+            spawnTextParticle(rocketPos.current.x + 20, rocketPos.current.y, `+${ptsGained} 正確! ✨`, '#10b981');
+
+            // Quick audio pronounces the target (real Taiwanese pronunciation)
+            speakTaiyu(ast.label);
+
+            // Auto advance level or sequence step
+            if (matchesCurrentTarget) {
+              if (isSequential) {
+                const nextStep = seqStep + 1;
+                if (nextStep < currentQuestion.sequence!.length) {
+                  setSeqStep(nextStep);
+                  setAlertText(`收集成功！下一個目標：${currentQuestion.sequence![nextStep]}`);
+                  setTimeout(() => setAlertText(null), 2500);
+                } else {
+                  setTimeout(() => {
+                    loadNextTopic();
+                  }, 1200);
+                }
+              } else {
+                setTimeout(() => {
+                  loadNextTopic();
+                }, 1200);
+              }
+            }
+          } else {
+            // HIT WRONG ASTEROID
+            logAttempt(false, ast.label);
+
+            if (shieldActive) {
+              // Absorbed by shield
+              setShieldActive(false);
+              playSfx('correct');
+              screenShake.current = 6;
+              spawnTextParticle(rocketPos.current.x, rocketPos.current.y - 20, '護盾抵擋！🛡️', '#38bdf8');
+            } else {
+              // Deduct life
+              playSfx('wrong');
+              setLives((l) => {
+                const nextLives = Math.max(0, l - 1);
+                if (nextLives === 0) {
+                  setTimeout(() => handleGameOver(), 100);
+                }
+                return nextLives;
+              });
+              setCombo(0);
+              setLivelyMode(false);
+              screenShake.current = 14;
+              screenFlash.current = 'red';
+              setTimeout(() => (screenFlash.current = null), 400);
+
+              spawnTextParticle(rocketPos.current.x - 10, rocketPos.current.y, '生命 -1 💥', '#ef4444');
+              // Speak correct clue automatically as feedback (real Taiwanese pronunciation)!
+              setTimeout(() => {
+                const targetText = isSequential ? currentQuestion.sequence![seqStep] : currentQuestion.name;
+                speakTaiyu(`注意看！這是 ${targetText}`);
+              }, 400);
+            }
+          }
+        }
+      });
+
+      // 8. PHYSICS & COLLISIONS - FLOATING ITEMS
+      powerups.current.forEach((coin, index) => {
+        coin.x -= 110 * dt;
+        coin.pulse += 6 * dt;
+
+        // Draw Spinning Items
+        ctx.save();
+        ctx.translate(coin.x, coin.y);
+        ctx.rotate(coin.pulse * 0.1);
+
+        // Neon Glow
+        ctx.shadowBlur = 12;
+        let itemColor = '#fbbf24'; // default gold
+        let itemEmoji = '💡';
+
+        if (coin.type === 'shield') {
+          itemColor = '#38bdf8';
+          itemEmoji = '🛡️';
+        } else if (coin.type === 'radar') {
+          itemColor = '#a855f7';
+          itemEmoji = '📡';
+        } else if (coin.type === 'slow') {
+          itemColor = '#34d399';
+          itemEmoji = '🌀';
+        }
+
+        ctx.shadowColor = itemColor;
+        ctx.fillStyle = itemColor;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, coin.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw internal emoji
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(itemEmoji, 0, 3.5);
+
+        ctx.restore();
+
+        // Distance Check
+        const dist = Math.hypot(coin.x - rocketPos.current.x, coin.y - rocketPos.current.y);
+        if (dist < coin.radius + activeShip.hitRadius) {
+          powerups.current.splice(index, 1);
+          playSfx('powerup');
+          screenFlash.current = 'yellow';
+          setTimeout(() => (screenFlash.current = null), 400);
+
+          if (coin.type === 'coin') {
+            setScore((s) => s + 50);
+            speakTaiyu(currentQuestion.name);
+            spawnTextParticle(rocketPos.current.x + 30, rocketPos.current.y, `金幣提示 +50 [${currentQuestion.name}] 💰`, '#fbbf24');
+          } else if (coin.type === 'shield') {
+            setShieldActive(true);
+            spawnTextParticle(rocketPos.current.x + 30, rocketPos.current.y, '護盾啟用！🛡️', '#38bdf8');
+          } else if (coin.type === 'radar') {
+            setRadarActive(true);
+            setTimeout(() => setRadarActive(false), 5000);
+            spawnTextParticle(rocketPos.current.x + 30, rocketPos.current.y, '雷達掃描：顯示正確！📡', '#c084fc');
+          } else if (coin.type === 'slow') {
+            setSlowActive(true);
+            setTimeout(() => setSlowActive(false), 5000);
+            spawnTextParticle(rocketPos.current.x + 30, rocketPos.current.y, '時間減速！🌀', '#34d399');
+          }
+        }
+      });
+
+      // 9. RENDER DUST / SPARKLE PARTICLES
+      particles.current.forEach((p, index) => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0) {
+          particles.current.splice(index, 1);
+          return;
+        }
+
+        const pct = p.life / p.maxLife;
+
+        if (p.text) {
+          ctx.save();
+          ctx.fillStyle = p.color;
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.shadowBlur = 4;
+          ctx.shadowColor = '#000000';
+          ctx.fillText(p.text, p.x, p.y);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * pct, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Clear offscreen entities
+      asteroids.current = asteroids.current.filter((ast) => ast.x > -60);
+      powerups.current = powerups.current.filter((c) => c.x > -30);
+
+      ctx.restore();
+
+      // Screen Flash overlay effects
+      if (screenFlash.current) {
+        ctx.fillStyle =
+          screenFlash.current === 'green'
+            ? 'rgba(16, 185, 129, 0.1)'
+            : screenFlash.current === 'red'
+            ? 'rgba(239, 68, 68, 0.15)'
+            : 'rgba(251, 191, 36, 0.1)';
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      // Request next frame
+      animFrameId.current = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+    };
+  }, [gameState, topicIndex, difficulty, lives, shieldActive, radarActive, slowActive, livelyMode, gameMode, highContrast]);
+
+  return (
+    <div className={immersiveMode ? 'fixed inset-0 z-50 bg-[#020514] p-4 flex flex-col justify-between overflow-hidden select-none' : 'w-full flex flex-col gap-4'}>
+      {/* Immersive wrapper check */}
+      {!immersiveMode ? (
+        <GameShell onHome={onHome}>
+          <div className="bg-[#020312] rounded-[32px] border-4 border-cyan-500/30 shadow-[0_0_35px_rgba(6,182,212,0.18)] overflow-hidden flex flex-col relative w-full h-[640px]">
+            {gameState === 'intro' ? renderSetupDashboard() : renderCosmicCanvasInterface()}
+          </div>
+        </GameShell>
+      ) : (
+        <div className="w-full h-full flex flex-col justify-between relative bg-[#020312] rounded-3xl overflow-hidden border border-slate-800">
+          {gameState === 'intro' ? renderSetupDashboard() : renderCosmicCanvasInterface()}
+        </div>
+      )}
+
+      {/* Game Over Modal Overlay */}
+      <AnimatePresence>
+        {gameState === 'gameover' && (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#140611] border-2 border-red-500 rounded-[32px] max-w-2xl w-full p-6 text-center text-white shadow-[0_0_50px_rgba(239,68,68,0.35)]"
+            >
+              <div className="text-5xl mb-3">💥</div>
+              <h3 className="text-2xl font-black text-red-500 mb-1 tracking-wider">
+                戰機能量耗盡！任務失敗
+              </h3>
+              <p className="text-xs text-red-400 font-mono tracking-widest mb-4">
+                SPACESHIP SYSTEM FAILED - REVIEW LOGS BELOW
+              </p>
+
+              {/* High precision statistics log */}
+              <div className="grid grid-cols-3 gap-2 text-xs font-bold mb-4">
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-red-500/10">
+                  <div className="text-slate-400 text-[10px]">得分</div>
+                  <div className="text-yellow-400 text-base font-black">{score}</div>
+                </div>
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-red-500/10">
+                  <div className="text-slate-400 text-[10px]">遊玩時間</div>
+                  <div className="text-white text-base font-mono">{survivalTime}s</div>
+                </div>
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-red-500/10">
+                  <div className="text-slate-400 text-[10px]">關卡進度</div>
+                  <div className="text-cyan-400 text-base">{topicIndex + 1} / {gameQuestions.length}</div>
+                </div>
+              </div>
+
+              {/* Educational Learning Review Component */}
+              {renderLearningReviewLogs()}
+
+              <div className="flex gap-3 justify-center mt-5">
+                <button
+                  onClick={onHome}
+                  className="py-2.5 px-6 rounded-full border border-slate-700 hover:bg-slate-800 text-white font-black text-xs transition-all cursor-pointer"
+                >
+                  返回大廳
+                </button>
+                <button
+                  onClick={startNewGame}
+                  className="py-2.5 px-6 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-lg shadow-red-600/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 inline-block mr-1" /> 重新挑戰
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Victory Celebration Modal Overlay */}
+      <AnimatePresence>
+        {gameState === 'victory' && (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#03150a] border-2 border-emerald-500 rounded-[32px] max-w-2xl w-full p-6 text-center text-white shadow-[0_0_50px_rgba(16,185,129,0.35)]"
+            >
+              <div className="text-5xl mb-2 animate-bounce">🏆</div>
+              <h3 className="text-2xl font-black text-emerald-400 mb-1 tracking-wider">
+                鹿港宇宙通關成功！
+              </h3>
+              <p className="text-xs text-emerald-400/80 font-mono tracking-widest mb-4">
+                MISSION ACCOMPLISHED - STUDY REPORT
+              </p>
+
+              <div className="flex justify-center gap-1 mb-4">
+                {[1, 2, 3].map((star) => (
+                  <Star key={star} className="w-8 h-8 text-yellow-400 fill-yellow-400 drop-shadow-md animate-pulse" />
+                ))}
+              </div>
+
+              {/* Statistics row */}
+              <div className="grid grid-cols-3 gap-2 text-xs font-bold mb-4">
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-emerald-500/15">
+                  <div className="text-slate-400 text-[10px]">總得分</div>
+                  <div className="text-yellow-400 text-base font-black">{score}</div>
+                </div>
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-emerald-500/15">
+                  <div className="text-slate-400 text-[10px]">遊玩時間</div>
+                  <div className="text-white text-base font-mono">{survivalTime}s</div>
+                </div>
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-emerald-500/15">
+                  <div className="text-slate-400 text-[10px]">答題評級</div>
+                  <div className="text-emerald-400 text-xs font-black">
+                    {score >= 800 ? '特級台語大師 👑' : '優秀飛行員 🎖️'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Educational Learning Review Component */}
+              {renderLearningReviewLogs()}
+
+              <div className="flex gap-3 justify-center mt-5">
+                <button
+                  onClick={startNewGame}
+                  className="py-2.5 px-6 rounded-full border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-black text-xs transition-all cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 inline-block mr-1" /> 再玩一次
+                </button>
+                <button
+                  onClick={onNext}
+                  className="py-2.5 px-6 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  進入下一關 <ChevronRight className="w-3.5 h-3.5 inline-block ml-1" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Time's Up Modal Overlay - neutral "time limit reached" ending (60s 限時模式) */}
+      <AnimatePresence>
+        {gameState === 'timeup' && (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#0a1024] border-2 border-cyan-500 rounded-[32px] max-w-2xl w-full p-6 text-center text-white shadow-[0_0_50px_rgba(6,182,212,0.35)]"
+            >
+              <div className="text-5xl mb-2">⏱️</div>
+              <h3 className="text-2xl font-black text-cyan-400 mb-1 tracking-wider">
+                時間到！本次任務結算
+              </h3>
+              <p className="text-xs text-orange-400/80 font-mono tracking-widest mb-4">
+                TIME LIMIT REACHED - FINAL SCORE REPORT
+              </p>
+
+              {/* Statistics row */}
+              <div className="grid grid-cols-3 gap-2 text-xs font-bold mb-4">
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-cyan-500/15">
+                  <div className="text-slate-400 text-[10px]">總得分</div>
+                  <div className="text-yellow-400 text-base font-black">{score}</div>
+                </div>
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-cyan-500/15">
+                  <div className="text-slate-400 text-[10px]">完成題數</div>
+                  <div className="text-white text-base font-mono">{topicIndex + (gameState === 'timeup' ? 1 : 0)} / {gameQuestions.length}</div>
+                </div>
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-cyan-500/15">
+                  <div className="text-slate-400 text-[10px]">剩餘生命</div>
+                  <div className="text-red-400 text-base font-black">{'❤️'.repeat(Math.max(0, lives))}</div>
+                </div>
+              </div>
+
+              {/* Educational Learning Review Component */}
+              {renderLearningReviewLogs()}
+
+              <div className="flex gap-3 justify-center mt-5">
+                <button
+                  onClick={onHome}
+                  className="py-2.5 px-6 rounded-full border border-slate-700 hover:bg-slate-800 text-white font-black text-xs transition-all cursor-pointer"
+                >
+                  返回大廳
+                </button>
+                <button
+                  onClick={startNewGame}
+                  className="py-2.5 px-6 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 inline-block mr-1" /> 再玩一次
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  // Setup / Pre-game Screen Dashboard
+  function renderSetupDashboard() {
+    return (
+      <div className="flex-1 flex flex-col justify-between p-6 overflow-y-auto bg-slate-950 text-white select-none">
+        {/* Banner with modern retro space title */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-950 border border-cyan-500/40 rounded-full text-[10px] text-cyan-400 tracking-widest font-mono uppercase">
+            🚀 臺羅宇宙生存戰 (Tâi-lô Space Survival)
+          </div>
+          <h2 className="text-3xl font-black text-cyan-400 mt-1 tracking-wider drop-shadow-md">
+            鹿港美食篇
+          </h2>
+          <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 leading-relaxed">
+            聽音辨詞，操控「臺羅號」宇宙飛船收集正確的漢字與拼音，閃避干擾隕石！
+          </p>
+        </div>
+
+        {/* Accessibility & Visual Comfort Controls */}
+        <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 my-2">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">👀</span>
+            <div className="text-left">
+              <div className="text-sm font-black text-white flex items-center gap-1.5">
+                <span>大字高對比白底模式</span>
+                <span className="bg-yellow-400 text-slate-950 font-mono text-[9px] font-black px-1.5 py-0.2 rounded animate-pulse">
+                  推薦 / 護眼
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                將隕石背景改為「高亮白底」，並將文字放大，大幅提升閱讀清晰度，避免看不清楚！
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              playSfx('click');
+              setHighContrast(!highContrast);
+            }}
+            className={`px-5 py-2 rounded-full font-black text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              highContrast
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                : 'bg-slate-850 text-slate-400 border border-slate-700 hover:text-white'
+            }`}
+          >
+            {highContrast ? '✅ 已開啟 (大字白底)' : '❌ 已關閉 (預設暗色)'}
+          </button>
+        </div>
+
+        {/* 1. Selection Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+          {/* A. Choose Game Mode */}
+          <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between">
+            <div>
+              <div className="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-1.5">
+                <Compass className="w-4 h-4" /> 選擇學習模式
+              </div>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { playSfx('click'); setGameMode('teaching'); }}
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all ${
+                    gameMode === 'teaching'
+                      ? 'border-emerald-500 bg-emerald-950/20 text-emerald-300'
+                      : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:bg-slate-900/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span>🟢 教學模式</span>
+                    {gameMode === 'teaching' && <span className="text-[10px] bg-emerald-500 text-slate-950 px-1 rounded">推薦</span>}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-normal leading-relaxed">
+                    答案預先用綠色(正確)與紅色(錯誤)標記。適合台語初學者降低挫折感。
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => { playSfx('click'); setGameMode('challenge'); }}
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all ${
+                    gameMode === 'challenge'
+                      ? 'border-purple-500 bg-purple-950/20 text-purple-300'
+                      : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:bg-slate-900/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span>😈 挑戰模式</span>
+                    {gameMode === 'challenge' && <span className="text-[10px] bg-purple-500 text-white px-1 rounded">極致</span>}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-normal leading-relaxed">
+                    所有隕石外觀相同，撞擊後才顯示結果。考驗您真實的聽辨與臺羅功力！
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-slate-500 mt-2 italic flex items-center gap-1">
+              <Info className="w-3.5 h-3.5" /> 收集正確詞語通關
+            </div>
+          </div>
+
+          {/* B. Choose Ship Character */}
+          <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4">
+            <div className="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-1.5">
+              <span>🚀</span> 選擇飛船角色
+            </div>
+            <div className="space-y-2">
+              {SHIP_CHARACTERS.map((ship) => (
+                <button
+                  key={ship.id}
+                  onClick={() => { playSfx('click'); setSelectedShipId(ship.id); }}
+                  className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all ${
+                    selectedShipId === ship.id
+                      ? 'border-cyan-500 bg-cyan-950/20 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.1)]'
+                      : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:bg-slate-900/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-center font-black">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-base">{ship.icon}</span>
+                      {ship.name}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      {ship.id === 'swift_lo' ? '敏捷增加' : ship.id === 'armor_lo' ? '雙重防護' : '均衡'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-normal mt-0.5 leading-snug">
+                    {ship.desc}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* C. Choose Pre-game Booster */}
+          <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4">
+            <div className="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-1.5">
+              <span>🎁</span> 選擇初始輔助道具 (免費)
+            </div>
+            <div className="space-y-2">
+              {BOOSTERS.map((bst) => (
+                <button
+                  key={bst.id}
+                  onClick={() => { playSfx('click'); setSelectedBoosterId(bst.id); }}
+                  className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all ${
+                    selectedBoosterId === bst.id
+                      ? 'border-amber-500 bg-amber-950/20 text-amber-300'
+                      : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:bg-slate-900/50'
+                  }`}
+                >
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span>{bst.icon}</span>
+                    {bst.name}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-normal mt-0.5 leading-snug">
+                    {bst.desc}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Start Button section */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <button
+            onClick={() => {
+              playSfx('click');
+              setImmersiveMode(!immersiveMode);
+            }}
+            className="text-xs text-slate-400 border border-slate-800 py-2.5 px-5 rounded-full hover:bg-slate-900 hover:text-white transition-all cursor-pointer"
+          >
+            {immersiveMode ? '🪐 退出全螢幕' : '🌌 開啟沉浸全螢幕'}
+          </button>
+
+          <button
+            onClick={() => {
+              playSfx('click');
+              startNewGame();
+            }}
+            className="py-3 px-10 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm tracking-wider shadow-lg shadow-cyan-500/20 hover:shadow-cyan-400/45 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            🚀 開啟臺羅宇宙生存戰
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Active Cosmic Interface with Canvas
+  function renderCosmicCanvasInterface() {
+    return (
+      <div className="flex-1 flex flex-col justify-between p-4 bg-[#02030f] text-white relative h-full">
+        {/* Futuristic Grid Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,24,60,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(18,24,60,0.1)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+
+        {/* ==================== TOP BAR CONTROLS ==================== */}
+        <div className="flex items-center justify-between gap-3 relative z-10">
+          {/* Top Speaker Trigger */}
+          <button
+            onClick={() => {
+              playSfx('click');
+              playClue();
+            }}
+            className="w-11 h-11 rounded-full border-2 border-cyan-500 bg-slate-950/90 text-cyan-400 flex items-center justify-center hover:bg-cyan-500/15 shadow-[0_0_15px_rgba(6,182,212,0.4)] active:scale-90 transition-all shrink-0 cursor-pointer"
+            title="點我重播發音"
+          >
+            <Volume2 className="w-5.5 h-5.5 animate-pulse" />
+          </button>
+
+          {/* High-tech central capsule */}
+          <div className="flex-1 max-w-2xl bg-slate-950/95 border-2 border-cyan-400 rounded-full py-2 px-6 flex flex-col items-center justify-center text-center shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+            <div className="text-sm md:text-base lg:text-lg font-black text-white tracking-wide leading-tight flex items-center gap-2 flex-wrap justify-center">
+              <span className="text-cyan-400 font-mono text-xs md:text-sm bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/40 mr-1 font-black">[{currentQuestion.categoryName}]</span>
+              <span>
+                {(currentQuestion.category === 1 || currentQuestion.category === 2) && !currentQuestion.sequence
+                  ? `請找出「${getMandarinFor(currentQuestion.name)}」的台語說法`
+                  : currentQuestion.prompt}
+              </span>
+            </div>
+            {currentQuestion.sequence && (
+              <div className="text-xs md:text-sm text-emerald-400 font-mono font-black tracking-wide mt-1 bg-emerald-950/30 px-3 py-0.5 rounded border border-emerald-500/20">
+                已收集：{currentQuestion.sequence.slice(0, seqStep).map(s => `[${s}]`).join(' ➔ ') || '無'}
+              </div>
+            )}
+            {!currentQuestion.sequence && (
+              <div className="text-[11px] md:text-xs text-cyan-400/90 font-mono tracking-widest mt-0.5">
+                主題：鹿港美食宇宙
+              </div>
+            )}
+          </div>
+
+          {/* Right utility icons */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Lively indicator */}
+            {livelyMode && (
+              <span className="text-[10px] font-black text-yellow-400 bg-yellow-950/60 border border-yellow-400/50 px-2 py-1 rounded-lg animate-bounce whitespace-nowrap">
+                🔥 鬧熱模式 2x
+              </span>
+            )}
+
+            {/* High contrast big-text toggle button */}
+            <button
+              onClick={() => {
+                playSfx('click');
+                setHighContrast(!highContrast);
+              }}
+              className={`px-3 h-9 rounded-xl border flex items-center gap-1.5 text-xs font-black transition-all cursor-pointer ${
+                highContrast
+                  ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'bg-slate-950/80 border-slate-800 text-cyan-400 hover:bg-cyan-500/10'
+              }`}
+              title="切換大字白底模式"
+            >
+              <Eye className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">{highContrast ? '大字白底' : '預設暗色'}</span>
+            </button>
+
+            {/* Mute toggle */}
+            <button
+              onClick={() => {
+                playSfx('click');
+                setSoundEnabled(!soundEnabled);
+              }}
+              className="w-9 h-9 rounded-xl border border-slate-800 bg-slate-950/80 text-cyan-400 flex items-center justify-center hover:bg-cyan-500/10 transition-all cursor-pointer"
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+            </button>
+
+            {/* Viewport resizing toggle */}
+            <button
+              onClick={() => {
+                playSfx('click');
+                setImmersiveMode(!immersiveMode);
+              }}
+              className="w-9 h-9 rounded-xl border border-slate-800 bg-slate-950/80 text-cyan-400 flex items-center justify-center hover:bg-cyan-500/10 transition-all cursor-pointer"
+            >
+              {immersiveMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* ==================== CENTRAL GAME COGNITIVE AREA ==================== */}
+        <div className="flex-1 my-3.5 relative overflow-hidden rounded-2xl border border-slate-850 flex flex-col justify-end">
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full block bg-[#02030f]"
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const mouseY = e.clientY - rect.top;
+              rocketPos.current.targetY = Math.max(activeShip.hitRadius + 12, Math.min(rect.height - activeShip.hitRadius - 12, mouseY));
+            }}
+            onTouchMove={(e) => {
+              if (e.touches.length === 0) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const touchY = e.touches[0].clientY - rect.top;
+              rocketPos.current.targetY = Math.max(activeShip.hitRadius + 12, Math.min(rect.height - activeShip.hitRadius - 12, touchY));
+            }}
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickY = e.clientY - rect.top;
+              rocketPos.current.targetY = Math.max(activeShip.hitRadius + 12, Math.min(rect.height - activeShip.hitRadius - 12, clickY));
+            }}
+          />
+
+          {/* Floating animated texts (Praise, warnings) */}
+          <AnimatePresence>
+            {praiseText && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.7, y: 10 }}
+                animate={{ opacity: 1, scale: 1.1, y: -20 }}
+                exit={{ opacity: 0 }}
+                className="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 px-5 py-2.5 bg-yellow-400 text-slate-950 rounded-2xl font-black text-xl tracking-widest z-30 pointer-events-none shadow-[0_0_20px_rgba(250,204,21,0.5)] flex items-center gap-1.5"
+              >
+                <Sparkles className="w-5 h-5 fill-slate-950" />
+                {praiseText}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {alertText && (
+              <motion.div
+                initial={{ opacity: 0, y: -30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="absolute top-6 left-1/2 transform -translate-x-1/2 px-5 py-2 bg-purple-950/95 border border-purple-400 text-purple-200 text-xs font-bold rounded-full z-30 pointer-events-none shadow-[0_0_15px_rgba(168,85,247,0.3)] whitespace-nowrap"
+              >
+                {alertText}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+            {/* ==================== LEFT FLOATING COGNITIVE BOX ==================== */}
+            <div className="absolute top-4 left-4 bg-slate-950/95 border-2 border-cyan-450 rounded-2xl p-4 w-52 font-bold select-none pointer-events-none shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+              <div className="text-xs text-cyan-300 font-mono uppercase tracking-widest font-black flex items-center gap-1.5">
+                <span>⏱️</span> <span>剩餘時間 (TIME LEFT)</span>
+              </div>
+              <div className={`text-2xl md:text-3xl font-black font-mono mt-1.5 ${(GAME_DURATION - survivalTime) <= 10 ? 'text-red-500 animate-pulse' : 'text-amber-450'}`}>
+                {Math.max(0, GAME_DURATION - survivalTime).toFixed(1)}s
+              </div>
+              <div className="border-t border-slate-800 mt-3 pt-2.5 flex flex-col gap-1.5">
+                <span className="text-slate-400 text-xs font-black">本題目標 (TARGET)：</span>
+                <span className="text-white text-sm md:text-base font-black bg-cyan-950 px-2.5 py-1.5 rounded border-2 border-cyan-500/50 text-center shadow-[inset_0_0_8px_rgba(6,182,212,0.3)]">
+                  {(() => {
+                    if ((currentQuestion.category === 1 || currentQuestion.category === 2) && !currentQuestion.sequence) {
+                      return getMandarinFor(currentQuestion.name);
+                    }
+                    const activeTaiyu = currentQuestion.sequence ? currentQuestion.sequence[seqStep] : currentQuestion.name;
+                    const mapData = LUKANG_DATA_MAP[activeTaiyu];
+                    return mapData ? `${activeTaiyu} (${mapData.tailo})` : activeTaiyu;
+                  })()}
+                </span>
+              </div>
+            </div>
+
+          {/* ==================== RIGHT FLOATING COGNITIVE BOX ==================== */}
+          <div className="absolute top-4 right-4 bg-slate-950/95 border-2 border-cyan-450 rounded-2xl p-4 w-52 font-bold select-none pointer-events-none space-y-3 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+            <div className="flex justify-between items-center">
+              <span className="text-xs md:text-sm text-cyan-300 font-mono uppercase tracking-widest font-black">分數 SCORE</span>
+              <span className="text-2xl md:text-3xl font-black font-mono text-yellow-400">
+                {score}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center pt-2.5 border-t border-slate-800">
+              <span className="text-xs md:text-sm text-cyan-300 font-mono uppercase font-black">生命 LIFE</span>
+              <div className="flex gap-1">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <Heart
+                    key={idx}
+                    className={`w-4.5 h-4.5 md:w-5 md:h-5 ${idx < lives ? 'fill-red-500 text-red-500 filter drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]' : 'text-slate-700'}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2.5 border-t border-slate-800">
+              <span className="text-xs md:text-sm text-cyan-300 font-mono uppercase font-black">連擊 COMBO</span>
+              <div className="flex items-center gap-1.5 text-cyan-400 font-mono text-base md:text-lg font-black animate-pulse">
+                <Zap className="w-4 h-4 md:w-4.5 md:h-4.5 fill-cyan-400" />
+                <span>x{combo}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Utility Boosters panel */}
+          <div className="absolute bottom-3 left-3 flex gap-1 select-none pointer-events-none">
+            {shieldActive && (
+              <span className="bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
+                🛡️ 護盾中
+              </span>
+            )}
+            {radarActive && (
+              <span className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 animate-pulse">
+                📡 雷達掃描
+              </span>
+            )}
+            {slowActive && (
+              <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
+                🌀 時間慢行
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ==================== FOOTER BOT UTILITIES ==================== */}
+        <div className="flex items-center justify-between gap-4 relative z-10">
+          {/* Legend Guide Info */}
+          <div className="hidden md:flex items-center gap-3 bg-slate-950/90 border border-slate-850 px-4 py-2 rounded-xl text-[10px] text-slate-400 font-bold select-none">
+            <div className="flex items-center gap-1">
+              <span>🎨 {gameMode === 'teaching' ? '教學標色已開啟' : '挑戰盲盒模式'}</span>
+            </div>
+            <div className="flex items-center gap-1.5 border-l border-slate-800 pl-3">
+              <span className="text-emerald-400">🟢</span> 正確卡片
+            </div>
+            <div className="flex items-center gap-1.5 border-l border-slate-800 pl-3">
+              <span className="text-red-400">🔴</span> 錯誤拼音 / 錯調
+            </div>
+            <div className="flex items-center gap-1.5 border-l border-slate-800 pl-3">
+              <span className="text-yellow-400">🟡</span> 道具/金幣
+            </div>
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                playSfx('click');
+                playClue();
+              }}
+              className="px-4 py-2 rounded-lg border border-cyan-500/30 bg-slate-950/80 text-cyan-400 text-xs font-black hover:bg-cyan-500/10 cursor-pointer"
+            >
+              🔊 重聽發音
+            </button>
+            <button
+              onClick={() => {
+                playSfx('click');
+                loadNextTopic();
+              }}
+              className="px-4 py-2 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 text-xs font-black hover:text-white hover:bg-slate-800 cursor-pointer"
+            >
+              跳過本題
+            </button>
+          </div>
+
+          <div className="bg-slate-950/90 border border-slate-850 px-4 py-2 rounded-xl text-xs font-mono text-cyan-400 flex items-center gap-2 select-none">
+            <Award className="w-4 h-4" />
+            <span>難度等級: {difficulty}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Educational Learning Review log panel shown on gameover/victory
+  function renderLearningReviewLogs() {
+    return (
+      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-left font-bold text-xs">
+        <div className="flex items-center gap-1.5 text-cyan-400 text-sm mb-2 border-b border-slate-800 pb-2">
+          <BookOpen className="w-4 h-4" />
+          <span>本局學習成果回顧 (Learning Review Log)</span>
+        </div>
+
+        {reviewLogs.length === 0 ? (
+          <p className="text-slate-500 italic text-center py-4">
+            尚無答題記錄。在遊戲中多撞擊隕石卡片，將能為您在此生成個人錯題本與發音指南喔！
+          </p>
+        ) : (
+          <div className="max-h-[140px] overflow-y-auto space-y-1.5 pr-1 text-[11px]">
+            {reviewLogs.map((log, idx) => (
+              <div
+                key={idx}
+                className={`p-2 rounded-xl border flex items-start gap-2 justify-between ${
+                  log.isCorrect
+                    ? 'bg-emerald-950/15 border-emerald-500/20 text-emerald-300'
+                    : 'bg-red-950/15 border-red-500/20 text-red-300'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span>{log.isCorrect ? '🟢' : '🔴'}</span>
+                    <span className="font-extrabold text-white text-xs">{log.topicName}</span>
+                    <span className="font-mono text-slate-400">({log.targetTailo})</span>
+                  </div>
+                  <div className="mt-1 leading-relaxed text-slate-300 font-normal">
+                    {log.isCorrect ? '完美的聽音匹配！恭喜！' : `碰撞干擾: "${log.userHit}"。${log.tip}`}
+                  </div>
+                </div>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                  log.isCorrect ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'
+                }`}>
+                  {log.isCorrect ? 'Correct' : 'Incorrect'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+}

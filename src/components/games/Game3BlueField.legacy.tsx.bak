@@ -1,0 +1,1242 @@
+import { useState, useEffect, useRef } from 'react';
+import { GameShell } from './GameShell';
+import { speakTaiyu } from '../../lib/speech';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Volume2,
+  Trophy,
+  Clock,
+  Lightbulb,
+  RotateCcw,
+  Award,
+  Play,
+  Flame,
+  CheckCircle,
+  XCircle,
+  ShoppingBag,
+  ArrowRight,
+  Shield,
+  Zap,
+  Sparkles,
+} from 'lucide-react';
+import { charDad, charAming, charMom, charGrandpa } from '../../assets/images/characters';
+
+// ==================== CONFIGS & TYPES ====================
+
+interface Question {
+  id: number;
+  type: 'vocab' | 'pairing' | 'phonics' | 'tone' | 'sentence';
+  prompt: string;
+  voiceText: string;
+  tailo?: string;
+  correctParts: string[]; // Cards to gather in sequence
+  distractors: string[];  // Wrong answers
+  destination: string;    // Mail delivery target
+  hint: string;
+}
+
+interface Level {
+  id: number;
+  name: string;
+  desc: string;
+  goalScore: number;
+  timeLimit: number;
+  questions: Question[];
+}
+
+const LEVELS: Level[] = [
+  {
+    id: 1,
+    name: '鹿港美食收批站',
+    desc: '聽音辨識特色美食漢字信件！',
+    goalScore: 300,
+    timeLimit: 60,
+    questions: [
+      {
+        id: 1,
+        type: 'vocab',
+        prompt: '請聽音收集對應的漢字美食信件：麵茶',
+        voiceText: '麵茶',
+        tailo: 'mī-tê',
+        correctParts: ['麵茶'],
+        distractors: ['麻粩', '牛舌餅', '圓仔湯', '錯調'],
+        destination: '鹿港美食街',
+        hint: '麵茶（mī-tê）是鹿港特色，香濃拌炒沖泡的古早點心。'
+      },
+      {
+        id: 2,
+        type: 'vocab',
+        prompt: '請聽音收集對應的漢字美食信件：牛舌餅',
+        voiceText: '牛舌餅',
+        tailo: 'gû-tsi̍h-piánn',
+        correctParts: ['牛舌餅'],
+        distractors: ['麵茶', '圓仔湯', '等路', '錯誤拼音'],
+        destination: '廟口商圈',
+        hint: '牛舌餅（gû-tsi̍h-piánn）形狀像牛舌，香酥可口。'
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: '漢羅配對街道',
+    desc: '觀察漢字，換道收集正確的臺羅信件！',
+    goalScore: 400,
+    timeLimit: 60,
+    questions: [
+      {
+        id: 3,
+        type: 'pairing',
+        prompt: '請收集「鹿港老街」正確的臺羅拼音信件：',
+        voiceText: '鹿港老街',
+        tailo: 'Ló-káng lâu-ke',
+        correctParts: ['Ló-káng lâu-ke'],
+        distractors: ['Lō-káng lâu-ke', 'înn-á-thng', 'se̍h-ke', 'tán-lōo'],
+        destination: '鹿港古蹟郵局',
+        hint: '「鹿港老街」的台語拼音是 Ló-káng lâu-ke。'
+      },
+      {
+        id: 4,
+        type: 'pairing',
+        prompt: '請收集「三輪車」正確的臺羅拼音信件：',
+        voiceText: '三輪車',
+        tailo: 'sann-lián-tshia',
+        correctParts: ['sann-lián-tshia'],
+        distractors: ['sann-lián', 'tán-lōo', 'mī-tê', 'se̍h-ke'],
+        destination: '老街導覽所',
+        hint: '「三輪車」的台語拼音是 sann-lián-tshia。'
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: '聲韻郵件中心',
+    desc: '聲母、韻母、調號連續收集音節任務！',
+    goalScore: 500,
+    timeLimit: 75,
+    questions: [
+      {
+        id: 5,
+        type: 'phonics',
+        prompt: '依序拼出「麵 (mī)」的拼音：m ➔ ī',
+        voiceText: '麵',
+        correctParts: ['m', 'ī'],
+        distractors: ['p', 'b', 'ang', '第七調', 'oo'],
+        destination: '拼音研究室',
+        hint: '「麵（mī）」由聲母 m 搭配帶第七調韻母 ī 組合而成。'
+      },
+      {
+        id: 6,
+        type: 'phonics',
+        prompt: '依序拼出「香 (phang)」的拼音：ph ➔ ang ➔ 第一調',
+        voiceText: '香',
+        correctParts: ['ph', 'ang', '第一調'],
+        distractors: ['p', 'h', 'an', '第七調', 'm'],
+        destination: '拼音郵件中心',
+        hint: '「香（phang）」由聲母 ph、韻母 ang、第一調組成。'
+      }
+    ]
+  },
+  {
+    id: 4,
+    name: '錯調障礙道路',
+    desc: '聽辨語音，避開相似聲調的干擾信件！',
+    goalScore: 500,
+    timeLimit: 60,
+    questions: [
+      {
+        id: 7,
+        type: 'tone',
+        prompt: '聽「等(tán)」，收集正確調號的臺羅（第二調）',
+        voiceText: '等',
+        tailo: 'tán',
+        correctParts: ['tán'],
+        distractors: ['tan', 'tàn', 'tân', 'tān'],
+        destination: '調號登記處',
+        hint: '「等(tán)」是第二調，調號為右上斜線。'
+      },
+      {
+        id: 8,
+        type: 'tone',
+        prompt: '聽「茶(tê)」，收集正確調號的臺羅（第五調）',
+        voiceText: '茶',
+        tailo: 'tê',
+        correctParts: ['tê'],
+        distractors: ['te', 'té', 'tè', 'tē'],
+        destination: '茶莊行信箱',
+        hint: '「茶(tê)」是第五調，調號為尖角帽符號。'
+      }
+    ]
+  },
+  {
+    id: 5,
+    name: '鹿港旅行大投遞',
+    desc: '聆聽句子，依序收集關鍵詞卡並投遞！',
+    goalScore: 600,
+    timeLimit: 90,
+    questions: [
+      {
+        id: 9,
+        type: 'sentence',
+        prompt: '「咱先坐三輪車踅老街，閣去買牛舌餅做等路。」(依序收集三詞)',
+        voiceText: '咱先坐三輪車踅老街，閣去買牛舌餅做等路',
+        correctParts: ['三輪車', '老街', '牛舌餅'],
+        distractors: ['台北101', '踅街', '麵茶', '麻粩', '過期郵件'],
+        destination: '鹿港北區遊客中心',
+        hint: '依序收集句子中提到的關鍵詞：1.三輪車 ➔ 2.老街 ➔ 3.牛舌餅。'
+      }
+    ]
+  }
+];
+
+interface RoadItem {
+  id: number;
+  lane: number; // 0, 1, 2
+  progress: number; // 0 (horizon) to 1 (screen bottom)
+  type: 'letter' | 'obstacle' | 'destination' | 'shield' | 'magnet';
+  label: string;
+  isCorrect?: boolean;
+}
+
+interface ReviewRecord {
+  prompt: string;
+  userGrabbed: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  hint: string;
+}
+
+export default function Game3BlueField({ onNext, onHome }: { onNext: () => void; onHome?: () => void }) {
+  // Game states
+  const [levelIdx, setLevelIdx] = useState(0);
+  const [gameState, setGameState] = useState<'intro' | 'playing' | 'shop' | 'fail' | 'win_all'>('intro');
+  const [questionIdx, setQuestionIdx] = useState(0);
+  const [collectedParts, setCollectedParts] = useState<string[]>([]);
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [feverMode, setFeverMode] = useState(false);
+  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [flash, setFlash] = useState<'success' | 'danger' | null>(null);
+
+  // Shop Upgrades
+  const [hasMagnet, setHasMagnet] = useState(false);
+  const [hasShield, setHasShield] = useState(false);
+  const [hasLens, setHasLens] = useState(false);
+  const [hasDoublePoints, setHasDoublePoints] = useState(false);
+  const [extraTime, setExtraTime] = useState(0);
+  const [audioReplays, setAudioReplays] = useState(5);
+
+  // Stats & Review
+  const [records, setRecords] = useState<ReviewRecord[]>([]);
+
+  // Physics & Animation
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [playerLane, setPlayerLane] = useState(1); // 0, 1, 2
+  const playerLaneRef = useRef(1);
+  const [items, setItems] = useState<RoadItem[]>([]);
+  const itemsRef = useRef<RoadItem[]>([]);
+
+  const currentLevel = LEVELS[levelIdx];
+  const currentQuestion = currentLevel?.questions[questionIdx];
+
+  // Keep refs in sync for high frequency animation loop
+  useEffect(() => {
+    playerLaneRef.current = playerLane;
+  }, [playerLane]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  // Handle initialization of playing mode
+  useEffect(() => {
+    if (gameState === 'playing') {
+      setTimeLeft(currentLevel.timeLimit + extraTime);
+      setCollectedParts([]);
+      setItems([]);
+      setFeedbackText('');
+      setCombo(0);
+      speakPrompt();
+    }
+  }, [gameState, levelIdx, questionIdx]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleGameOver();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [gameState]);
+
+  // Sound cue playback
+  const speakPrompt = () => {
+    if (!currentQuestion) return;
+    speakTaiyu(currentQuestion.voiceText, undefined, currentQuestion.tailo);
+  };
+
+  const playBuzzer = () => {
+    speakTaiyu('不著矣'); // Minnan: Incorrect
+  };
+
+  const playEncouragement = () => {
+    const praises = ['足𠢕！', '送著矣！', '真正厲害！', '閣一封！', '臺語真輪轉！'];
+    const randomPr = praises[Math.floor(Math.random() * praises.length)];
+    speakTaiyu(randomPr);
+    setFeedbackText(`🌟 ${randomPr}`);
+    setTimeout(() => setFeedbackText(''), 1500);
+  };
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameState !== 'playing') return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        setPlayerLane((prev) => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        setPlayerLane((prev) => Math.min(2, prev + 1));
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        speakPrompt();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState, questionIdx]);
+
+  // Mouse / Touch Tap input handling split into three columns
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gameState !== 'playing') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    
+    if (clickX < width * 0.33) {
+      setPlayerLane(0);
+    } else if (clickX > width * 0.66) {
+      setPlayerLane(2);
+    } else {
+      setPlayerLane(1);
+    }
+  };
+
+  // Item spawning periodically
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const interval = setInterval(() => {
+      spawnItems();
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [gameState, collectedParts, questionIdx]);
+
+  const spawnItems = () => {
+    if (!currentQuestion) return;
+    const isReadyForDelivery = collectedParts.length === currentQuestion.correctParts.length;
+
+    // If fully gathered, spawn destination mailbox only
+    if (isReadyForDelivery) {
+      // Check if destination is already spawned
+      const hasDest = itemsRef.current.some((it) => it.type === 'destination');
+      if (!hasDest) {
+        const destLane = Math.floor(Math.random() * 3);
+        const newItem: RoadItem = {
+          id: Date.now(),
+          lane: destLane,
+          progress: 0,
+          type: 'destination',
+          label: currentQuestion.destination,
+        };
+        setItems((prev) => [...prev, newItem]);
+      }
+      return;
+    }
+
+    // Normal play: Spawn target part letters & obstacles
+    const activeTarget = currentQuestion.correctParts[collectedParts.length];
+    const spawnedList: RoadItem[] = [];
+    const randLaneForCorrect = Math.floor(Math.random() * 3);
+
+    // 1. Correct letter
+    spawnedList.push({
+      id: Date.now() + 1,
+      lane: randLaneForCorrect,
+      progress: 0,
+      type: 'letter',
+      label: activeTarget,
+      isCorrect: true,
+    });
+
+    // 2. Obstacle or distractor in other lanes
+    const otherLanes = [0, 1, 2].filter((l) => l !== randLaneForCorrect);
+    otherLanes.forEach((l, idx) => {
+      const isBarrier = Math.random() > 0.6;
+      if (isBarrier) {
+        spawnedList.push({
+          id: Date.now() + 2 + idx,
+          lane: l,
+          progress: 0,
+          type: 'obstacle',
+          label: Math.random() > 0.5 ? '🚧' : '錯調',
+        });
+      } else {
+        const wrongLabel =
+          currentQuestion.distractors[Math.floor(Math.random() * currentQuestion.distractors.length)] || '錯調';
+        spawnedList.push({
+          id: Date.now() + 2 + idx,
+          lane: l,
+          progress: 0,
+          type: 'letter',
+          label: wrongLabel,
+          isCorrect: false,
+        });
+      }
+    });
+
+    // 3. Rare shield / magnet powerups
+    if (Math.random() > 0.88) {
+      const emptyLane = Math.floor(Math.random() * 3);
+      if (!spawnedList.some((it) => it.lane === emptyLane)) {
+        spawnedList.push({
+          id: Date.now() + 10,
+          lane: emptyLane,
+          progress: 0,
+          type: Math.random() > 0.5 ? 'shield' : 'magnet',
+          label: Math.random() > 0.5 ? '🛡️' : '🧲',
+        });
+      }
+    }
+
+    setItems((prev) => [...prev, ...spawnedList]);
+  };
+
+  // Main Canvas animation & Physics update tick loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let roadOffset = 0;
+    let frameTime = 0;
+    const speed = 0.015; // lane progression rate
+
+    const tick = () => {
+      frameTime += 0.05;
+      roadOffset = (roadOffset + 8) % 40;
+
+      // Draw starry space/glowing street grid background
+      ctx.fillStyle = '#0a0d24';
+      ctx.fillRect(0, 0, 800, 400);
+
+      // Draw decorative glowing street lanterns in background sides
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
+      for (let s = 0; s < 4; s++) {
+        ctx.beginPath();
+        ctx.arc(60 + s * 50, 100 - Math.sin(frameTime * 0.2 + s) * 10, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.arc(740 - s * 50, 100 - Math.sin(frameTime * 0.2 + s) * 10, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw Horizon archway gate "鹿港老街"
+      ctx.save();
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#e74c3c';
+      ctx.shadowBlur = 10;
+      ctx.strokeRect(360, 85, 80, 35);
+      ctx.fillStyle = 'rgba(231,76,60,0.2)';
+      ctx.fillRect(360, 85, 80, 35);
+      ctx.restore();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('鹿港老街 ✉', 400, 106);
+
+      // Draw Perspective Lane Highway Dividers
+      ctx.strokeStyle = '#4a00e0';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(330, 120);
+      ctx.lineTo(120, 380);
+      ctx.moveTo(470, 120);
+      ctx.lineTo(680, 380);
+      ctx.stroke();
+
+      // Dashed lane divider markers
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([15, 20]);
+      ctx.lineDashOffset = -roadOffset;
+
+      ctx.beginPath();
+      // Left lane divider line
+      ctx.moveTo(365, 120);
+      ctx.lineTo(300, 380);
+      // Right lane divider line
+      ctx.moveTo(435, 120);
+      ctx.lineTo(500, 380);
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset line dash
+
+      // Smooth horizontal animation of player avatar
+      const pLane = playerLaneRef.current;
+      const targetPlayerX = 210 + pLane * 190;
+      const playerY = 320;
+
+      // Update positions and check collisions
+      const currentList = [...itemsRef.current];
+      const nextList: RoadItem[] = [];
+
+      currentList.forEach((it) => {
+        let nextProg = it.progress + speed;
+
+        // Magnet attraction simulation
+        let nextLane = it.lane;
+        if (hasMagnet && it.type === 'letter' && it.isCorrect && nextProg > 0.3 && nextProg < 0.8) {
+          if (it.lane !== pLane) {
+            nextLane = it.lane < pLane ? it.lane + 1 : it.lane - 1;
+          }
+        }
+
+        const isCollision = nextProg >= 0.82 && nextProg <= 0.94 && nextLane === pLane;
+
+        if (isCollision) {
+          handleCollidedItem(it);
+        } else if (nextProg < 1.0) {
+          nextList.push({
+            ...it,
+            lane: nextLane,
+            progress: nextProg,
+          });
+        }
+      });
+
+      // Update React state safely
+      setItems(nextList);
+
+      // Render floating cards/obstacles/mailbox
+      nextList.forEach((it) => {
+        // Linear Interpolation for 3D Perspective Pos
+        const horizonY = 120;
+        const bottomY = 380;
+        const currentY = horizonY + it.progress * (bottomY - horizonY);
+
+        const xHorizon = 400 + (it.lane - 1) * 70;
+        const xBottom = 400 + (it.lane - 1) * 190;
+        const currentX = xHorizon + it.progress * (xBottom - xHorizon);
+
+        const scale = 0.2 + it.progress * 0.8;
+
+        ctx.save();
+        if (it.type === 'destination') {
+          // Beautiful Traditional Wooden Mailbox Destination
+          ctx.shadowColor = '#00ffcc';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = '#11132e';
+          ctx.strokeStyle = '#00ffcc';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(currentX - 50 * scale, currentY - 45 * scale, 100 * scale, 55 * scale, 8 * scale);
+          ctx.fill();
+          ctx.stroke();
+
+          // Wooden mailbox roof structure
+          ctx.fillStyle = '#ff3366';
+          ctx.beginPath();
+          ctx.moveTo(currentX - 60 * scale, currentY - 45 * scale);
+          ctx.lineTo(currentX, currentY - 65 * scale);
+          ctx.lineTo(currentX + 60 * scale, currentY - 45 * scale);
+          ctx.closePath();
+          ctx.fill();
+
+          // Mailbox destination name
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.max(9, 14 * scale)}px "Space Grotesk"`;
+          ctx.textAlign = 'center';
+          ctx.fillText('📥 寄送至', currentX, currentY - 24 * scale);
+          ctx.fillStyle = '#ffff00';
+          ctx.font = `bold ${Math.max(10, 16 * scale)}px sans-serif`;
+          ctx.fillText(it.label, currentX, currentY - 2 * scale);
+
+        } else if (it.type === 'obstacle') {
+          // Yellow and Black strip safety barricade
+          ctx.shadowColor = '#e74c3c';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = '#222';
+          ctx.fillRect(currentX - 35 * scale, currentY - 20 * scale, 70 * scale, 15 * scale);
+
+          // Striped pattern
+          ctx.strokeStyle = '#f1c40f';
+          ctx.lineWidth = 4 * scale;
+          ctx.beginPath();
+          for (let s = -30; s < 30; s += 15) {
+            ctx.moveTo(currentX + s * scale, currentY - 20 * scale);
+            ctx.lineTo(currentX + (s + 10) * scale, currentY - 5 * scale);
+          }
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.max(8, 12 * scale)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(it.label, currentX, currentY + 12 * scale);
+
+        } else if (it.type === 'shield' || it.type === 'magnet') {
+          // Shiny powerup sphere
+          ctx.shadowColor = '#3498db';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = '#3498db';
+          ctx.beginPath();
+          ctx.arc(currentX, currentY - 8 * scale, 15 * scale, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `${Math.max(10, 16 * scale)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(it.label, currentX, currentY - 8 * scale);
+
+        } else {
+          // Glowing Letter Envelopes
+          ctx.shadowColor = it.isCorrect ? '#2ecc71' : '#e74c3c';
+          ctx.shadowBlur = hasLens && it.isCorrect ? 18 : 8;
+
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = it.isCorrect ? '#2ecc71' : '#e74c3c';
+          ctx.lineWidth = 2.5;
+
+          ctx.beginPath();
+          ctx.roundRect(currentX - 45 * scale, currentY - 22 * scale, 90 * scale, 34 * scale, 5 * scale);
+          ctx.fill();
+          ctx.stroke();
+
+          // Envelope folded flaps
+          ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+          ctx.beginPath();
+          ctx.moveTo(currentX - 45 * scale, currentY - 22 * scale);
+          ctx.lineTo(currentX, currentY - 4 * scale);
+          ctx.lineTo(currentX + 45 * scale, currentY - 22 * scale);
+          ctx.stroke();
+
+          // Label content
+          ctx.fillStyle = '#1e1b4b';
+          ctx.font = `bold ${Math.max(10, 14 * scale)}px "Space Grotesk", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(it.label, currentX, currentY - 5 * scale);
+        }
+        ctx.restore();
+      });
+
+      // Draw Player dinosaur postman avatar
+      ctx.save();
+      const bounce = Math.sin(frameTime * 1.5) * 5;
+
+      // Draw outer shield bubble if active
+      if (hasShield) {
+        ctx.strokeStyle = 'rgba(0, 255, 200, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#00ffc8';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(targetPlayerX, playerY + 15 + bounce, 45, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Dinosaur body
+      ctx.fillStyle = '#2ecc71';
+      ctx.beginPath();
+      ctx.arc(targetPlayerX, playerY + 20 + bounce, 24, 0, Math.PI * 2); // main body
+      ctx.fill();
+
+      // Tail
+      ctx.beginPath();
+      ctx.moveTo(targetPlayerX - 22, playerY + 25 + bounce);
+      ctx.lineTo(targetPlayerX - 42, playerY + 30 + bounce);
+      ctx.lineTo(targetPlayerX - 20, playerY + 35 + bounce);
+      ctx.closePath();
+      ctx.fill();
+
+      // Head with cute snout
+      ctx.beginPath();
+      ctx.arc(targetPlayerX + 8, playerY - 4 + bounce, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(targetPlayerX, playerY - 4 + bounce, 22, 12); // snout extension
+
+      // Cute Big Eye
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(targetPlayerX + 12, playerY - 8 + bounce, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(targetPlayerX + 13, playerY - 8 + bounce, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pink blush cheeks
+      ctx.fillStyle = 'rgba(255, 100, 100, 0.6)';
+      ctx.beginPath();
+      ctx.arc(targetPlayerX + 6, playerY + bounce, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Postman Mailbag (Brown strap and satchel bag)
+      ctx.strokeStyle = '#5c4033';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(targetPlayerX - 10, playerY + bounce);
+      ctx.lineTo(targetPlayerX + 10, playerY + 28 + bounce);
+      ctx.stroke();
+
+      ctx.fillStyle = '#8a5229';
+      ctx.beginPath();
+      ctx.roundRect(targetPlayerX - 18, playerY + 16 + bounce, 24, 18, 4);
+      ctx.fill();
+
+      // Blue Mailman Cap
+      ctx.fillStyle = '#1e3799';
+      ctx.beginPath();
+      ctx.roundRect(targetPlayerX - 4, playerY - 23 + bounce, 24, 8, 3);
+      ctx.fill();
+      ctx.fillRect(targetPlayerX - 8, playerY - 17 + bounce, 26, 4); // cap visor
+
+      // Mini golden post symbol on cap
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath();
+      ctx.arc(targetPlayerX + 4, playerY - 19 + bounce, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hand holding an envelope if player has collected cards
+      if (collectedParts.length > 0) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(targetPlayerX + 14, playerY + 10 + bounce, 20, 14, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(targetPlayerX + 24, playerY + 17 + bounce, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      animId = requestAnimationFrame(tick);
+    };
+
+    tick();
+    return () => cancelAnimationFrame(animId);
+  }, [items, hasMagnet, hasShield, hasLens, collectedParts, playerLane]);
+
+  // Handle active collision evaluation
+  const handleCollidedItem = (item: RoadItem) => {
+    if (item.type === 'shield') {
+      setHasShield(true);
+      setFeedbackText('🛡️ 護盾啟動！抵擋一次路障傷害');
+      setTimeout(() => setFeedbackText(''), 1500);
+      return;
+    }
+
+    if (item.type === 'magnet') {
+      setHasMagnet(true);
+      setFeedbackText('🧲 郵件磁鐵！自動吸引正確卡片 8s');
+      setTimeout(() => {
+        setHasMagnet(false);
+      }, 8000);
+      return;
+    }
+
+    if (item.type === 'obstacle') {
+      // Hit street barricade
+      if (hasShield) {
+        setHasShield(false);
+        setFeedbackText('🛡️ 護盾破裂！成功抵擋傷害');
+      } else {
+        setLives((l) => Math.max(0, l - 1));
+        setCombo(0);
+        setFlash('danger');
+        setFeedbackText('💥 撞到路障！速度降低、連擊中斷');
+        if (lives <= 1) {
+          handleGameOver();
+        }
+      }
+      setTimeout(() => {
+        setFeedbackText('');
+        setFlash(null);
+      }, 1500);
+      return;
+    }
+
+    if (item.type === 'destination') {
+      // Completed the delivery quest stage!
+      setFlash('success');
+      setScore((s) => s + 200 + combo * 15);
+      setCombo((c) => c + 1);
+
+      playEncouragement();
+
+      // Save success record
+      const fullAns = currentQuestion.correctParts.join('➔');
+      setRecords((prev) => [
+        ...prev,
+        {
+          prompt: currentQuestion.prompt,
+          userGrabbed: fullAns,
+          correctAnswer: fullAns,
+          isCorrect: true,
+          hint: currentQuestion.hint,
+        },
+      ]);
+
+      // Transition to next question or shop
+      setTimeout(() => {
+        setFlash(null);
+        if (questionIdx + 1 < currentLevel.questions.length) {
+          setQuestionIdx((q) => q + 1);
+        } else {
+          // Completed level! Verify goal
+          if (score >= currentLevel.goalScore) {
+            if (levelIdx + 1 < LEVELS.length) {
+              setGameState('shop');
+            } else {
+              setGameState('win_all');
+            }
+          } else {
+            setGameState('shop'); // Let them shop to retry or progress
+          }
+        }
+      }, 1500);
+      return;
+    }
+
+    if (item.type === 'letter') {
+      // Handle letter envelope collection
+      if (item.isCorrect) {
+        setFlash('success');
+        setCollectedParts((p) => {
+          const next = [...p, item.label];
+          // Check if all sequence parts collected
+          if (next.length === currentQuestion.correctParts.length) {
+            setFeedbackText(`📫 信件集齊！信箱正出現在前方，快投遞！`);
+          } else {
+            const nextPart = currentQuestion.correctParts[next.length];
+            setFeedbackText(`✅ 收集正確！下一個字請收集：${nextPart}`);
+          }
+          return next;
+        });
+        speakTaiyu(item.label);
+      } else {
+        // Grabbed incorrect distractor
+        setFlash('danger');
+        setCombo(0);
+        playBuzzer();
+        setFeedbackText(`❌ 收集錯誤信件！扣 30 分！提示：${currentQuestion.hint}`);
+
+        setScore((s) => Math.max(0, s - 30));
+
+        // Save failure record
+        setRecords((prev) => [
+          ...prev,
+          {
+            prompt: currentQuestion.prompt,
+            userGrabbed: item.label,
+            correctAnswer: currentQuestion.correctParts.join('➔'),
+            isCorrect: false,
+            hint: currentQuestion.hint,
+          },
+        ]);
+      }
+
+      setTimeout(() => {
+        setFlash(null);
+        if (!item.isCorrect) {
+          setFeedbackText('');
+        }
+      }, 1500);
+    }
+  };
+
+  const handleGameOver = () => {
+    setGameState('fail');
+  };
+
+  const handleBuyUpgrade = (key: string, cost: number) => {
+    if (score < cost) {
+      speakTaiyu('錢無夠'); // Minnan: Not enough money
+      return;
+    }
+    setScore((s) => s - cost);
+    speakTaiyu('買矣'); // Minnan: Bought
+
+    if (key === 'magnet') setHasMagnet(true);
+    if (key === 'shield') setHasShield(true);
+    if (key === 'lens') setHasLens(true);
+    if (key === 'double') setHasDoublePoints(true);
+    if (key === 'time') setExtraTime((t) => t + 10);
+    if (key === 'replay') setAudioReplays((r) => r + 3);
+  };
+
+  const handleRestartAll = () => {
+    setScore(0);
+    setCombo(0);
+    setLevelIdx(0);
+    setQuestionIdx(0);
+    setLives(3);
+    setRecords([]);
+    setGameState('playing');
+  };
+
+  return (
+    <GameShell onHome={onHome}>
+      <div className="flex flex-col gap-4 flex-1 select-none w-full text-slate-800">
+        
+        {/* Neon glowing container wrapping active states */}
+        <div className={`flex flex-col gap-3 flex-1 rounded-3xl p-4 shadow-xl border-4 relative transition-all duration-300 ${
+          flash === 'success' ? 'bg-emerald-950/95 border-emerald-500 scale-[1.01]' :
+          flash === 'danger' ? 'bg-rose-950/95 border-rose-600 scale-[1.01]' :
+          'bg-slate-950 border-indigo-900'
+        }`}>
+
+          {/* ==================== INTRO PAGE ==================== */}
+          {gameState === 'intro' && (
+            <div className="flex flex-col items-center justify-center flex-1 z-10 gap-6 text-center max-w-2xl mx-auto p-4 text-white">
+              <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-cyan-400 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                <span className="text-5xl">🦖</span>
+              </div>
+
+              <div>
+                <h1 className="text-4xl font-black text-cyan-400 mb-1 tracking-wider">
+                  臺羅送批大挑戰
+                </h1>
+                <p className="text-amber-300 text-lg font-bold">
+                  鹿港老街篇：收著正確詞卡，送台語去旅行！
+                </p>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  結合三線跑酷、聽音辨詞、信件收集與指定目的地投遞任務！操控恐龍送批員左右換道，收集正確台語拼音信件，避開路障，並將郵件安全投遞到老街指定收件站！
+                </p>
+              </div>
+
+              {/* Levels overview */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 w-full my-1">
+                {LEVELS.map((lvl) => (
+                  <div key={lvl.id} className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-center">
+                    <span className="text-[11px] font-black text-cyan-400 block">第 {lvl.id} 關</span>
+                    <span className="text-[10px] font-bold text-slate-300 block truncate">{lvl.name}</span>
+                    <span className="text-[9px] text-slate-500 block">🎯 {lvl.goalScore}分</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setGameState('playing')}
+                  className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-600 hover:to-indigo-700 text-white font-black rounded-full shadow-lg transform active:scale-95 transition-all text-sm flex items-center gap-2 cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-white" />
+                  <span>開始送批！</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== ACTIVE PLAYING HUD ==================== */}
+          {gameState === 'playing' && (
+            <div className="flex flex-col gap-2 z-10 text-white">
+              <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-md flex-wrap gap-2">
+                
+                {/* Score & Combo */}
+                <div className="flex items-center gap-3">
+                  <div className="bg-cyan-500/10 border border-cyan-500/30 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-slate-400">目前分數</span>
+                    <span className="text-base font-black text-cyan-300 font-mono">{score}</span>
+                  </div>
+
+                  {combo > 0 && (
+                    <div className="bg-amber-500 text-slate-950 px-2.5 py-1 rounded-full text-xs font-black animate-bounce flex items-center gap-1">
+                      <Flame className="w-3.5 h-3.5 fill-slate-950" />
+                      <span>連擊 {combo}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Question & Audio cue */}
+                <div className="flex-1 max-w-md mx-2 bg-slate-950 border border-indigo-500/40 rounded-xl p-2 flex items-center gap-2">
+                  <button
+                    onClick={speakPrompt}
+                    disabled={audioReplays <= 0}
+                    className="w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center shrink-0 active:scale-95 transition-transform cursor-pointer"
+                  >
+                    <Volume2 className="w-5 h-5 text-white" />
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] text-cyan-400 font-black block tracking-wider">聽音送批任務 (重播: {audioReplays})</span>
+                    <p className="text-sm font-black truncate text-slate-100">{currentQuestion?.prompt}</p>
+                  </div>
+
+                  {/* Assembling steps progress */}
+                  {currentQuestion && currentQuestion.correctParts.length > 1 && (
+                    <div className="flex gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                      {currentQuestion.correctParts.map((_, sIdx) => (
+                        <span
+                          key={sIdx}
+                          className={`w-3.5 h-3.5 rounded-full text-[9px] font-black flex items-center justify-center ${
+                            collectedParts.length > sIdx ? 'bg-emerald-500' : 'bg-slate-700'
+                          }`}
+                        >
+                          {sIdx + 1}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Level details, Lives & Time */}
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <span className="text-[9px] text-slate-400 block font-bold">LEVEL {levelIdx + 1}</span>
+                    <span className="text-xs font-black text-slate-300">🎯 晉級 {currentLevel.goalScore}分</span>
+                  </div>
+
+                  {/* Lives hearts */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <span key={i} className="text-base">
+                        {lives > i ? '❤️' : '🖤'}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Time Circle */}
+                  <div className="relative w-10 h-10 flex items-center justify-center bg-slate-950 border border-slate-800 rounded-full">
+                    <Clock className="w-4 h-4 text-emerald-400 absolute" />
+                    <span className="text-xs font-black relative text-emerald-300 font-mono">{timeLeft}s</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ==================== CORE PERSPECTIVE CANVAS RUNNER FIELD ==================== */}
+          {gameState === 'playing' && (
+            <div className="flex-1 relative border-4 border-indigo-950 bg-slate-950 rounded-2xl overflow-hidden min-h-[350px]">
+              
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={400}
+                onClick={handleCanvasClick}
+                className="w-full h-full block cursor-pointer"
+              />
+
+              {/* Feedback text announcement layer */}
+              {feedbackText && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/95 border-2 border-cyan-500 rounded-2xl p-4 shadow-2xl max-w-sm w-full text-center z-20">
+                  <p className="text-sm font-black text-slate-200">{feedbackText}</p>
+                </div>
+              )}
+
+              {/* Lane Tap Guidance Overlays */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-12 pointer-events-none select-none z-10">
+                <span className="px-3 py-1 bg-slate-900/80 border border-slate-800 rounded-full text-[10px] text-cyan-400 font-mono">◀ A / 點擊左側 換道</span>
+                <span className="px-3 py-1 bg-slate-900/80 border border-slate-800 rounded-full text-[10px] text-cyan-400 font-mono">D / 點擊右側 換道 ▶</span>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== LEARNING SHOP BETWEEN LEVELS ==================== */}
+          {gameState === 'shop' && (
+            <div className="flex flex-col flex-1 z-10 text-white max-w-2xl mx-auto w-full p-4 justify-center">
+              <div className="text-center mb-4">
+                <span className="text-3xl">🏬</span>
+                <h2 className="text-2xl font-black text-cyan-400">郵局學習道具商店</h2>
+                <p className="text-xs text-slate-300">在進入下一關前，用收集到的分數換取學習法寶！</p>
+              </div>
+
+              <div className="bg-slate-900 border border-indigo-950 rounded-2xl p-4 mb-4 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400">你擁有的郵政薪資</span>
+                  <div className="text-2xl font-black text-cyan-300 font-mono">${score}</div>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-slate-400">關卡進度</span>
+                  <div className="text-sm font-bold text-slate-200">
+                    關卡 {levelIdx + 1} 完成 ({score >= currentLevel.goalScore ? '✅ 達標' : '❌ 未達標'})
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {[
+                  { key: 'magnet', name: '🧲 郵件磁鐵', cost: 100, desc: '自動吸引正確卡片 8 秒' },
+                  { key: 'shield', name: '🛡️ 郵差護盾', cost: 80, desc: '抵擋一次路障撞擊' },
+                  { key: 'lens', name: '👓 聲調眼鏡', cost: 120, desc: '使正確拼音產生綠色亮光' },
+                  { key: 'time', name: '⏳ 延時郵資', cost: 60, desc: '下一關額外增加 10 秒' },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => handleBuyUpgrade(item.key, item.cost)}
+                    className="bg-slate-950 border border-slate-800 hover:border-cyan-500 rounded-xl p-3 text-left transition-colors flex items-center justify-between group cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-bold text-sm text-slate-100">{item.name}</div>
+                      <div className="text-[10px] text-slate-400 leading-normal">{item.desc}</div>
+                    </div>
+                    <div className="bg-indigo-900/40 text-cyan-300 text-xs font-black px-2.5 py-1 rounded-lg group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
+                      ${item.cost}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-4">
+                {score >= currentLevel.goalScore ? (
+                  <button
+                    onClick={() => {
+                      setQuestionIdx(0);
+                      setLevelIdx((prev) => prev + 1);
+                      setGameState('playing');
+                    }}
+                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>起程前往第 {levelIdx + 2} 關 ➔</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setQuestionIdx(0);
+                      setGameState('playing');
+                    }}
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-black rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>重新挑戰本關 (賺取足夠分數)</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ==================== FAILURE & REVIEW REVIEW REPORT ==================== */}
+          {gameState === 'fail' && (
+            <div className="flex flex-col flex-1 z-10 text-white max-w-3xl mx-auto w-full p-4 overflow-y-auto">
+              <div className="text-center mb-5">
+                <span className="text-4xl">📬</span>
+                <h2 className="text-3xl font-black text-rose-500 mt-2">投遞失敗！重新整裝再發</h2>
+                <p className="text-xs text-slate-400 leading-normal mt-1">生命值歸零或時間終了。讓我們回顧錯漏信件，掌握發音與拼音精髓！</p>
+              </div>
+
+              {/* Review Report Table */}
+              <div className="bg-slate-900 border border-indigo-950 rounded-2xl p-4 mb-6">
+                <h3 className="font-bold text-sm text-cyan-400 mb-3 flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-cyan-400" />
+                  <span>台語拼音與單字學習回顧</span>
+                </h3>
+
+                {records.length > 0 ? (
+                  <div className="flex flex-col gap-2.5 max-h-[180px] overflow-y-auto pr-1">
+                    {records.map((rec, rIdx) => (
+                      <div
+                        key={rIdx}
+                        className={`p-2.5 rounded-xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-2 ${
+                          rec.isCorrect
+                            ? 'bg-emerald-950/25 border-emerald-900/60 text-emerald-200'
+                            : 'bg-rose-950/25 border-rose-900/60 text-rose-200'
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <span className="font-bold block text-slate-300 mb-0.5">{rec.prompt}</span>
+                          <span className="opacity-90 block">你收集的: {rec.userGrabbed} | 正確答案: {rec.correctAnswer}</span>
+                        </div>
+                        <div className="text-[10px] bg-slate-950/50 p-1.5 rounded-lg border border-slate-800 md:max-w-xs shrink-0 text-slate-400">
+                          {rec.hint}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-xs text-slate-500 py-6">尚無投遞挑戰紀錄。開始奔跑吧！</p>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={handleRestartAll}
+                  className="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-600 hover:to-indigo-700 text-white font-black rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>重整行囊！再跑一次</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VICTORY WIN ALL SCREEN ==================== */}
+          {gameState === 'win_all' && (
+            <div className="flex flex-col items-center justify-center flex-1 z-10 text-white text-center max-w-xl mx-auto p-4 gap-5">
+              <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 via-amber-500 to-yellow-300 rounded-full flex items-center justify-center shadow-2xl border-4 border-yellow-200 animate-bounce">
+                <span className="text-5xl">👑</span>
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-black text-yellow-400">特派郵差大長官！</h2>
+                <p className="text-base text-slate-200 font-bold mt-1">恭喜順利通關所有鹿港美食與老街旅行關卡！</p>
+                <p className="text-xs text-slate-400 leading-relaxed mt-2">
+                  你完美達成了所有「收集、保管、投遞」郵政任務，在三線跑酷道路上將台語字彙、拼音與調號完美合成投遞！你的台語實力簡直不可思議！
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 w-full">
+                <div className="flex justify-around">
+                  <div>
+                    <span className="text-xs text-slate-400 block">最終得分</span>
+                    <span className="text-2xl font-black text-yellow-400 font-mono">{score}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-400 block">通關大關卡</span>
+                    <span className="text-xl font-black text-cyan-300">5 / 5</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-400 block">投遞正確率</span>
+                    <span className="text-xl font-black text-emerald-400">100%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 w-full">
+                <button
+                  onClick={handleRestartAll}
+                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-600 transition-all text-sm cursor-pointer"
+                >
+                  再跑一趟
+                </button>
+                <button
+                  onClick={onHome}
+                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-950 font-black rounded-xl shadow-md transition-all text-sm cursor-pointer"
+                >
+                  回首頁
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </GameShell>
+  );
+}

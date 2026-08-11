@@ -1,0 +1,1277 @@
+import { useState, useEffect, useRef } from 'react';
+import { GameShell } from './GameShell';
+import { GAMES } from './gamesData';
+import { speakTaiyu } from '../../lib/speech';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Volume2,
+  VolumeX,
+  Play,
+  RotateCcw,
+  HelpCircle,
+  Pause,
+  Home,
+  Flame,
+  Sparkles,
+  Trophy,
+  Zap,
+  Award,
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight
+} from 'lucide-react';
+
+// Ground item schema
+interface GroundItem {
+  id: string;
+  name: string;
+  tailo: string;
+  type: 'gold' | 'rock';
+  x: number;
+  y: number;
+  radius: number;
+  value: number; // money awarded or deducted
+  isCollected: boolean;
+}
+
+// Initial item placements mapped from Figure 1
+const INITIAL_ITEMS: GroundItem[] = [
+  // ROW 1 (y: 260)
+  { id: 'rock_alishan', name: '阿里山', tailo: 'A-lí-san', type: 'rock', x: 170, y: 260, radius: 35, value: 30, isCollected: false },
+  { id: 'gold_mī_tê', name: '麵茶', tailo: 'mī-tê', type: 'gold', x: 300, y: 260, radius: 42, value: 150, isCollected: false },
+  { id: 'rock_mua-lau', name: 'mua-lau', tailo: 'mua-lau', type: 'rock', x: 670, y: 260, radius: 35, value: 30, isCollected: false },
+  { id: 'gold_inn-á-thng', name: '圓仔湯', tailo: 'inn-á-thng', type: 'gold', x: 850, y: 260, radius: 42, value: 150, isCollected: false },
+
+  // ROW 2 (y: 380)
+  { id: 'gold_muâ-láu', name: '麻粩', tailo: 'muâ-láu', type: 'gold', x: 160, y: 380, radius: 42, value: 150, isCollected: false },
+  { id: 'rock_tone2', name: '第2調', tailo: 'tē-jī-tiāu', type: 'rock', x: 330, y: 380, radius: 35, value: 30, isCollected: false },
+  { id: 'gold_gû-tsi̍h-piánn', name: '牛舌餅', tailo: 'gû-tsi̍h-piánn', type: 'gold', x: 520, y: 380, radius: 48, value: 150, isCollected: false },
+  { id: 'rock_pinyin_error', name: '錯誤拼音', tailo: 'tshò-gōo', type: 'rock', x: 700, y: 380, radius: 35, value: 30, isCollected: false },
+  { id: 'rock_mī-tē', name: 'mi-tē', tailo: 'mi-tē', type: 'rock', x: 870, y: 380, radius: 35, value: 30, isCollected: false },
+
+  // ROW 3 (y: 500)
+  { id: 'rock_stall', name: '路邊攤', tailo: 'lōo-pinn-thuann', type: 'rock', x: 140, y: 500, radius: 35, value: 30, isCollected: false },
+  { id: 'gold_lô-káng', name: '鹿港老街', tailo: 'Ló-káng lâu-kue', type: 'gold', x: 300, y: 500, radius: 52, value: 200, isCollected: false },
+  { id: 'rock_taipei101', name: '台北101', tailo: 'Tâi-pak 101', type: 'rock', x: 500, y: 500, radius: 35, value: 30, isCollected: false },
+  { id: 'gold_sann-lián', name: '三輪車', tailo: 'sann-lián-tshia', type: 'gold', x: 700, y: 500, radius: 46, value: 150, isCollected: false },
+  { id: 'rock_kau-a', name: 'kàu-á', tailo: 'kàu-á', type: 'rock', x: 840, y: 500, radius: 35, value: 30, isCollected: false }
+];
+
+export default function Game4SpaceMiner({ onNext, onHome }: { onNext: () => void; onHome?: () => void }) {
+  // Game metrics (starts at $120 money, $650 goal for level 1)
+  const [gameState, setGameState] = useState<'start' | 'playing' | 'paused' | 'levelwin' | 'gameover'>('start');
+  const [level, setLevel] = useState(1);
+  const [money, setMoney] = useState(120);
+  const [goal, setGoal] = useState(650);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [tntCount, setTntCount] = useState(2);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hintActive, setHintActive] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
+
+  // Floating text feedback (+150 or -50)
+  const [floatText, setFloatText] = useState<{ x: number; y: number; text: string; color: string } | null>(null);
+
+  // Active items and target setup
+  const [items, setItems] = useState<GroundItem[]>(INITIAL_ITEMS);
+  const [targetItem, setTargetItem] = useState<GroundItem | null>(null);
+
+  // Rope and Claw physics refs and state
+  const [ropeAngle, setRopeAngle] = useState(0);
+  const [ropeLength, setRopeLength] = useState(40);
+  const [ropeState, setRopeState] = useState<'swinging' | 'shooting' | 'reeling'>('swinging');
+  const [grabbedItem, setGrabbedItem] = useState<GroundItem | null>(null);
+  const [tntExploded, setTntExploded] = useState(false);
+
+  // Core coordinates
+  const pivotX = 500;
+  const pivotY = 135;
+
+  // Responsive scale and container ref
+  const [scale, setScale] = useState(1);
+  const gameBoardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (gameBoardRef.current) {
+        const parentWidth = gameBoardRef.current.parentElement?.clientWidth || window.innerWidth;
+        const targetWidth = 1000;
+        // Limit scale to a maximum of 1, scale down if smaller
+        setScale(Math.min(1, parentWidth / targetWidth));
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    // Trigger immediately
+    setTimeout(handleResize, 100);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Refs for loop controls
+  const loopRef = useRef<number | null>(null);
+  const angleRef = useRef(0);
+  const lengthRef = useRef(40);
+  const stateRef = useRef<'swinging' | 'shooting' | 'reeling'>('swinging');
+  const grabbedRef = useRef<GroundItem | null>(null);
+  const itemsRef = useRef<GroundItem[]>(INITIAL_ITEMS);
+  const timeRef = useRef(0);
+
+  // Sound triggers
+  const playSound = (txt: string, tailo?: string) => {
+    if (soundEnabled) {
+      speakTaiyu(txt, undefined, tailo);
+    }
+  };
+
+  // Sync refs with state on change
+  useEffect(() => {
+    stateRef.current = ropeState;
+  }, [ropeState]);
+
+  useEffect(() => {
+    grabbedRef.current = grabbedItem;
+  }, [grabbedItem]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  // Handle Level loading and word selection
+  useEffect(() => {
+    // Pick an uncollected gold nugget as the target
+    const availableGolds = items.filter(item => item.type === 'gold' && !item.isCollected);
+    if (availableGolds.length > 0) {
+      // Prioritize some typical ones like gû-tsi̍h-piánn
+      const candidate = availableGolds.find(g => g.id === 'gold_gû-tsi̍h-piánn') || availableGolds[0];
+      setTargetItem(candidate);
+    } else {
+      // If all golds collected, level cleared!
+      triggerLevelClear();
+    }
+  }, [items]);
+
+  // Play audio target prompt on target change
+  useEffect(() => {
+    if (targetItem && gameState === 'playing') {
+      setTimeout(() => {
+        playSound(targetItem.name, targetItem.tailo);
+      }, 400);
+    }
+  }, [targetItem?.id, gameState]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const interval = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(interval);
+          handleTimeUp();
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameState, level]);
+
+  // Main high-performance game loop (60fps)
+  useEffect(() => {
+    if (gameState !== 'playing') {
+      if (loopRef.current) cancelAnimationFrame(loopRef.current);
+      return;
+    }
+
+    const gameLoop = () => {
+      timeRef.current += 0.016;
+
+      // 1. ROPE STATE: SWINGING
+      if (stateRef.current === 'swinging') {
+        const swingSpeed = 1.9 + level * 0.25; // Slightly faster at higher levels
+        const maxAngle = 70; // Sweep back and forth
+        const newAngle = Math.sin(timeRef.current * swingSpeed) * maxAngle;
+        angleRef.current = newAngle;
+        setRopeAngle(newAngle);
+      }
+
+      // 2. ROPE STATE: SHOOTING
+      else if (stateRef.current === 'shooting') {
+        const shootSpeed = 11;
+        lengthRef.current += shootSpeed;
+        setRopeLength(lengthRef.current);
+
+        const rad = (angleRef.current * Math.PI) / 180;
+        const clawX = pivotX + Math.sin(rad) * lengthRef.current;
+        const clawY = pivotY + Math.cos(rad) * lengthRef.current;
+
+        // Wall collisions
+        if (clawX < 15 || clawX > 985 || clawY > 585) {
+          stateRef.current = 'reeling';
+          setRopeState('reeling');
+        } else {
+          // Check collision with objects on ground
+          let collidedItem: GroundItem | null = null;
+          for (const item of itemsRef.current) {
+            if (!item.isCollected) {
+              const dx = clawX - item.x;
+              const dy = clawY - item.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < item.radius) {
+                collidedItem = item;
+                break;
+              }
+            }
+          }
+
+          if (collidedItem) {
+            stateRef.current = 'reeling';
+            setRopeState('reeling');
+            setGrabbedItem(collidedItem);
+          }
+        }
+      }
+
+      // 3. ROPE STATE: REELING
+      else if (stateRef.current === 'reeling') {
+        let reelSpeed = 15; // Empty claw is very fast
+        const item = grabbedRef.current;
+        if (item) {
+          if (item.type === 'gold') {
+            reelSpeed = item.id.includes('lô-káng') ? 3.5 : 5.5; // Big gold is heavy and slow
+          } else {
+            reelSpeed = 2.2; // Rock is slow
+          }
+        }
+
+        lengthRef.current = Math.max(40, lengthRef.current - reelSpeed);
+        setRopeLength(lengthRef.current);
+
+        // Fully reeled back in
+        if (lengthRef.current <= 40) {
+          if (item) {
+            handleItemCollection(item);
+          }
+          stateRef.current = 'swinging';
+          setRopeState('swinging');
+          setGrabbedItem(null);
+        }
+      }
+
+      loopRef.current = requestAnimationFrame(gameLoop);
+    };
+
+    loopRef.current = requestAnimationFrame(gameLoop);
+    return () => {
+      if (loopRef.current) cancelAnimationFrame(loopRef.current);
+    };
+  }, [gameState, level]);
+
+  // Handle keyboard inputs: SPACE (shoot), T/UP (TNT)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameState !== 'playing') return;
+      
+      if (e.code === 'Space') {
+        e.preventDefault();
+        launchClaw();
+      } else if (e.code === 'KeyT' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        triggerTNT();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState, ropeState, tntCount, grabbedItem]);
+
+  // Launch claw if swinging
+  const launchClaw = () => {
+    if (stateRef.current === 'swinging') {
+      stateRef.current = 'shooting';
+      setRopeState('shooting');
+    }
+  };
+
+  // Consume TNT to explode heavy rocks
+  const triggerTNT = () => {
+    if (stateRef.current === 'reeling' && grabbedRef.current && tntCount > 0) {
+      setTntCount(prev => prev - 1);
+      setTntExploded(true);
+      playSound('秫米糋', '術米金'); // play explosion-like vocal feedback
+
+      setTimeout(() => {
+        setTntExploded(false);
+      }, 500);
+
+      const rockId = grabbedRef.current.id;
+      // Remove rock from screen
+      setItems(prev => prev.map(item => item.id === rockId ? { ...item, isCollected: true } : item));
+      setGrabbedItem(null);
+      grabbedRef.current = null;
+    }
+  };
+
+  // Handle collection logic once returned to miner
+  const handleItemCollection = (item: GroundItem) => {
+    const rad = (angleRef.current * Math.PI) / 180;
+    const clawX = pivotX + Math.sin(rad) * 50;
+    const clawY = pivotY + Math.cos(rad) * 50;
+
+    // Check if it's the target gold nugget
+    if (targetItem && item.id === targetItem.id) {
+      // SUCCESSFUL TARGET MATCH
+      const addedMoney = item.value;
+      const addedScore = 100;
+      
+      setMoney(prev => prev + addedMoney);
+      setScore(prev => prev + addedScore);
+      setItems(prev => prev.map(g => g.id === item.id ? { ...g, isCollected: true } : g));
+
+      // Trigger floating success text
+      setFloatText({
+        x: clawX,
+        y: clawY,
+        text: `+$${addedMoney} ✨ 答對!`,
+        color: 'text-yellow-400 font-extrabold shadow-sm'
+      });
+
+      // Play success speech
+      const congrats = ['答著矣！', '真正厲害！', '台語真輪轉！'];
+      const randomCongrat = congrats[Math.floor(Math.random() * congrats.length)];
+      playSound(randomCongrat);
+
+      setTimeout(() => setFloatText(null), 1500);
+    } else if (item.type === 'gold') {
+      // GOLD BUT WRONG WORD
+      const penalty = 50;
+      setMoney(prev => Math.max(0, prev - penalty));
+
+      setFloatText({
+        x: clawX,
+        y: clawY,
+        text: `-$${penalty} ❌ 抓錯字!`,
+        color: 'text-red-400 font-bold'
+      });
+
+      playSound('閣來！');
+      setTimeout(() => setFloatText(null), 1500);
+    } else {
+      // GRABBED A ROCK (Incorrect spelling / distractor)
+      const penalty = item.value;
+      setMoney(prev => Math.max(0, prev - penalty));
+      setItems(prev => prev.map(g => g.id === item.id ? { ...g, isCollected: true } : g));
+
+      setFloatText({
+        x: clawX,
+        y: clawY,
+        text: `-$${penalty} 🪨 抓到岩石!`,
+        color: 'text-stone-400 font-bold'
+      });
+
+      playSound('閣來！');
+      setTimeout(() => setFloatText(null), 1500);
+    }
+  };
+
+  // Check if win criteria met at time out
+  const handleTimeUp = () => {
+    if (loopRef.current) cancelAnimationFrame(loopRef.current);
+    
+    if (money >= goal) {
+      triggerLevelClear();
+    } else {
+      setGameState('gameover');
+      playSound('閣來！');
+    }
+  };
+
+  const triggerLevelClear = () => {
+    if (loopRef.current) cancelAnimationFrame(loopRef.current);
+    setGameState('levelwin');
+    saveGameRecord();
+    playSound('真正厲害！');
+  };
+
+  // Save learning score results to standard records list
+  const saveGameRecord = () => {
+    const dateStr = new Date().toLocaleDateString();
+    const stars = money >= goal + 150 ? 5 : money >= goal ? 4 : 3;
+    const newRecord = {
+      date: dateStr,
+      gameName: '太空台語礦工大冒險',
+      score: score,
+      stars: stars
+    };
+
+    const stored = localStorage.getItem('tai_lo_records');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        localStorage.setItem('tai_lo_records', JSON.stringify([newRecord, ...parsed]));
+      } catch (e) {
+        localStorage.setItem('tai_lo_records', JSON.stringify([newRecord]));
+      }
+    } else {
+      localStorage.setItem('tai_lo_records', JSON.stringify([newRecord]));
+    }
+  };
+
+  // Load next level
+  const startNextLevel = () => {
+    const nextLevel = level + 1;
+    setLevel(nextLevel);
+    setGoal(650 + (nextLevel - 1) * 500);
+    setTimeLeft(60);
+    setTntCount(prev => prev + 1); // bonus TNT for level clear
+    setItems(INITIAL_ITEMS.map(item => ({ ...item, isCollected: false })));
+    setRopeLength(40);
+    setRopeState('swinging');
+    setGrabbedItem(null);
+    setGameState('playing');
+    lengthRef.current = 40;
+    stateRef.current = 'swinging';
+    grabbedRef.current = null;
+  };
+
+  // Reset current challenge
+  const restartGame = () => {
+    setMoney(120);
+    setScore(0);
+    setTimeLeft(60);
+    setTntCount(2);
+    setItems(INITIAL_ITEMS.map(item => ({ ...item, isCollected: false })));
+    setRopeLength(40);
+    setRopeState('swinging');
+    setGrabbedItem(null);
+    setGameState('playing');
+    lengthRef.current = 40;
+    stateRef.current = 'swinging';
+    grabbedRef.current = null;
+  };
+
+  // Calculate tip coordinates for visualization
+  const rad = (ropeAngle * Math.PI) / 180;
+  const clawX = pivotX + Math.sin(rad) * ropeLength;
+  const clawY = pivotY + Math.cos(rad) * ropeLength;
+
+  // Render correct target highlight guiding beam if Hint is pressed
+  const renderHintHighlight = () => {
+    if (!hintActive || !targetItem) return null;
+    return (
+      <div 
+        className="absolute animate-ping pointer-events-none rounded-full bg-yellow-400/30 border-4 border-yellow-400"
+        style={{
+          left: `${targetItem.x - targetItem.radius - 8}px`,
+          top: `${targetItem.y - targetItem.radius - 8}px`,
+          width: `${(targetItem.radius + 8) * 2}px`,
+          height: `${(targetItem.radius + 8) * 2}px`,
+          zIndex: 15
+        }}
+      />
+    );
+  };
+
+  return (
+    <GameShell onHome={onHome}>
+      {/* 1. Header Row (Top status HUD with Level, Money, Goal, Audio Task, Timer) */}
+      <div className="flex flex-col md:flex-row gap-4 items-stretch select-none">
+        {/* Money and Goal Panel */}
+        <div className="flex items-center gap-3.5 px-6 py-4 bg-[#0B0C10] border-2 border-slate-700/80 rounded-2xl text-white font-black shrink-0 shadow-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-[#85BB65] text-xl">💰</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Money</span>
+              <span className="text-xl text-yellow-400 tracking-wide">${money}</span>
+            </div>
+          </div>
+          <div className="h-8 w-[1.5px] bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <span className="text-amber-500 text-lg">⭐</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Goal</span>
+              <span className="text-xl text-yellow-300 tracking-wide">${goal}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Audio Task Display (Perfect match of Figure 1 cyan box) */}
+        <div className="flex-1 bg-[#0F1C2E] border-2 border-cyan-500/80 rounded-2xl p-4 flex items-center justify-between text-white relative shadow-[0_0_15px_rgba(6,182,212,0.15)] overflow-hidden">
+          {/* Animated glow background bar */}
+          <div className="absolute top-0 left-0 h-1 bg-cyan-500 w-full animate-pulse" />
+          
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => targetItem && playSound(targetItem.name, targetItem.tailo)}
+              className="w-12 h-12 rounded-full bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-white flex items-center justify-center shadow-md border border-cyan-300/40 transition-all cursor-pointer group shrink-0"
+              title="播放發音"
+            >
+              <Volume2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            </button>
+
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="font-bold text-slate-300 text-sm">聽音任務：</span>
+                <span className="font-black text-yellow-300 text-xl md:text-2xl tracking-wide underline decoration-cyan-400 underline-offset-4">
+                  {targetItem ? targetItem.tailo : '讀取中...'}
+                </span>
+              </div>
+              <span className="text-xs text-slate-400 font-bold mt-1 tracking-wide">請點擊畫面的任何地方或空白鍵抓出正確的台語詞彙</span>
+            </div>
+          </div>
+
+          <div className="hidden lg:flex flex-col items-end shrink-0 select-none">
+            <span className="text-[10px] text-cyan-400 font-black tracking-widest uppercase">Target</span>
+            <span className="text-sm text-yellow-400 font-bold tracking-wider">
+              {targetItem ? '✨ 鹿港傳統點心' : '載入中'}
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Level & Circular Glowing Timer (Figure 1 green timer ring) */}
+        <div className="flex items-center gap-5 px-6 py-4 bg-[#0B0C10] border-2 border-slate-700/80 rounded-2xl text-white font-black shrink-0 shadow-lg justify-between md:justify-start">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Level</span>
+            <span className="text-2xl text-blue-400 tracking-widest text-center mt-0.5">{level}</span>
+          </div>
+          
+          <div className="h-8 w-[1.5px] bg-slate-700" />
+          
+          <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+            {/* Background circle */}
+            <svg className="absolute w-full h-full -rotate-90">
+              <circle
+                cx="24"
+                cy="24"
+                r="21"
+                className="stroke-slate-800"
+                strokeWidth="4"
+                fill="transparent"
+              />
+              <circle
+                cx="24"
+                cy="24"
+                r="21"
+                className={`${timeLeft < 15 ? 'stroke-red-500' : 'stroke-emerald-400'} transition-all duration-1000`}
+                strokeWidth="4"
+                fill="transparent"
+                strokeDasharray={132}
+                strokeDashoffset={132 - (132 * timeLeft) / 60}
+              />
+            </svg>
+            <span className={`text-base font-black ${timeLeft < 15 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
+              {timeLeft}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Primary Layout: Sidebar Controls + Interactive Space Arena */}
+      <div className="flex flex-col lg:flex-row gap-4 flex-1">
+        
+        {/* Left Side: Circular glass action buttons (Matches Figure 1 leftmost UI column) */}
+        <div className="flex flex-row lg:flex-col items-center justify-around lg:justify-start gap-4 p-3 bg-[#0B0C10]/80 border border-slate-800 rounded-2xl lg:w-24 shrink-0 shadow-2xl">
+          {/* Pause Button */}
+          <button
+            onClick={() => {
+              if (gameState === 'playing') setGameState('paused');
+              else if (gameState === 'paused') setGameState('playing');
+            }}
+            className="flex flex-col items-center gap-1 group cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-full bg-slate-900 border-2 border-blue-500/60 flex items-center justify-center text-blue-400 group-hover:bg-blue-950/40 group-hover:border-blue-400 transition-all active:scale-90 shadow-md">
+              <Pause className="w-5 h-5 fill-current" />
+            </div>
+            <span className="text-[11px] font-black text-slate-300 group-hover:text-blue-400 transition-colors">
+              {gameState === 'paused' ? '繼續' : '暫停'}
+            </span>
+          </button>
+
+          {/* Sound Mute Button */}
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="flex flex-col items-center gap-1 group cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-full bg-slate-900 border-2 border-cyan-500/60 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-950/40 group-hover:border-cyan-400 transition-all active:scale-90 shadow-md">
+              {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5 text-red-400" />}
+            </div>
+            <span className="text-[11px] font-black text-slate-300 group-hover:text-cyan-400 transition-colors">
+              音效
+            </span>
+          </button>
+
+          {/* Hint Helper Arrow Button */}
+          <button
+            onClick={() => {
+              setHintActive(!hintActive);
+              if (!hintActive && targetItem) {
+                playSound(targetItem.name, targetItem.tailo);
+              }
+            }}
+            className="flex flex-col items-center gap-1 group cursor-pointer"
+            title="開啟字卡提示定位"
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-red-400 transition-all active:scale-90 shadow-md ${
+              hintActive 
+                ? 'bg-red-500 text-white border-2 border-white animate-pulse' 
+                : 'bg-slate-900 border-2 border-red-500/60 group-hover:bg-red-950/40 group-hover:border-red-400'
+            }`}>
+              <span className="text-xl font-extrabold">?</span>
+            </div>
+            <span className="text-[11px] font-black text-slate-300 group-hover:text-red-400 transition-colors">
+              提示
+            </span>
+          </button>
+
+          {/* Home Button */}
+          <button
+            onClick={onHome}
+            className="flex flex-col items-center gap-1 group cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-full bg-slate-900 border-2 border-amber-500/60 flex items-center justify-center text-amber-400 group-hover:bg-amber-950/40 group-hover:border-amber-400 transition-all active:scale-90 shadow-md">
+              <Home className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-black text-slate-300 group-hover:text-amber-400 transition-colors">
+              首頁
+            </span>
+          </button>
+        </div>
+
+        {/* The main scaling space miner viewport */}
+        <div className="flex-1 bg-gradient-to-b from-[#070913] via-[#10142B] to-[#05060C] border-4 border-slate-800 rounded-3xl overflow-hidden relative shadow-2xl min-h-[500px] lg:min-h-[600px] select-none">
+          
+          {/* Scaling board wrapper */}
+          <div 
+            ref={gameBoardRef}
+            className="absolute top-0 left-0 w-[1000px] h-[600px] origin-top-left"
+            style={{ transform: `scale(${scale})` }}
+            onClick={launchClaw}
+          >
+            {/* Interactive Stars blinking */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/40 via-[#070913] to-black opacity-90 pointer-events-none">
+              <div className="absolute w-2 h-2 rounded-full bg-white/40 top-12 left-1/4 animate-ping" />
+              <div className="absolute w-1 h-1 rounded-full bg-white/60 top-32 left-3/4 animate-pulse" />
+              <div className="absolute w-1.5 h-1.5 rounded-full bg-cyan-400/50 top-4/5 left-1/5 animate-pulse" />
+              <div className="absolute w-1 h-1 rounded-full bg-yellow-400/40 top-2/3 left-4/5 animate-ping" />
+            </div>
+
+            {/* --- DECORATION: DEEP SPACE OBJECTS --- */}
+            
+            {/* A: Left Station - "臺語太空礦場" (Waving Taiwan Flag & Rotating Radar) */}
+            <div className="absolute left-[3%] top-[5%] w-[200px] h-[150px] pointer-events-none select-none opacity-85">
+              <svg className="w-full h-full" viewBox="0 0 200 150">
+                {/* Station metal dome */}
+                <path d="M 30 110 A 50 50 0 0 1 130 110 Z" fill="#2C3E50" stroke="#34495E" strokeWidth="2" />
+                <path d="M 45 110 A 35 35 0 0 1 115 110 Z" fill="#1A252F" />
+                {/* Window lights glowing */}
+                <circle cx="65" cy="95" r="5" fill="#00E676" className="animate-pulse" />
+                <circle cx="80" cy="90" r="5" fill="#00B0FF" className="animate-pulse" />
+                <circle cx="95" cy="95" r="5" fill="#FFD600" className="animate-pulse" />
+                
+                {/* Antenna tower */}
+                <line x1="80" y1="60" x2="80" y2="30" stroke="#7F8C8D" strokeWidth="3" />
+                {/* Rotating radar dish */}
+                <path d="M 65 30 Q 80 15 95 30" fill="none" stroke="#BDC3C7" strokeWidth="3" strokeLinecap="round" className="animate-pulse" />
+                <circle cx="80" cy="22" r="3" fill="#E040FB" />
+
+                {/* Ground foundation block */}
+                <rect x="20" y="110" width="120" height="15" rx="4" fill="#34495E" />
+                {/* Chinese Text plaque */}
+                <rect x="35" y="112" width="90" height="11" rx="2" fill="#0F172A" stroke="#5C6B73" strokeWidth="1" />
+                <text x="80" y="121" fill="#E2E8F0" fontSize="8.5" fontWeight="900" textAnchor="middle" letterSpacing="1">
+                  臺語太空礦場
+                </text>
+
+                {/* Flagpole & Waving Taiwan Flag */}
+                <line x1="140" y1="115" x2="140" y2="40" stroke="#95A5A6" strokeWidth="2.5" />
+                <circle cx="140" cy="40" r="2.5" fill="#F1C40F" />
+                {/* Waving red flag of Taiwan */}
+                <g transform="translate(141, 42)">
+                  <path d="M 0 0 Q 15 -3 30 0 Q 25 15 30 20 Q 15 17 0 20 Z" fill="#C0392B" />
+                  {/* Blue canton */}
+                  <rect x="0" y="0" width="14" height="10" fill="#2980B9" />
+                  {/* White Sun */}
+                  <circle cx="7" cy="5" r="2.5" fill="#FFFFFF" />
+                  <path d="M 7 1 L 7 9 M 3 5 L 11 5 M 4 2 L 10 8 M 4 8 L 10 2" stroke="#FFFFFF" strokeWidth="0.8" />
+                </g>
+              </svg>
+            </div>
+
+            {/* B: Right Space Objects (Beautiful Earth Globe & Orbiting Satellites) */}
+            <div className="absolute right-[4%] top-[4%] w-[220px] h-[160px] pointer-events-none select-none opacity-85 flex items-center justify-end">
+              <svg className="w-full h-full" viewBox="0 0 220 160">
+                {/* Orbit loop */}
+                <ellipse cx="140" cy="70" rx="75" ry="35" fill="none" stroke="rgba(0, 176, 255, 0.2)" strokeWidth="1.5" strokeDasharray="4 4" />
+                
+                {/* Big Glowing Earth Sphere */}
+                <defs>
+                  <radialGradient id="earthGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#0284C7" />
+                    <stop offset="75%" stopColor="#0369A1" />
+                    <stop offset="100%" stopColor="#0B132B" />
+                  </radialGradient>
+                </defs>
+                <circle cx="140" cy="70" r="45" fill="url(#earthGlow)" filter="drop-shadow(0 0 15px rgba(2,132,199,0.5))" />
+                {/* Green abstract continents representing Taiwan & Asia */}
+                <path d="M 120 50 Q 130 45 140 52 T 150 70 Q 140 85 125 75 Z" fill="#10B981" opacity="0.8" />
+                <path d="M 150 80 Q 160 70 170 82 T 165 95 Q 155 90 150 80 Z" fill="#10B981" opacity="0.8" />
+                <path d="M 115 85 Q 120 90 128 83 T 132 95 Z" fill="#059669" opacity="0.7" />
+                {/* White swirling clouds */}
+                <path d="M 105 65 C 115 55, 135 70, 155 58" fill="none" stroke="#FFFFFF" strokeWidth="2.5" opacity="0.4" strokeLinecap="round" />
+                <path d="M 120 85 C 135 80, 150 95, 175 80" fill="none" stroke="#FFFFFF" strokeWidth="2" opacity="0.3" strokeLinecap="round" />
+
+                {/* Orbiting Satellite */}
+                <g transform="translate(72, 50)" className="animate-pulse">
+                  <rect x="-8" y="-4" width="16" height="8" rx="2" fill="#7F8C8D" />
+                  <rect x="-16" y="-3" width="8" height="6" fill="#00B0FF" />
+                  <rect x="8" y="-3" width="8" height="6" fill="#00B0FF" />
+                  <line x1="0" y1="-4" x2="0" y2="-10" stroke="#7F8C8D" strokeWidth="1" />
+                  <circle cx="0" cy="-10" r="1.5" fill="#E040FB" />
+                </g>
+
+                {/* Sleek Rocket Ship blasting off */}
+                <g transform="translate(45, 105) rotate(-35)">
+                  {/* Flame tail */}
+                  <path d="M -15 0 Q -5 -6 -2 -2 Q -5 6 -15 0" fill="#FF5722" className="animate-bounce" />
+                  <path d="M -12 0 Q -6 -3 -4 -1 Q -6 3 -12 0" fill="#FFEB3B" />
+                  {/* Fuselage body */}
+                  <path d="M -8 -6 L 15 0 L -8 6 Z" fill="#ECEFF1" stroke="#455A64" strokeWidth="1" />
+                  {/* Wing fins */}
+                  <path d="M -8 -6 L -14 -12 L -8 -1 Z" fill="#FF1744" />
+                  <path d="M -8 6 L -14 12 L -8 1 Z" fill="#FF1744" />
+                  <circle cx="2" cy="0" r="2.5" fill="#00E676" />
+                </g>
+              </svg>
+            </div>
+
+
+            {/* --- C: TOP MINER VEHICLE & DEER CHARACTER --- */}
+            <div 
+              className="absolute top-[35px] left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none select-none z-10"
+              style={{ width: '160px' }}
+            >
+              {/* Miner Capsule Vehicle / Lunar Cart */}
+              <svg className="w-[120px] h-[100px] overflow-visible" viewBox="0 0 120 100">
+                {/* Translucent Flashlight Beam casting down (sweeps with ropeAngle!) */}
+                <defs>
+                  <linearGradient id="lightBeam" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(253, 224, 71, 0.4)" />
+                    <stop offset="100%" stopColor="rgba(253, 224, 71, 0)" />
+                  </linearGradient>
+                </defs>
+                <g transform={`translate(60, 45) rotate(${ropeAngle})`}>
+                  <polygon points="-12,5 12,5 150,480 -150,480" fill="url(#lightBeam)" />
+                </g>
+
+                {/* A. Cute Miner Deer head inside vehicle */}
+                <g transform="translate(60, 26)">
+                  {/* Antlers */}
+                  <path d="M -12 -12 Q -18 -26 -12 -34 Q -10 -25 -8 -12" fill="#8D6E63" />
+                  <path d="M -14 -22 L -20 -24" stroke="#8D6E63" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M 12 -12 Q 18 -26 12 -34 Q 10 -25 8 -12" fill="#8D6E63" />
+                  <path d="M 14 -22 L 20 -24" stroke="#8D6E63" strokeWidth="2.5" strokeLinecap="round" />
+
+                  {/* Ears */}
+                  <path d="M -8 -5 Q -22 -10 -15 3 Z" fill="#A1887F" />
+                  <path d="M 8 -5 Q 22 -10 15 3 Z" fill="#A1887F" />
+
+                  {/* Deer face */}
+                  <ellipse cx="0" cy="2" rx="14" ry="12" fill="#D7CCC8" />
+                  {/* Eyes */}
+                  <circle cx="-5" cy="0" r="3" fill="#3E2723" />
+                  <circle cx="5" cy="0" r="3" fill="#3E2723" />
+                  <circle cx="-4.5" cy="-1" r="1" fill="#FFFFFF" />
+                  <circle cx="5.5" cy="-1" r="1" fill="#FFFFFF" />
+                  
+                  {/* Smiling snout */}
+                  <ellipse cx="0" cy="5" rx="5" ry="3.5" fill="#F5F5F5" />
+                  <polygon points="-2,4 2,4 0,6" fill="#3E2723" />
+                  <path d="M -1.5,7 Q 0,8.5 1.5,7" fill="none" stroke="#3E2723" strokeWidth="1" />
+
+                  {/* Yellow Miner Hardhat with headlamp */}
+                  <path d="M -14 -8 Q 0 -22 14 -8 Z" fill="#FFD54F" stroke="#F5B041" strokeWidth="1.5" />
+                  {/* Hat visor rim */}
+                  <path d="M -17 -7 Q 0 -11 17 -7" fill="none" stroke="#FF9800" strokeWidth="2.5" />
+                  {/* Glowing headlamp center */}
+                  <circle cx="0" cy="-11" r="5.5" fill="#ECEFF1" stroke="#B0BEC5" strokeWidth="1" />
+                  <circle cx="0" cy="-11" r="3" fill="#FFF" className="animate-pulse" />
+                  {/* Sparkle star on headlamp */}
+                  <polygon points="0,-15 1,-12 4,-11 1,-10 0,-7 -1,-10 -4,-11 -1,-12" fill="#FFF" />
+                </g>
+
+                {/* B. Metallic Space Cart Container */}
+                {/* Silver bumper rim */}
+                <rect x="20" y="38" width="80" height="22" rx="5" fill="#1E3A8A" stroke="#3B82F6" strokeWidth="2" />
+                <rect x="25" y="42" width="70" height="14" rx="3" fill="#3B82F6" opacity="0.8" />
+                {/* Horizontal glowing stripe */}
+                <line x1="30" y1="49" x2="90" y2="49" stroke="#93C5FD" strokeWidth="2" strokeLinecap="round" className="animate-pulse" />
+                
+                {/* Mechanical chain dispenser tube underneath */}
+                <rect x="52" y="60" width="16" height="12" rx="2" fill="#475569" />
+                <circle cx="60" cy="66" r="4.5" fill="#1E293B" />
+              </svg>
+            </div>
+
+
+            {/* --- D: THE INTERACTIVE WIRE ROPE AND MECHANICAL CLAW --- */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none select-none z-20 overflow-visible">
+              <defs>
+                <filter id="laserGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* 1. Wire chain cable */}
+              <line
+                x1={pivotX}
+                y1={pivotY}
+                x2={clawX}
+                y2={clawY}
+                stroke="#64748B"
+                strokeWidth="3.5"
+                strokeDasharray="2,5"
+                strokeLinecap="round"
+              />
+              {/* Internal high-tension wire */}
+              <line
+                x1={pivotX}
+                y1={pivotY}
+                x2={clawX}
+                y2={clawY}
+                stroke="#E2E8F0"
+                strokeWidth="1.2"
+              />
+
+              {/* 2. Rotating Steel Claw on the Tip (Closes when holding item!) */}
+              <g transform={`translate(${clawX}, ${clawY}) rotate(${ropeAngle})`}>
+                <circle cx="0" cy="0" r="5" fill="#475569" stroke="#94A3B8" strokeWidth="1" />
+                
+                {/* Left claw claw arm */}
+                <path
+                  d={grabbedItem ? "M -3,0 Q -16,10 -3,25 Q -8,12 0,0" : "M -3,0 Q -24,8 -14,24 Q -12,12 0,0"}
+                  fill="#94A3B8"
+                  stroke="#475569"
+                  strokeWidth="1.5"
+                />
+                
+                {/* Right claw claw arm */}
+                <path
+                  d={grabbedItem ? "M 3,0 Q 16,10 3,25 Q 8,12 0,0" : "M 3,0 Q 24,8 14,24 Q 12,12 0,0"}
+                  fill="#94A3B8"
+                  stroke="#475569"
+                  strokeWidth="1.5"
+                />
+
+                {/* Laser tip guide */}
+                <circle cx="0" cy="2" r="1.5" fill="#FF1744" />
+              </g>
+
+              {/* 3. TNT Explosion Fireball animation */}
+              {tntExploded && (
+                <g transform={`translate(${clawX}, ${clawY})`}>
+                  <circle cx="0" cy="0" r="45" fill="rgba(255,110,0,0.8)" filter="url(#laserGlow)" className="animate-ping" />
+                  <circle cx="0" cy="0" r="25" fill="#FFEB3B" />
+                  <path d="M-15,-15 L15,15 M15,-15 L-15,15" stroke="#FF5722" strokeWidth="4" />
+                  <text x="0" y="5" fill="#D32F2F" fontSize="16" fontWeight="900" textAnchor="middle">
+                    BOOM!
+                  </text>
+                </g>
+              )}
+            </svg>
+
+
+            {/* --- E: FLOATING TEXT FEEDBACKS --- */}
+            <AnimatePresence>
+              {floatText && (
+                <motion.div
+                  initial={{ opacity: 0, y: floatText.y, scale: 0.8 }}
+                  animate={{ opacity: 1, y: floatText.y - 45, scale: 1.1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className={`absolute pointer-events-none text-base font-black px-3.5 py-1.5 bg-slate-900/90 border border-slate-700 rounded-full select-none z-30 ${floatText.color}`}
+                  style={{ left: `${floatText.x - 50}px` }}
+                >
+                  {floatText.text}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+
+            {/* --- F: THE STATIONARY GROUND ITEMS (Gold & Rocks) --- */}
+            {items.map((item) => {
+              if (item.isCollected) return null;
+
+              // Check if currently holding this item to attach its position to claw
+              const isGrabbed = grabbedItem && grabbedItem.id === item.id;
+              const displayX = isGrabbed ? clawX : item.x;
+              const displayY = isGrabbed ? clawY : item.y;
+
+              const isTargetGold = targetItem && item.id === targetItem.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center select-none cursor-pointer"
+                  style={{
+                    left: `${displayX}px`,
+                    top: `${displayY}px`,
+                    width: `${item.radius * 2.2}px`,
+                    height: `${item.radius * 2.2}px`,
+                    zIndex: isGrabbed ? 25 : 10
+                  }}
+                  onClick={(e) => {
+                    // Let clicking an item trigger launching claw in its general direction
+                    e.stopPropagation();
+                    launchClaw();
+                  }}
+                >
+                  {/* Glowing halo behind gold nuggets */}
+                  {item.type === 'gold' && (
+                    <div 
+                      className={`absolute inset-0 rounded-full transition-all duration-1000 ${
+                        isTargetGold 
+                          ? 'bg-yellow-400/35 shadow-[0_0_25px_rgba(253,224,71,0.9)] animate-pulse border-2 border-yellow-300' 
+                          : 'bg-yellow-500/10 shadow-[0_0_15px_rgba(253,224,71,0.4)]'
+                      }`}
+                    />
+                  )}
+
+                  {/* Ground item SVG shape */}
+                  <svg 
+                    className="w-full h-full filter drop-shadow(0px 4px 6px rgba(0,0,0,0.5)) hover:scale-105 transition-transform duration-200" 
+                    viewBox="0 0 100 100"
+                  >
+                    {item.type === 'gold' ? (
+                      // Gold nugget vector shape
+                      <g>
+                        <defs>
+                          <radialGradient id="goldGrad" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="#FFF275" />
+                            <stop offset="30%" stopColor="#FFD54F" />
+                            <stop offset="85%" stopColor="#FF8F00" />
+                            <stop offset="100%" stopColor="#E65100" />
+                          </radialGradient>
+                        </defs>
+                        {/* Irregular faceted stone path */}
+                        <path
+                          d="M 50 15 L 75 22 L 88 48 L 78 78 L 48 88 L 18 78 L 12 48 L 22 22 Z"
+                          fill="url(#goldGrad)"
+                          stroke="#E65100"
+                          strokeWidth={isTargetGold ? "3.5" : "1.5"}
+                        />
+                        {/* Gold facets and shines */}
+                        <path d="M 50 15 L 48 48 L 18 78" stroke="#FFF59D" strokeWidth="1.5" fill="none" opacity="0.6" />
+                        <path d="M 75 22 L 48 48 L 78 78" stroke="#FFB300" strokeWidth="1.5" fill="none" opacity="0.5" />
+                        {/* Sparkle marks */}
+                        <polygon points="32,28 34,34 40,32 34,30" fill="#FFF" />
+                        <polygon points="68,68 70,72 74,70 70,68" fill="#FFF" />
+                      </g>
+                    ) : (
+                      // Grey rock vector shape
+                      <g>
+                        <defs>
+                          <radialGradient id="rockGrad" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stopColor="#B0BEC5" />
+                            <stop offset="70%" stopColor="#546E7A" />
+                            <stop offset="100%" stopColor="#37474F" />
+                          </radialGradient>
+                        </defs>
+                        <path
+                          d="M 50 18 L 82 25 L 85 52 L 72 82 L 45 85 L 20 78 L 15 50 L 22 25 Z"
+                          fill="url(#rockGrad)"
+                          stroke="#263238"
+                          strokeWidth="2"
+                        />
+                        {/* Rock crevices and craters */}
+                        <ellipse cx="32" cy="42" rx="6" ry="4" fill="#37474F" stroke="#263238" strokeWidth="1" opacity="0.6" />
+                        <ellipse cx="65" cy="55" rx="8" ry="5" fill="#37474F" stroke="#263238" strokeWidth="1" opacity="0.6" />
+                        <circle cx="50" cy="32" r="3" fill="#263238" opacity="0.4" />
+                      </g>
+                    )}
+                  </svg>
+
+                  {/* Word and Romanization label card inside each nugget/rock */}
+                  <div 
+                    className={`absolute bottom-[-10px] px-3 py-1 rounded-lg border flex flex-col items-center shadow-md select-none text-center ${
+                      item.type === 'gold'
+                        ? isTargetGold 
+                          ? 'bg-yellow-400 border-yellow-200 text-slate-900 scale-105 font-black ring-4 ring-yellow-400/50' 
+                          : 'bg-amber-950/90 border-amber-500 text-yellow-300 font-extrabold'
+                        : 'bg-slate-900/90 border-slate-700 text-slate-300 font-bold'
+                    }`}
+                    style={{ minWidth: '85px', fontSize: '11px', lineHeight: '1.2' }}
+                  >
+                    <span className="text-[13px] tracking-wide font-black truncate max-w-[90px]">{item.name}</span>
+                    <span className="text-[9px] font-mono tracking-tight opacity-90 truncate max-w-[90px]">{item.tailo}</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Target highlight helper ping circle */}
+            {renderHintHighlight()}
+
+          </div>
+
+          {/* PAUSED OVERLAY STATE */}
+          {gameState === 'paused' && (
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center text-center z-40 select-none">
+              <div className="p-8 rounded-3xl border-2 border-slate-800 bg-slate-950/95 max-w-sm flex flex-col items-center gap-4 shadow-2xl">
+                <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-3xl animate-pulse">
+                  ⏸️
+                </div>
+                <h3 className="font-black text-white text-2xl">太空任務暫停中</h3>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  點擊下方按鈕或再次按下【暫停】鍵回到太空採礦現場！
+                </p>
+                <button
+                  onClick={() => setGameState('playing')}
+                  className="w-full mt-2 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  繼續探險
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* 3. Footer Row (Instruction Plaque & TNT controls) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center select-none">
+        
+        {/* Game Tutorial Details Summary Box */}
+        <div className="md:col-span-3 bg-[#0B0C10] border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-4 text-white text-xs items-start md:items-center">
+          <span className="px-3 py-1.5 bg-yellow-400 text-slate-950 font-black rounded-lg uppercase shrink-0 text-[10px] tracking-wider">
+            遊戲說明
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 flex-1">
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">✨</span>
+              <div>
+                <div className="font-black text-yellow-300">金塊 = 正確答案</div>
+                <div className="text-slate-400 text-[10px]">抓到可得分數與大額金錢</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">🪨</span>
+              <div>
+                <div className="font-black text-slate-300">石頭 = 錯誤答案</div>
+                <div className="text-slate-400 text-[10px]">抓到會倒扣金錢並損失時間</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">🧨</span>
+              <div>
+                <div className="font-black text-red-400">TNT = 清除障礙</div>
+                <div className="text-slate-400 text-[10px]">可立刻炸毀手上抓著的重物</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Big Cartoon TNT Dynamite Trigger Button (Matches Figure 1 bottom-right button) */}
+        <div className="flex justify-end shrink-0">
+          <button
+            onClick={triggerTNT}
+            disabled={stateRef.current !== 'reeling' || !grabbedItem || tntCount <= 0}
+            className={`relative flex items-center justify-between pl-5 pr-4 py-3.5 rounded-2xl border-2 transition-all shadow-xl w-full md:w-56 cursor-pointer group select-none active:scale-95 ${
+              stateRef.current === 'reeling' && grabbedItem && tntCount > 0
+                ? 'bg-gradient-to-r from-red-700 to-orange-600 hover:from-red-600 hover:to-orange-500 border-red-300 text-white animate-bounce'
+                : 'bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed opacity-60'
+            }`}
+          >
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dynamite</span>
+              <span className="text-sm font-black tracking-wide">清除一個障礙</span>
+            </div>
+            
+            {/* TNT Dynamite Graphic */}
+            <div className="relative flex items-center">
+              <svg className="w-12 h-12 overflow-visible" viewBox="0 0 50 50">
+                {/* 3 bundled dynamite sticks */}
+                <rect x="8" y="12" width="10" height="26" rx="2" fill="#D32F2F" stroke="#7B1FA2" strokeWidth="0.5" />
+                <rect x="18" y="10" width="12" height="28" rx="2" fill="#E53935" stroke="#7B1FA2" strokeWidth="0.5" strokeDasharray="" />
+                <rect x="30" y="12" width="10" height="26" rx="2" fill="#C62828" stroke="#7B1FA2" strokeWidth="0.5" />
+                {/* Bundle tape with label */}
+                <rect x="8" y="21" width="32" height="8" fill="#F5F5F5" />
+                <text x="24" y="28" fill="#111" fontSize="7" fontWeight="900" textAnchor="middle">TNT</text>
+                {/* Burning Fuse spark */}
+                <path d="M 24 10 Q 24 2 34 5" fill="none" stroke="#FFA000" strokeWidth="1.5" />
+                <circle cx="34" cy="5" r="2.5" fill="#FFEB3B" className="animate-ping" />
+              </svg>
+
+              {/* Red TNT inventory count badge */}
+              <span className="absolute -top-1 -right-1.5 w-6 h-6 rounded-full bg-red-600 border border-white flex items-center justify-center text-white font-black text-xs shadow-md animate-pulse">
+                x{tntCount}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+
+      {/* --- MODAL OVERLAYS --- */}
+
+      {/* A. WELCOME TUTORIAL DIALOG */}
+      <AnimatePresence>
+        {showTutorial && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              className="relative max-w-lg w-full bg-[#0F1423] border-4 border-[#3B82F6] rounded-3xl p-7 shadow-2xl flex flex-col items-center text-center text-white"
+            >
+              <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center text-5xl mb-4 shadow-inner animate-pulse">
+                🦌
+              </div>
+              
+              <h2 className="text-2xl font-black text-yellow-300 tracking-wide flex items-center gap-2 mb-2">
+                <span>🛸</span> 太空台語礦工大冒險
+              </h2>
+              <p className="text-sm text-slate-300 font-bold mb-6">
+                歡迎來到月球太空站！這一次，我們要幫忙聰明的鹿礦工開著採礦車，在重力微弱的太空岩層中，抓取香甜美味的「鹿港在地點心」金塊！
+              </p>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 w-full text-left flex flex-col gap-3.5 text-xs text-slate-300 mb-6">
+                <div className="flex gap-2.5 items-start">
+                  <span className="text-base">1️⃣</span>
+                  <p>
+                    <strong className="text-cyan-300">聽音辨詞</strong>：點擊上方喇叭聆聽台語發音，找出對應的拼音詞彙。
+                  </p>
+                </div>
+                <div className="flex gap-2.5 items-start">
+                  <span className="text-base">2️⃣</span>
+                  <p>
+                    <strong className="text-yellow-300">抓取金塊</strong>：按【空白鍵】或【點擊畫面】發射鉤子。只抓取和目標音檔相符的黃金。
+                  </p>
+                </div>
+                <div className="flex gap-2.5 items-start">
+                  <span className="text-base">3️⃣</span>
+                  <p>
+                    <strong className="text-red-400"> detonate 炸藥</strong>：如果抓到很沉重耗時的普通石頭，點擊右下角【TNT】（或 T 鍵）引爆它，可以秒回收鉤爪！
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowTutorial(false);
+                  setGameState('playing');
+                }}
+                className="px-10 py-4 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold text-sm transition-all active:scale-95 shadow-lg shadow-cyan-500/20 cursor-pointer flex items-center gap-2"
+              >
+                出發！前往太空採礦 <ChevronRight className="w-4 h-4 stroke-[3]" />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* B. LEVEL WIN SCREEN */}
+      <AnimatePresence>
+        {gameState === 'levelwin' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative max-w-md w-full bg-[#0F1423] border-4 border-emerald-500 rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center text-white"
+            >
+              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-5xl mb-4 animate-bounce">
+                🏆
+              </div>
+              
+              <h2 className="text-2xl font-black text-emerald-400 mb-1">任務圓滿達成！</h2>
+              <p className="text-sm text-slate-400 font-bold mb-6">您順利採集到足夠的台語點心金塊！</p>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 w-full mb-6 flex flex-col gap-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">當前關卡分數</span>
+                  <span className="text-yellow-400 font-black">{score} 分</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-slate-800 pt-2">
+                  <span className="text-slate-400">總體太空資金</span>
+                  <span className="text-emerald-400 font-black">${money}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-slate-800 pt-2">
+                  <span className="text-slate-400">通關星等紀錄</span>
+                  <span className="text-yellow-300 font-black">
+                    {money >= goal + 150 ? '⭐⭐⭐⭐⭐' : money >= goal ? '⭐⭐⭐⭐' : '⭐⭐⭐'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-4 w-full">
+                <button
+                  onClick={restartGame}
+                  className="flex-1 py-3.5 rounded-full border-2 border-slate-700 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer transition-colors"
+                >
+                  重玩本關
+                </button>
+                <button
+                  onClick={startNextLevel}
+                  className="flex-1 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs cursor-pointer transition-colors shadow-md shadow-emerald-500/10 flex items-center justify-center gap-1.5"
+                >
+                  前進 Level {level + 1} 🚀
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* C. GAME OVER SCREEN */}
+      <AnimatePresence>
+        {gameState === 'gameover' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative max-w-md w-full bg-[#0F1423] border-4 border-red-500 rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center text-white"
+            >
+              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center text-5xl mb-4 animate-pulse">
+                🛰️
+              </div>
+              
+              <h2 className="text-2xl font-black text-red-500 mb-1">採礦船燃料耗盡!</h2>
+              <p className="text-sm text-slate-400 font-bold mb-6">太空資金未達到目標門檻 ${goal}</p>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 w-full mb-6 flex flex-col gap-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">當前金錢</span>
+                  <span className="text-red-400 font-black">${money}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-slate-800 pt-2">
+                  <span className="text-slate-400">關卡目標</span>
+                  <span className="text-slate-300 font-black">${goal}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-4 w-full">
+                <button
+                  onClick={onHome}
+                  className="flex-1 py-3.5 rounded-full border-2 border-slate-700 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer transition-colors"
+                >
+                  回大廳
+                </button>
+                <button
+                  onClick={restartGame}
+                  className="flex-1 py-3.5 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-xs cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5"
+                >
+                  再戰一次 🔄
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+    </GameShell>
+  );
+}
