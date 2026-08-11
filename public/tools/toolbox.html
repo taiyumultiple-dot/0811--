@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台語工具箱｜臺羅拼音方塊研究所</title>
+<style>
+/* 單一檔案、不連外部資源：老師把檔案存到隨身碟、離線在教室也能開 */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030b17; --panel:#071322; --card:#030b17;
+  --line:rgba(6,182,212,.4); --line-hi:#67e8f9;
+  --amber:#fcd34d; --sub:#a5f3fc; --emerald:#34d399; --rose:#fb7185;
+}
+body{
+  background:var(--bg); color:#fff; min-height:100vh; padding:16px;
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  font-weight:900; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:20px;
+  box-shadow:0 0 20px rgba(2,132,199,.15)}
+button,input,select,textarea{font:inherit;font-weight:900}
+button{cursor:pointer;border:none;background:none;color:inherit;transition:all .15s}
+button:active{transform:scale(.95)}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+input,textarea{background:var(--card);border:2px solid var(--line);border-radius:16px;
+  padding:12px 16px;color:#fff;outline:none;width:100%}
+input:focus,textarea:focus{border-color:var(--line-hi)}
+input::placeholder,textarea::placeholder{color:rgba(165,243,252,.4)}
+a{color:var(--sub)}
+
+/* 頁首 */
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:52px;height:52px;border-radius:16px;background:rgba(8,51,68,.9);
+  border:2px solid #22d3ee;display:grid;place-items:center;font-size:26px;
+  box-shadow:0 0 15px rgba(2,132,199,.5)}
+.top h1{font-size:26px;letter-spacing:.03em}
+.top .tag{color:var(--amber);font-size:15px}
+.search{margin-left:auto;position:relative;width:min(320px,100%)}
+.search input{padding-left:42px}
+.search span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:17px;opacity:.7}
+
+/* 上課快速列 */
+.quick{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:rgba(8,51,68,.5);border:1px solid var(--line);border-radius:20px;padding:14px 18px}
+.quick .lbl{color:var(--amber);font-size:15px;white-space:nowrap}
+.quick button{padding:11px 20px;border-radius:14px;background:var(--card);
+  border:2px solid var(--line);color:var(--sub);font-size:15px;display:flex;align-items:center;gap:7px}
+.quick button:hover{border-color:var(--line-hi);color:#fff}
+
+/* 分區 */
+.sec{display:flex;align-items:center;gap:9px;border-left:4px solid var(--amber);
+  padding-left:12px;margin-top:4px}
+.sec h2{font-size:20px}
+.sec .n{margin-left:auto;font-size:13px;color:rgba(165,243,252,.6)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+
+/* 工具卡 */
+.card{position:relative;background:var(--card);border:2px solid var(--line);border-radius:18px;
+  padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.card:hover{border-color:var(--line-hi);transform:translateY(-2px)}
+.card .hd{display:flex;align-items:center;gap:12px;padding-right:36px}
+.card .ic{width:48px;height:48px;border-radius:14px;background:rgba(8,51,68,.8);
+  border:1px solid rgba(34,211,238,.6);display:grid;place-items:center;font-size:24px;flex-shrink:0}
+.card .nm{font-size:17px;line-height:1.3}
+.card p{font-size:13.5px;color:#ecfeff;line-height:1.65;flex:1}
+.star{position:absolute;top:12px;right:12px;font-size:19px;padding:5px;border-radius:9px;
+  color:rgba(6,182,212,.55);line-height:1}
+.star.on{color:var(--amber)}
+.star:hover{background:rgba(8,51,68,.7)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.t{font-size:11px;padding:4px 9px;border-radius:8px;border:1px solid;letter-spacing:.02em}
+.t.free{color:#6ee7b7;border-color:rgba(110,231,183,.5);background:rgba(6,78,59,.4)}
+.t.proj{color:var(--amber);border-color:rgba(252,211,77,.5);background:rgba(120,53,15,.35)}
+.t.print{color:#c4b5fd;border-color:rgba(196,181,253,.5);background:rgba(76,29,149,.3)}
+.t.ai{color:#f9a8d4;border-color:rgba(249,168,212,.5);background:rgba(131,24,67,.3)}
+.go{width:100%;padding:12px;border-radius:14px;font-size:15px;display:flex;
+  align-items:center;justify-content:center;gap:7px}
+.go.on{background:linear-gradient(90deg,#34d399,#2dd4bf,#22d3ee);color:#020617}
+.go.on:hover{filter:brightness(1.1)}
+.go.off{background:rgba(8,51,68,.9);border:2px solid var(--line);color:var(--sub)}
+
+.foot{text-align:center;padding-top:16px;border-top:1px solid rgba(6,182,212,.3);font-size:13px}
+
+/* 工具內頁 */
+.back{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:11px 18px;
+  border-radius:14px;background:rgba(8,51,68,.9);border:2px solid var(--line);color:var(--sub);font-size:15px}
+.back:hover{color:#fff;border-color:var(--line-hi)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;background:#030a16;border:2px solid var(--line);
+  border-radius:18px;padding:8px}
+.tabs button{flex:1;min-width:120px;padding:13px;border-radius:12px;color:var(--sub);font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.tabs button:hover{background:rgba(8,51,68,.6);color:#fff}
+.tabs button.act{background:linear-gradient(90deg,#34d399,#2dd4bf);color:#020617;
+  box-shadow:0 0 15px rgba(52,211,153,.4)}
+
+/* 抽籤 */
+.stage{width:100%;min-height:190px;border-radius:24px;border:4px solid var(--line);
+  background:var(--card);display:grid;place-items:center;padding:28px;text-align:center}
+.stage.hit{background:rgba(6,78,59,.6);border-color:var(--emerald);
+  box-shadow:0 0 40px rgba(52,211,153,.35)}
+.stage .nm{font-size:clamp(38px,9vw,88px);line-height:1.1}
+.stage.hit .nm{color:var(--amber);text-shadow:0 0 25px rgba(252,211,77,.6)}
+.stage .roll{opacity:.65;font-size:clamp(32px,7vw,64px)}
+.stage .hint{color:rgba(165,243,252,.5);font-size:19px}
+.row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center}
+.big{padding:16px 32px;border-radius:18px;background:linear-gradient(90deg,#34d399,#2dd4bf,#22d3ee);
+  color:#020617;font-size:20px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+.big:hover:not(:disabled){filter:brightness(1.1)}
+.ghost{padding:16px 20px;border-radius:18px;background:rgba(8,51,68,.9);border:2px solid var(--line);
+  color:var(--sub);font-size:15px;display:flex;align-items:center;gap:8px}
+.ghost:hover{color:#fff;border-color:var(--line-hi)}
+.chk{display:flex;align-items:center;gap:10px;padding:16px;border-radius:18px;background:var(--card);
+  border:2px solid var(--line);font-size:15px;color:var(--sub);cursor:pointer;user-select:none}
+.chk input{width:19px;height:19px;accent-color:var(--emerald);cursor:pointer}
+.pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.pill{padding:6px 12px;border-radius:12px;background:rgba(8,51,68,.8);
+  border:1px solid rgba(34,211,238,.5);color:var(--sub);font-size:13px}
+
+/* 計分 */
+.team{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);
+  border-radius:18px;padding:14px}
+.team .rk{font-size:26px;width:44px;text-align:center;flex-shrink:0}
+.team .nm{flex:1;font-size:21px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team .sc{font-size:34px;color:var(--amber);width:88px;text-align:right;
+  font-variant-numeric:tabular-nums;flex-shrink:0}
+.team .ops{display:flex;gap:6px;flex-shrink:0}
+.team .ops button{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+  font-size:19px;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.b-minus{background:rgba(244,63,94,.9);color:#fff}
+.b-plus{background:var(--emerald);color:#020617}
+.b-five{background:var(--amber);color:#020617;font-size:15px}
+.b-del{background:rgba(8,51,68,.9);border:2px solid var(--line);color:var(--sub)}
+
+/* 計時 */
+.clock{width:100%;border-radius:24px;border:4px solid var(--line);background:var(--card);
+  padding:44px 20px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.clock.warn{border-color:var(--rose);background:rgba(76,5,25,.5);animation:pulse 1s infinite}
+.clock.end{border-color:var(--rose);background:rgba(76,5,25,.7);box-shadow:0 0 40px rgba(251,113,133,.4)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.clock .d{font-size:clamp(64px,15vw,140px);line-height:1;font-variant-numeric:tabular-nums}
+.clock.warn .d,.clock.end .d{color:#fda4af}
+.bar{width:80%;height:12px;border-radius:99px;background:rgba(8,51,68,.9);
+  border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#34d399,#22d3ee);transition:width .2s}
+.clock.warn .bar i,.clock.end .bar i{background:var(--rose)}
+.preset{padding:12px 22px;border-radius:16px;background:var(--card);border:2px solid var(--line);
+  color:var(--sub);font-size:16px}
+.preset.act{background:var(--amber);border-color:#fde68a;color:#020617}
+.preset:hover:not(.act){border-color:var(--line-hi);color:#fff}
+
+/* 分組 */
+.grp{background:var(--card);border:2px solid;border-radius:18px;padding:16px;
+  display:flex;flex-direction:column;gap:12px}
+.grp .h{display:flex;justify-content:space-between;align-items:center;font-size:19px}
+.grp .h small{font-size:13px;color:var(--sub)}
+
+/* 教室用語卡 */
+.phr{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px;
+  display:flex;flex-direction:column;gap:11px}
+.phr .zh{font-size:19px}
+.phr .lookup{display:flex;gap:8px;flex-wrap:wrap}
+.phr .lookup a{padding:7px 13px;border-radius:11px;background:rgba(8,51,68,.9);
+  border:1px solid rgba(34,211,238,.5);font-size:13px;text-decoration:none}
+.phr .lookup a:hover{border-color:var(--line-hi);color:#fff}
+.phr input{padding:10px 14px;font-size:15px}
+.phr .note{font-size:12px;color:rgba(165,243,252,.55);line-height:1.6;font-weight:700}
+.warnbox{background:rgba(120,53,15,.35);border:2px solid rgba(252,211,77,.5);border-radius:18px;
+  padding:16px;font-size:13.5px;line-height:1.75;color:#fde68a;font-weight:700}
+.warnbox b{color:var(--amber)}
+
+.empty{text-align:center;padding:52px 20px;color:rgba(165,243,252,.55);font-size:17px}
+.hide{display:none !important}
+@media(max-width:640px){
+  body{padding:10px}
+  .panel{padding:14px;border-radius:18px}
+  .team .sc{width:60px;font-size:26px}
+  .team .ops button{width:40px;height:40px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══ 工具牆 ══ -->
+  <div id="wall" class="panel" style="display:flex;flex-direction:column;gap:18px">
+    <div class="top">
+      <div class="logo">🧰</div>
+      <div>
+        <h1>台語工具箱</h1>
+        <div class="tag">老師的備課與上課工具台</div>
+      </div>
+      <div class="search">
+        <span>🔍</span>
+        <input id="q" type="text" placeholder="搜尋工具…" aria-label="搜尋工具">
+      </div>
+    </div>
+
+    <div class="quick">
+      <span class="lbl">⚡ 上課中直接用</span>
+      <button onclick="open_('classroom','draw')">🎲 抽籤點名</button>
+      <button onclick="open_('classroom','timer')">⏱️ 倒數計時</button>
+      <button onclick="open_('classroom','score')">🏆 計分板</button>
+      <button onclick="open_('classroom','group')">👥 隨機分組</button>
+    </div>
+
+    <div id="secs"></div>
+
+    <div class="foot">
+      <a href="#" id="report">工具有問題？點此回報</a>
+    </div>
+  </div>
+
+  <!-- ══ 工具內頁 ══ -->
+  <div id="tool" class="hide" style="display:flex;flex-direction:column;gap:16px">
+    <button class="back" onclick="closeTool()">← 回到工具箱</button>
+    <div id="toolBody" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+/* ─────────── 工具清單 ───────────
+   標籤讓老師掃一眼就知道能不能用：
+   free=免登入 proj=可投影 print=可列印 ai=需要 API 金鑰 */
+var TOOLS = [
+  {id:'classroom', g:'t', ic:'🎲', nm:'課堂小工具',
+   d:'抽籤點名、計分板、倒數計時、隨機分組。不用網路、不用 AI，開了就能投影。',
+   tags:['free','proj'], ready:true},
+  {id:'phrases', g:'t', ic:'🗣️', nm:'教室用語卡',
+   d:'「翻到第三頁」「安靜」「排隊」這些話台語怎麼講。查教育部辭典後自己存下來，可投影可列印。',
+   tags:['free','proj','print'], ready:true},
+  {id:'proverbs', g:'t', ic:'📖', nm:'台語諺語小字典',
+   d:'查俗諺、看意思與使用情境，附例句。資料來自教育部辭典，不自己編。',
+   tags:['free','proj'], ready:false},
+  {id:'worksheet', g:'t', ic:'📄', nm:'台語學習單產生器',
+   d:'輸入主題與年級，產生可列印的學習單。產出後可以直接編輯再印。',
+   tags:['print','ai'], ready:false},
+  {id:'quiz', g:'t', ic:'📝', nm:'台語試題產生器',
+   d:'產生字音字形、聽力、情境選擇題，附解答，可匯入教學後台。',
+   tags:['print','ai'], ready:false},
+  {id:'annotate', g:'t', ic:'🔤', nm:'課文台羅標註',
+   d:'貼一段課文，自動標上台羅拼音。沒把握的字會標紅提醒查證，不會硬編。',
+   tags:['print','ai'], ready:false},
+  {id:'flashcards', g:'s', ic:'🗂️', nm:'我的單字卡',
+   d:'把學過的詞收進來，用間隔複習排程，每天抽考幾張。跟學習紀錄共用資料。',
+   tags:['free'], ready:false},
+  {id:'dialogue', g:'s', ic:'💬', nm:'情境對話產生器',
+   d:'選一個場景（買菜、看醫生、坐車、拜訪長輩），產生一段生活對話，逐句練習。',
+   tags:['ai'], ready:false}
+];
+var TAGNM = {free:'免登入', proj:'可投影', print:'可列印', ai:'需要 API 金鑰'};
+var SECS = [{k:'t', nm:'老師用', ic:'🍎'}, {k:'s', nm:'學生用', ic:'🎒'}];
+
+/* ─────────── 小工具 ─────────── */
+var LS = {
+  get:function(k,d){ try{ var v=localStorage.getItem(k); return v===null?d:v; }catch(e){ return d; } },
+  set:function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  json:function(k,d){ try{ return JSON.parse(localStorage.getItem(k)) || d; }catch(e){ return d; } }
+};
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function el(id){ return document.getElementById(id); }
+function moeUrl(w){ return 'https://sutian.moe.edu.tw/zh-hant/tshiau/?lui=tai_su&tsha=' + encodeURIComponent(w); }
+
+var favs = LS.json('taigi_toolbox_favs', []);
+
+/* ─────────── 工具牆 ─────────── */
+function renderWall(){
+  var kw = el('q').value.trim().toLowerCase();
+  var list = TOOLS.filter(function(t){
+    return !kw || t.nm.toLowerCase().indexOf(kw)>=0 || t.d.toLowerCase().indexOf(kw)>=0;
+  }).sort(function(a,b){ return (favs.indexOf(b.id)>=0) - (favs.indexOf(a.id)>=0); });
+
+  var html = '';
+  SECS.forEach(function(s){
+    var items = list.filter(function(t){ return t.g===s.k; });
+    if(!items.length) return;
+    html += '<div class="sec"><span style="font-size:19px">'+s.ic+'</span><h2>'+s.nm+'</h2>'
+          + '<span class="n">'+items.length+' 個工具</span></div><div class="grid">';
+    items.forEach(function(t){
+      var on = favs.indexOf(t.id)>=0;
+      html += '<div class="card">'
+        + '<button class="star'+(on?' on':'')+'" onclick="fav(\''+t.id+'\')" '
+        + 'aria-label="'+(on?'取消收藏':'收藏')+' '+esc(t.nm)+'">'+(on?'★':'☆')+'</button>'
+        + '<div class="hd"><div class="ic">'+t.ic+'</div><div class="nm">'+esc(t.nm)+'</div></div>'
+        + '<p>'+esc(t.d)+'</p>'
+        + '<div class="tags">' + t.tags.map(function(g){
+            return '<span class="t '+g+'">'+TAGNM[g]+'</span>'; }).join('') + '</div>'
+        + '<button class="go '+(t.ready?'on':'off')+'" '
+        + (t.ready?'onclick="open_(\''+t.id+'\')"':'disabled')+'>'
+        + (t.ready?'開始使用 ❯':'🚧 即將推出') + '</button>'
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  if(!html) html = '<div class="empty">找不到「'+esc(el('q').value)+'」相關的工具</div>';
+  el('secs').innerHTML = html;
+}
+function fav(id){
+  var i = favs.indexOf(id);
+  if(i>=0) favs.splice(i,1); else favs.push(id);
+  LS.set('taigi_toolbox_favs', JSON.stringify(favs));
+  renderWall();
+}
+el('q').addEventListener('input', renderWall);
+
+/* ─────────── 開關工具 ─────────── */
+var timers = [];
+function clearTimers(){ timers.forEach(clearInterval); timers.forEach(clearTimeout); timers = []; }
+
+function open_(id, sub){
+  var t = TOOLS.filter(function(x){ return x.id===id; })[0];
+  if(!t || !t.ready) return;
+  el('wall').classList.add('hide');
+  el('tool').classList.remove('hide');
+  if(id==='classroom') classroom(sub||'draw');
+  if(id==='phrases') phrases();
+  window.scrollTo(0,0);
+}
+function closeTool(){
+  clearTimers();
+  el('toolBody').innerHTML = '';
+  el('tool').classList.add('hide');
+  el('wall').classList.remove('hide');
+}
+
+/* ═══════════ 課堂小工具 ═══════════ */
+var CTABS = [{k:'draw',nm:'抽籤點名',ic:'🎲'},{k:'score',nm:'計分板',ic:'🏆'},
+             {k:'timer',nm:'倒數計時',ic:'⏱️'},{k:'group',nm:'隨機分組',ic:'👥'}];
+
+function classroom(tab){
+  clearTimers();
+  var html = '<div class="tabs">' + CTABS.map(function(t){
+    return '<button class="'+(t.k===tab?'act':'')+'" onclick="classroom(\''+t.k+'\')">'
+         + t.ic+' '+t.nm+'</button>'; }).join('') + '</div>'
+    + '<div id="ct"></div>';
+  if(tab==='draw'||tab==='group'){
+    html += '<div class="panel"><div style="display:flex;flex-direction:column;gap:9px">'
+      + '<label style="font-size:16px">班級名單 '
+      + '<span style="font-size:13px;color:var(--sub)">一行一個名字，抽籤與分組共用</span></label>'
+      + '<textarea id="roster" rows="5" placeholder="王小明&#10;陳美玲&#10;林志豪"></textarea>'
+      + '<div style="font-size:13px;color:var(--sub)" id="rn"></div></div></div>';
+  }
+  el('toolBody').innerHTML = html;
+
+  if(tab==='draw'||tab==='group'){
+    var r = el('roster');
+    r.value = LS.get('taigi_classroom_roster','');
+    r.addEventListener('input', function(){
+      LS.set('taigi_classroom_roster', r.value);
+      el('rn').textContent = '共 ' + names().length + ' 人';
+      if(tab==='draw') drawUI(); else groupUI();
+    });
+    el('rn').textContent = '共 ' + names().length + ' 人';
+  }
+  if(tab==='draw') drawUI();
+  if(tab==='score') scoreUI();
+  if(tab==='timer') timerUI();
+  if(tab==='group') groupUI();
+}
+function names(){
+  var seen = {}, out = [];
+  LS.get('taigi_classroom_roster','').split('\n').forEach(function(n){
+    n = n.trim();
+    if(n && !seen[n]){ seen[n]=1; out.push(n); }
+  });
+  return out;
+}
+
+/* ── 抽籤點名 ── */
+var drawn = [], excl = true, rolling = false, lastHit = '';
+function drawUI(){
+  var all = names();
+  var pool = excl ? all.filter(function(n){ return drawn.indexOf(n)<0; }) : all;
+  // 抽中的名字要一直留在畫面上，老師還在唸、還在請那位同學回答，
+  // 不能因為重繪就變回提示字
+  el('ct').innerHTML = '<div class="panel" style="display:flex;flex-direction:column;gap:16px;align-items:center">'
+    + '<div class="stage'+(lastHit?' hit':'')+'" id="stage">'
+    + (lastHit ? '<span class="nm">'+esc(lastHit)+'</span>'
+               : '<span class="hint">'+(all.length? '按「抽籤」開始' : '請先在下方貼上班級名單')+'</span>')
+    + '</div>'
+    + '<div class="row">'
+    + '<button class="big" id="spin" '+(pool.length?'':'disabled')+'>🎲 抽籤</button>'
+    + '<button class="ghost" id="rst">↺ 重置抽籤池</button>'
+    + '<label class="chk"><input type="checkbox" id="ex" '+(excl?'checked':'')+'>抽過的人不再抽到</label>'
+    + '</div>'
+    + '<div style="font-size:15px;color:var(--sub)">剩餘可抽 '
+    + '<b style="color:var(--amber);font-size:19px">'+pool.length+'</b> 人'
+    + (drawn.length? ' ／ 已抽 '+drawn.length+' 人':'') + '</div>'
+    + (drawn.length? '<div class="pills">'+drawn.map(function(n){
+        return '<span class="pill">'+esc(n)+'</span>'; }).join('')+'</div>' : '')
+    + '</div>';
+
+  el('ex').onchange = function(){ excl = this.checked; drawUI(); };
+  el('rst').onclick = function(){ drawn = []; lastHit = ''; drawUI(); };
+  el('spin').onclick = function(){
+    if(rolling || !pool.length) return;
+    rolling = true; el('spin').disabled = true;
+    var stage = el('stage'), TICKS = 30, i = 0;
+    (function step(){
+      stage.innerHTML = '<span class="nm roll">'
+        + esc(pool[Math.floor(Math.random()*pool.length)]) + '</span>';
+      if(++i < TICKS){
+        // 間隔越來越長 → 名字由快轉慢再停住
+        timers.push(setTimeout(step, 45 + Math.pow(i/TICKS,3)*300));
+      } else {
+        var hit = pool[Math.floor(Math.random()*pool.length)];
+        stage.classList.add('hit');
+        stage.innerHTML = '<span class="nm">'+esc(hit)+'</span>';
+        rolling = false;
+        lastHit = hit;
+        if(excl) drawn.push(hit);
+        timers.push(setTimeout(drawUI, 1200));
+      }
+    })();
+  };
+}
+
+/* ── 計分板 ── */
+var teams = LS.json('taigi_classroom_teams', []);
+var MEDAL = ['🥇','🥈','🥉'];
+function saveTeams(){ LS.set('taigi_classroom_teams', JSON.stringify(teams)); }
+function scoreUI(){
+  var rk = teams.slice().sort(function(a,b){ return b.s - a.s; });
+  el('ct').innerHTML = '<div class="panel" style="display:flex;flex-direction:column;gap:14px">'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    + '<input id="tn" placeholder="組別名稱（例如：第一組）" style="flex:1;min-width:200px">'
+    + '<button class="big" id="add" style="padding:12px 22px;font-size:16px">＋ 新增組別</button></div>'
+    + (rk.length ? rk.map(function(t,i){
+        return '<div class="team"><span class="rk">'+(MEDAL[i]||(i+1)+'.')+'</span>'
+          + '<span class="nm">'+esc(t.n)+'</span><span class="sc">'+t.s+'</span>'
+          + '<span class="ops">'
+          + '<button class="b-minus" onclick="bump(\''+t.id+'\',-1)" aria-label="減1分">－</button>'
+          + '<button class="b-plus" onclick="bump(\''+t.id+'\',1)" aria-label="加1分">＋</button>'
+          + '<button class="b-five" onclick="bump(\''+t.id+'\',5)" aria-label="加5分">+5</button>'
+          + '<button class="b-del" onclick="delTeam(\''+t.id+'\')" aria-label="刪除">🗑</button>'
+          + '</span></div>'; }).join('')
+      : '<div class="empty">還沒有組別，先新增一組吧</div>')
+    + (rk.length ? '<div class="row" style="padding-top:6px">'
+        + '<button class="ghost" onclick="zero()">↺ 分數歸零</button>'
+        + '<button class="ghost" style="border-color:rgba(244,63,94,.5);color:#fda4af" '
+        + 'onclick="clearTeams()">🗑 清空所有組別</button></div>' : '')
+    + '</div>';
+  var add = function(){
+    var n = el('tn').value.trim();
+    if(!n) return;
+    teams.push({id:'t'+Date.now()+Math.floor(Math.random()*1e4), n:n, s:0});
+    saveTeams(); scoreUI();
+  };
+  el('add').onclick = add;
+  el('tn').onkeydown = function(e){ if(e.key==='Enter') add(); };
+}
+function bump(id,d){ teams.forEach(function(t){ if(t.id===id) t.s+=d; }); saveTeams(); scoreUI(); }
+function delTeam(id){ teams = teams.filter(function(t){ return t.id!==id; }); saveTeams(); scoreUI(); }
+function zero(){ teams.forEach(function(t){ t.s=0; }); saveTeams(); scoreUI(); }
+function clearTeams(){ teams = []; saveTeams(); scoreUI(); }
+
+/* ── 倒數計時 ── */
+var total = 180, left = 180, running = false, endAt = 0;
+function timerUI(){
+  var m = String(Math.floor(left/60)).padStart(2,'0'), s = String(left%60).padStart(2,'0');
+  var warn = left>0 && left<=10, end = left===0;
+  el('ct').innerHTML = '<div class="panel" style="display:flex;flex-direction:column;gap:18px;align-items:center">'
+    + '<div class="clock '+(end?'end':warn?'warn':'')+'">'
+    + '<span class="d">'+m+':'+s+'</span>'
+    + (end? '<span style="font-size:26px;color:#fda4af">⏰ 時間到！</span>':'')
+    + '<div class="bar"><i style="width:'+(total? left/total*100 : 0)+'%"></i></div></div>'
+    + '<div class="row"><button class="big" id="pp" '+(left?'':'disabled')+'>'
+    + (running?'⏸ 暫停':'▶ 開始')+'</button>'
+    + '<button class="ghost" id="rs">↺ 重設</button></div>'
+    + '<div class="row">'
+    + [1,3,5].map(function(x){ return '<button class="preset '+(total===x*60?'act':'')
+        + '" onclick="setMin('+x+')">'+x+' 分鐘</button>'; }).join('')
+    + '<span style="display:flex;gap:8px;align-items:center">'
+    + '<input id="cm" type="number" min="0.5" step="0.5" placeholder="自訂" '
+    + 'style="width:96px;text-align:center;padding:12px" aria-label="自訂分鐘數">'
+    + '<span style="font-size:16px">分鐘</span>'
+    + '<button class="ghost" style="padding:12px 16px" onclick="applyCustom()">設定</button></span>'
+    + '</div></div>';
+  el('pp').onclick = toggle;
+  el('rs').onclick = function(){ running=false; clearTimers(); left=total; timerUI(); };
+  el('cm').onkeydown = function(e){ if(e.key==='Enter') applyCustom(); };
+}
+function toggle(){
+  if(!left) return;
+  running = !running;
+  clearTimers();
+  if(running){
+    // 用結束時間戳算，分頁切走再切回來也不會走鐘
+    endAt = Date.now() + left*1000;
+    timers.push(setInterval(function(){
+      left = Math.max(0, Math.round((endAt - Date.now())/1000));
+      if(!left){ running=false; clearTimers(); }
+      timerUI();
+    }, 200));
+  }
+  timerUI();
+}
+function setMin(x){ running=false; clearTimers(); total=Math.round(x*60); left=total; timerUI(); }
+function applyCustom(){
+  var v = parseFloat(el('cm').value);
+  if(!isFinite(v) || v<=0) return;
+  setMin(Math.min(v,180));
+}
+
+/* ── 隨機分組 ── */
+var gcount = 4, groups = [];
+var GC = ['#34d399','#fcd34d','#fb7185','#38bdf8','#a78bfa','#a3e635'];
+function groupUI(){
+  el('ct').innerHTML = '<div class="panel" style="display:flex;flex-direction:column;gap:16px">'
+    + '<div class="row"><label style="display:flex;align-items:center;gap:10px;font-size:17px">分成'
+    + '<input id="gc" type="number" min="1" max="12" value="'+gcount+'" '
+    + 'style="width:84px;text-align:center;padding:12px" aria-label="組數">組</label>'
+    + '<button class="big" id="mix" '+(names().length?'':'disabled')+'>👥 一鍵分組</button></div>'
+    + (groups.length
+        ? '<div class="grid">' + groups.map(function(g,i){
+            return '<div class="grp" style="border-color:'+GC[i%GC.length]+'">'
+              + '<div class="h"><span>第 '+(i+1)+' 組</span><small>'+g.length+' 人</small></div>'
+              + '<div class="pills" style="justify-content:flex-start">'
+              + g.map(function(n){ return '<span class="pill" style="color:#fff;font-size:15px">'
+                  + esc(n)+'</span>'; }).join('') + '</div></div>'; }).join('') + '</div>'
+        : '<div class="empty">'+(names().length?'按「一鍵分組」開始':'請先在下方貼上班級名單')+'</div>')
+    + '</div>';
+  el('gc').onchange = function(){ gcount = Math.max(1, Math.min(12, +this.value||1)); this.value = gcount; };
+  el('mix').onclick = function(){
+    var p = names().slice();
+    // Fisher-Yates 洗牌，再輪流發牌 → 各組人數最多差一人
+    for(var i=p.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=p[i]; p[i]=p[j]; p[j]=t; }
+    var n = Math.max(1, Math.min(gcount, p.length));
+    groups = []; for(var k=0;k<n;k++) groups.push([]);
+    p.forEach(function(nm,i){ groups[i%n].push(nm); });
+    groupUI();
+  };
+}
+
+/* ═══════════ 教室用語卡 ═══════════
+   刻意不預填台語念法：整句在教育部辭典查不到（實測「坐好」0 筆），
+   由 AI 生一個台羅拼音等於編造，對學台語的人有害。
+   做法改成「拆成單詞查官方辭典 → 老師確認後自己存」。 */
+var PHRASES = [
+  {zh:'翻到第三頁', key:['翻','頁']},
+  {zh:'安靜',       key:['安靜']},
+  {zh:'排隊',       key:['排隊']},
+  {zh:'坐好',       key:['坐','好']},
+  {zh:'舉手',       key:['舉手']},
+  {zh:'交作業',     key:['作業']},
+  {zh:'還有五分鐘', key:['分鐘']},
+  {zh:'下課了',     key:['下課']},
+  {zh:'大聲一點',   key:['大聲']},
+  {zh:'再說一次',   key:['一次']},
+  {zh:'很好',       key:['真好']},
+  {zh:'回家路上小心', key:['小心']}
+];
+function phrases(){
+  var saved = LS.json('taigi_phrase_notes', {});
+  el('toolBody').innerHTML = '<div class="warnbox">'
+    + '<b>⚠️ 這一頁刻意不幫你填台語念法。</b><br>'
+    + '整句在教育部辭典查不到（例如「坐好」查出來是 0 筆），'
+    + '如果讓 AI 生一個台羅拼音出來，那是<b>編的</b>——學生跟著唸就錯了。<br>'
+    + '所以這裡的做法是：<b>幫你把句子拆成單詞、直接連到教育部《臺灣台語常用詞辭典》</b>，'
+    + '你聽過官方發音、確認之後自己填進去，存在這台電腦裡。'
+    + '</div>'
+    + '<div class="grid">' + PHRASES.map(function(p,i){
+        return '<div class="phr"><div class="zh">'+esc(p.zh)+'</div>'
+          + '<div class="lookup">' + p.key.map(function(w){
+              return '<a href="'+moeUrl(w)+'" target="_blank" rel="noopener">🔍 查「'+esc(w)+'」</a>';
+            }).join('') + '</div>'
+          + '<input data-i="'+i+'" class="pn" placeholder="確認後填台語念法／台羅拼音" '
+          + 'value="'+esc(saved[p.zh]||'')+'">'
+          + '</div>'; }).join('') + '</div>'
+    + '<div class="phr" style="border-style:dashed"><div class="note">'
+    + '💡 填好的內容存在這台電腦的瀏覽器裡，換一台電腦不會跟著走。'
+    + '要在教室投影就直接開這一頁，字級已經調到投影機看得清楚。</div></div>';
+
+  Array.prototype.forEach.call(document.querySelectorAll('.pn'), function(inp){
+    inp.addEventListener('input', function(){
+      var s = LS.json('taigi_phrase_notes', {});
+      s[PHRASES[+inp.dataset.i].zh] = inp.value;
+      LS.set('taigi_phrase_notes', JSON.stringify(s));
+    });
+  });
+}
+
+renderWall();
+</script>
+</body>
+</html>
