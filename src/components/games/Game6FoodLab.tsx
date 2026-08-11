@@ -57,7 +57,7 @@ export default function Game6FoodLab({
 
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-blocks.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-blocks.html`}
           title="臺羅拼音方塊研究所"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"

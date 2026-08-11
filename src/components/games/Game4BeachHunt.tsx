@@ -56,7 +56,7 @@ export default function Game4SpaceMiner({
 
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-mining.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-mining.html`}
           title="臺語太空礦場"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"

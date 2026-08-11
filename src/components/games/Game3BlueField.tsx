@@ -56,7 +56,7 @@ export default function Game3BlueField({
 
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-runner.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-runner.html`}
           title="臺羅送批大挑戰"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"

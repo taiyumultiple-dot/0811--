@@ -55,7 +55,7 @@ export default function Game2NightMarket({
 
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-brick-breaker.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-brick-breaker.html`}
           title="臺羅聲韻打磚王"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"

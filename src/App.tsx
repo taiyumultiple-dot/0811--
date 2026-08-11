@@ -22,6 +22,7 @@ const Game10Souvenirs = lazy(() => import('./components/games/Game10Souvenirs'))
 const PhonicsPage = lazy(() => import('./components/PhonicsPage'));
 const RecordPage = lazy(() => import('./components/RecordPage'));
 const NewsPage = lazy(() => import('./components/NewsPage'));
+const ToolboxPage = lazy(() => import('./components/ToolboxPage'));
 
 function LoadingFallback() {
   return (
@@ -34,7 +35,7 @@ function LoadingFallback() {
   );
 }
 
-type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | `game${number}`;
+type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | `game${number}`;
 
 function App() {
   const [view, setView] = useState<View>('home');
@@ -55,7 +56,7 @@ function App() {
       startBGM('hub');
     } else if (view === 'phonics') {
       startBGM('phonics');
-    } else if (view === 'news' || view === 'record') {
+    } else if (view === 'news' || view === 'record' || view === 'toolbox') {
       startBGM('relax');
     } else if (view.startsWith('game')) {
       startBGM('game');
@@ -99,6 +100,10 @@ function App() {
 
     if (view === 'news') {
       return <NewsPage onNavigate={(target) => handleNavigate(target)} />;
+    }
+
+    if (view === 'toolbox') {
+      return <ToolboxPage onNavigate={(target) => handleNavigate(target)} />;
     }
 
     if (view === 'game1') return <Game1FoodMatch onHome={goHome} onNext={() => goNext('game1')} />;

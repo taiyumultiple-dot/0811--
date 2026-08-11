@@ -19,7 +19,16 @@ import {
   bearDecor,
 } from '../assets/images/homepage';
 
-const SIDEBAR_ITEMS = [
+type SidebarItem = {
+  /** 圖檔（base64）。台語工具箱改用 emoji，所以是選填 */
+  icon?: string;
+  emoji?: string;
+  title: string;
+  subtitle: string;
+  active: boolean;
+};
+
+const SIDEBAR_ITEMS: SidebarItem[] = [
   { icon: iconPhonics, title: '拼音方案', subtitle: '認識聲母、韻母', active: false },
   { icon: iconInitials, title: '聲母學習', subtitle: '掌握聲母發音', active: false },
   { icon: iconFinals, title: '韻母學習', subtitle: '單元韻母練習', active: true },
@@ -27,6 +36,8 @@ const SIDEBAR_ITEMS = [
   { icon: iconTone, title: '動畫專區', subtitle: '台語精彩動畫影片', active: false },
   { icon: iconGame, title: '拼音遊戲', subtitle: '遊戲中學拼音', active: false },
   { icon: iconLinks, title: '相關連結', subtitle: '更多學習資源', active: false },
+  // 用 emoji 而不是圖檔：assets/images/homepage/index.ts 已經是 458KB 的 base64，不要再加大首屏
+  { emoji: '🧰', title: '台語工具箱', subtitle: 'AI 學習小幫手', active: false },
 ];
 
 const FEATURE_CARDS = [
@@ -100,6 +111,11 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
   };
 
   const handleSidebarClick = (title: string) => {
+    // 台語工具箱是獨立頁面，不是拼音頁的分頁
+    if (title === '台語工具箱') {
+      onNavigate('toolbox');
+      return;
+    }
     const tabId = MAP_SIDEBAR_TABS[title];
     if (tabId) {
       onNavigate('phonics', tabId);
@@ -133,7 +149,13 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
                   onClick={() => handleSidebarClick(item.title)}
                   className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 cursor-pointer transition-all bg-[#030b17] hover:bg-[#0c1f38] border-2 border-cyan-500/40 hover:border-cyan-300 shadow-md group active:scale-98"
                 >
-                  <img src={item.icon} alt="" className="w-12 h-12 rounded-xl object-contain shrink-0 bg-cyan-950/80 p-1.5 border border-cyan-400/60 shadow-sm" />
+                  {item.icon ? (
+                    <img src={item.icon} alt="" className="w-12 h-12 rounded-xl object-contain shrink-0 bg-cyan-950/80 p-1.5 border border-cyan-400/60 shadow-sm" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl shrink-0 bg-cyan-950/80 p-1.5 border border-cyan-400/60 shadow-sm flex items-center justify-center text-2xl">
+                      {item.emoji}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="font-black text-white text-base md:text-lg group-hover:text-amber-300 transition-colors leading-snug">{item.title}</div>
                     <div className="text-xs md:text-sm text-cyan-200 font-extrabold mt-0.5 leading-snug">{item.subtitle}</div>

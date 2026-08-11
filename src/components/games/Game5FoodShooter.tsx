@@ -56,7 +56,7 @@ export default function Game5FoodShooter({
 
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-shooter.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-shooter.html`}
           title="臺羅戰機防衛戰"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"

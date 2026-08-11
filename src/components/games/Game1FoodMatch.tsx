@@ -57,7 +57,7 @@ export default function Game1FoodMatch({
       {/* 遊戲本體：嵌入獨立製作的 index.html */}
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-survival.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-survival.html`}
           title="太空台語生存戰"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"

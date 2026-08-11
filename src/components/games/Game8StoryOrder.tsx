@@ -56,7 +56,7 @@ export default function Game8StoryOrder({
 
       <div className="flex-1 min-h-0">
         <iframe
-          src="/games/taigi-order.html"
+          src={`${import.meta.env.BASE_URL}games/taigi-order.html`}
           title="臺語字詞排序研究所"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen"
