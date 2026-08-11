@@ -189,6 +189,53 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
             />
           </div>
 
+          {/* ---------------- 課堂專用互動遊戲：五門・心靈迷宮 ---------------- */}
+          {/* 這款是獨立製作的 HTML 遊戲，整包放在 public/lifequest/，用 iframe 載入。
+              放在首頁 hero 底下、四大功能上面，是因為它現在是遊戲區唯一的內容。 */}
+          <div className="bg-[#071322] border-2 border-amber-300/50 rounded-3xl shadow-[0_0_24px_rgba(233,200,119,0.18)] p-5 md:p-6 flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-2xl">🎮</span>
+              <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">課堂專用互動遊戲</h2>
+              <span className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-xs shadow-sm">全新</span>
+            </div>
+
+            <div className="rounded-2xl bg-[#030b17] border-2 border-amber-300/40 p-5 md:p-6 flex flex-col md:flex-row items-center gap-5 md:gap-7">
+              {/* 遊戲識別標 */}
+              <div className="shrink-0 w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 border-amber-300/60 bg-gradient-to-b from-[#121B2E] to-[#070B14] flex flex-col items-center justify-center gap-1 shadow-inner">
+                <span className="text-4xl md:text-5xl leading-none text-amber-200">⌘</span>
+                <span className="text-[10px] md:text-xs font-black tracking-widest text-amber-300/80">五扇門</span>
+              </div>
+
+              <div className="flex-1 min-w-0 text-center md:text-left">
+                <div className="font-black text-white text-lg md:text-2xl tracking-wide">
+                  五門・心靈迷宮
+                </div>
+                <p className="text-xs md:text-sm text-cyan-50 font-black leading-relaxed mt-2">
+                  生命教育互動推理遊戲。穿過心靈迷宮的五扇門，把散落的思考碎片排成鑰匙。
+                </p>
+                <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
+                  {['推理鑄鑰', '迷障圖鑑', '每日思辨', '心象探索'].map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-950/70 border border-cyan-500/40 text-cyan-100 font-black text-[11px] md:text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => onNavigate('lifequest')}
+                data-sound="pop"
+                className="shrink-0 w-full md:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-400 text-slate-950 font-black text-base md:text-lg hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>開始遊戲</span>
+                <span className="text-sm font-bold">❯</span>
+              </button>
+            </div>
+          </div>
+
           {/* Feature Cards Container */}
           <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-5 md:p-6 flex flex-col gap-5">
             <div className="flex items-center gap-2">
