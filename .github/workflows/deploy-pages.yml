@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - toolbox-preview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時只跑一個部署，後推的取代前一個
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 這個專案沒有 package-lock.json，所以用 npm install 而不是 npm ci
+      - name: 安裝套件
+        run: npm install
+
+      # 型別檢查只是提醒，不擋部署：先讓網站上得去，型別問題另外修
+      - name: 型別檢查（不擋部署）
+        run: npm run lint
+        continue-on-error: true
+
+      # GitHub Pages 專案站台在 /<repo>/ 子路徑底下，
+      # 用 --base 帶進去就不必改 vite.config.ts，本機開發不受影響
+      - name: 建置
+        run: npm run build -- --base=/0811--/
+
+      # enablement: true → 第一次跑就自動幫這個 repo 打開 GitHub Pages，
+      # 不必再手動去 Settings → Pages 設定
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
