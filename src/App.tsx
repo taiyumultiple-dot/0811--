@@ -23,8 +23,6 @@ const PhonicsPage = lazy(() => import('./components/PhonicsPage'));
 const RecordPage = lazy(() => import('./components/RecordPage'));
 const NewsPage = lazy(() => import('./components/NewsPage'));
 const ToolboxPage = lazy(() => import('./components/ToolboxPage'));
-// 五門・心靈迷宮：獨立製作的 HTML 遊戲，整包放在 public/lifequest/，用 iframe 載入
-const LifeQuestGame = lazy(() => import('./components/games/LifeQuestGame'));
 
 function LoadingFallback() {
   return (
@@ -37,7 +35,7 @@ function LoadingFallback() {
   );
 }
 
-type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | 'lifequest' | `game${number}`;
+type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | `game${number}`;
 
 function App() {
   const [view, setView] = useState<View>('home');
@@ -107,8 +105,6 @@ function App() {
     if (view === 'toolbox') {
       return <ToolboxPage onNavigate={(target) => handleNavigate(target)} />;
     }
-
-    if (view === 'lifequest') return <LifeQuestGame onHome={goHome} />;
 
     if (view === 'game1') return <Game1FoodMatch onHome={goHome} onNext={() => goNext('game1')} />;
     if (view === 'game2') return <Game2NightMarket onHome={goHome} onNext={() => goNext('game2')} />;
