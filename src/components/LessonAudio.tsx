@@ -38,10 +38,14 @@ export default function LessonAudio({
   trackKey,
   title,
   compact = false,
+  attached = false,
 }: {
   trackKey: string;
   title?: string;
   compact?: boolean;
+  /** 直接接在投影片圖片下緣、共用同一個外框卡片時用——拿掉自己的圓角／邊框，
+   *  不留間距，靠外層卡片的 overflow-hidden 裁出底部圓角。 */
+  attached?: boolean;
 }) {
   const meta = LESSON_TRACKS[trackKey];
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -62,8 +66,8 @@ export default function LessonAudio({
 
   return (
     <div
-      className={`rounded-2xl border-2 border-[#E4772E]/40 bg-[#FFF7EE] flex items-center gap-3 ${
-        compact ? 'px-3 py-2' : 'px-4 py-3'
+      className={`bg-[#FFF7EE] flex items-center gap-3 ${
+        attached ? 'px-4 py-3' : `rounded-2xl border-2 border-[#E4772E]/40 ${compact ? 'px-3 py-2' : 'px-4 py-3'}`
       }`}
     >
       <audio

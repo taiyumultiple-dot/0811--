@@ -3,7 +3,6 @@ import {
   ChevronRight,
   RotateCcw,
   CheckCircle2,
-  AlertCircle,
   ExternalLink,
   Award,
   Megaphone,
@@ -22,11 +21,12 @@ import { logoMark, frogDecor, heroFull } from '../assets/images/homepage';
 import { HubShell } from './games/GameShell';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  TONES_DATA, TONE_PRACTICE_WORDS, TONE_NAMES, INITIAL_GROUPS, INITIALS_DATA,
-  INITIAL_SYLLABLES, FINAL_GROUPS, type InitialSymbol, type Tone,
+  TONES_DATA, INITIAL_GROUPS, INITIALS_DATA,
+  FINAL_GROUPS, type InitialSymbol, type Tone,
   SCHEME_INTRO_LINKS, INPUT_METHODS, CHAR_USAGE_NOTE, DICTIONARIES, LEARNING_RESOURCE_HUB,
   SLIDE_SECTIONS, slideUrl, SLIDE_AUDIO,
   SLIDE_SECTIONS_PRACTICE, slidePracticeUrl, SLIDE_AUDIO_PRACTICE,
+  SLIDE_GROUPS_PRACTICE, practiceGroupContaining,
 } from '../data/phonicsData';
 import LessonAudio from './LessonAudio';
 
@@ -94,21 +94,29 @@ export default function PhonicsPage({
     setPracticeSlideNum(practiceTabRange(tab)[0]);
   };
 
-  // 左右鍵翻頁，像真的在放 PPT 一樣（入門篇／練習篇各自的投影片範圍）
+  // 左右鍵翻頁，像真的在放 PPT 一樣（入門篇／練習篇各自的投影片範圍；
+  // 練習篇的投影片有分組，翻頁要跳到下一組的第一張，不是單純 +1）
   useEffect(() => {
     if (activeSidebar !== 'phonics_scheme') return;
     const [lo, hi] = book === 'intro' ? tabSlideRange(schemeTab) : practiceTabRange(practiceTab);
+    const tabGroups = SLIDE_GROUPS_PRACTICE.filter((g) => g[0] >= lo && g[g.length - 1] <= hi);
     const onKey = (e: KeyboardEvent) => {
-      const setNum = book === 'intro' ? setSlideNum : setPracticeSlideNum;
-      if (e.key === 'ArrowRight') setNum((n) => Math.min(hi, n + 1));
-      else if (e.key === 'ArrowLeft') setNum((n) => Math.max(lo, n - 1));
+      if (book === 'intro') {
+        if (e.key === 'ArrowRight') setSlideNum((n) => Math.min(hi, n + 1));
+        else if (e.key === 'ArrowLeft') setSlideNum((n) => Math.max(lo, n - 1));
+        return;
+      }
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      setPracticeSlideNum((n) => {
+        const group = practiceGroupContaining(n);
+        const pos = tabGroups.findIndex((g) => g[0] === group[0]);
+        if (e.key === 'ArrowRight') return pos < tabGroups.length - 1 ? tabGroups[pos + 1][0] : hi;
+        return pos > 0 ? tabGroups[pos - 1][0] : lo;
+      });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [activeSidebar, book, schemeTab, practiceTab]);
-
-  // --- 聲母學習 ---
-  const [selectedInitial, setSelectedInitial] = useState<InitialSymbol | null>(null);
 
   // --- 韻母學習 ---
   const [expandedFinalGroup, setExpandedFinalGroup] = useState<string | null>(FINAL_GROUPS[0].group);
@@ -117,9 +125,6 @@ export default function PhonicsPage({
   const [comboInitial, setComboInitial] = useState<InitialSymbol>('p');
   const [comboFinal, setComboFinal] = useState('a');
   const [comboTone, setComboTone] = useState<Tone>(1);
-
-  // --- 連讀變調頁 ---
-  const [sandhiTone, setSandhiTone] = useState<Tone>(1);
 
   // 側欄拿掉了（跟頂部導覽列的「拼音學習」「動畫專區」重複），改由 initialTab
   // 這個 prop 直接決定要顯示哪個分頁；頂部導覽列換頁時 initialTab 會變，
@@ -208,15 +213,16 @@ export default function PhonicsPage({
                     return (
                       <div className="flex flex-col gap-3">
                         {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
-                        <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md bg-[#1a1a1a]">
-                          <img
-                            src={`${import.meta.env.BASE_URL}${slideUrl(n)}`}
-                            alt={`課本入門篇第 ${n} 頁`}
-                            className="w-full h-auto"
-                          />
+                        <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
+                          <div className="bg-[#1a1a1a]">
+                            <img
+                              src={`${import.meta.env.BASE_URL}${slideUrl(n)}`}
+                              alt={`課本入門篇第 ${n} 頁`}
+                              className="w-full h-auto block"
+                            />
+                          </div>
+                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
                         </div>
-
-                        {audio && <LessonAudio trackKey={audio.trackKey} />}
 
                         <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
                           <button
@@ -270,108 +276,8 @@ export default function PhonicsPage({
                     </div>
                   )}
 
-                  {schemeTab === 'tones' && (
-                    <div className="flex flex-col gap-3">
-                      <h3 className="font-black text-[#3E2723] text-lg">連讀變調練習：AA 型重疊詞</h3>
-                      <p className="text-sm text-[#8A8378]">前字變調、後字本調，選一個聲調體會前後差別。</p>
-                      <div className="flex flex-wrap gap-2">
-                        {TONES_DATA.map((t) => (
-                          <button
-                            key={t.tone}
-                            onClick={() => setSandhiTone(t.tone)}
-                            className={`px-5 py-2.5 rounded-xl font-black text-base transition-all active:scale-95 ${
-                              sandhiTone === t.tone
-                                ? 'bg-[#4E9B5D] text-white shadow-md'
-                                : 'bg-white border-2 border-[#EFE8D8] text-[#5C5548] hover:border-[#4E9B5D]'
-                            }`}
-                          >
-                            第 {t.tone} 聲
-                          </button>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {TONE_PRACTICE_WORDS[sandhiTone].map((w) => (
-                          <div key={w.hanzi} className="bg-white p-4 rounded-2xl border border-[#EFE8D8] shadow-sm flex items-center justify-between">
-                            <span className="text-xl font-black text-[#2D2A26]">{w.hanzi}</span>
-                            <span className="font-mono font-black text-[#E4772E]">{w.tailo}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="p-3.5 rounded-xl bg-emerald-50/40 flex items-start gap-2.5">
-                        <AlertCircle className="w-4.5 h-4.5 text-[#4E9B5D] shrink-0 mt-0.5" />
-                        <p className="text-sm text-[#3E7D4C] leading-relaxed">
-                          💡 AA 型重疊詞的第一個字要變調、第二個字讀本調——例如「{TONE_PRACTICE_WORDS[sandhiTone][0]?.hanzi}」的前字聲調，跟{TONE_NAMES[sandhiTone]}的字典本調聽起來不一樣，這就是連讀變調。
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
                   {schemeTab === 'scheme' && (
                     <div className="flex flex-col gap-6">
-                      <div>
-                        <h3 className="font-black text-[#3E2723] text-lg mb-3">延伸練習：逐聲母例字（課本練習篇 P.36-53）</h3>
-                        {!selectedInitial ? (
-                          <div className="flex flex-col gap-5">
-                            {INITIAL_GROUPS.map((g) => (
-                              <div key={g.group}>
-                                <div className="text-sm font-black text-[#8A8378] tracking-widest mb-2">{g.group}</div>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                  {g.symbols.map((sym) => (
-                                    <button
-                                      key={sym}
-                                      onClick={() => setSelectedInitial(sym)}
-                                      className="aspect-square rounded-2xl bg-white border-2 border-[#EFE8D8] hover:border-[#4E9B5D] active:scale-95 transition-all flex items-center justify-center font-mono font-black text-2xl text-[#4E9B5D] shadow-sm"
-                                    >
-                                      {INITIALS_DATA[sym].label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-6 bg-[#FCFAF5] p-5 rounded-3xl border border-[#EFE8D8]">
-                            <div className="flex justify-between items-center border-b border-[#EFE8D8] pb-4">
-                              <button
-                                onClick={() => setSelectedInitial(null)}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-[#EFE8D8] rounded-xl font-bold text-sm text-[#5C5548] hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
-                              >
-                                ← 返回聲母列表
-                              </button>
-                            </div>
-                            <div className="flex items-center gap-5">
-                              <div className="w-24 h-24 rounded-2xl bg-[#4E9B5D]/5 border-2 border-[#4E9B5D] flex items-center justify-center shrink-0">
-                                <span className="text-5xl font-black text-[#4E9B5D]">{INITIALS_DATA[selectedInitial].label}</span>
-                              </div>
-                              <div>
-                                <h2 className="text-2xl font-black text-[#2D2A26] mb-1">{INITIALS_DATA[selectedInitial].label} 聲母</h2>
-                                <p className="text-base text-[#5C5548] font-bold">{INITIALS_DATA[selectedInitial].desc}</p>
-                                {INITIALS_DATA[selectedInitial].example && (
-                                  <p className="text-base text-[#E4772E] font-black mt-1">
-                                    例：{INITIALS_DATA[selectedInitial].example!.hanzi}（{INITIALS_DATA[selectedInitial].example!.tailo}）
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <LessonAudio
-                              trackKey={`initial-${selectedInitial}`}
-                              title={`課本錄音：聲母 ${INITIALS_DATA[selectedInitial].label}`}
-                            />
-                            <div className="bg-white p-4 rounded-2xl border border-[#EFE8D8] shadow-sm">
-                              <div className="text-sm font-black text-[#8A8378] tracking-widest mb-3">課本「10 分鐘練武功」例字（P.36-53）</div>
-                              <div className="flex flex-wrap gap-2.5">
-                                {INITIAL_SYLLABLES[selectedInitial].map((s) => (
-                                  <div key={s.tone} className="px-4 py-2.5 rounded-xl bg-[#FFF7EE] border-2 border-[#E4772E]/40 flex items-baseline gap-2">
-                                    <span className="text-sm font-black text-[#E4772E] bg-[#E4772E]/10 rounded-full w-5 h-5 inline-flex items-center justify-center">{s.tone}</span>
-                                    <span className="text-lg font-black text-[#2D2A26] font-mono">{s.syllable}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
                       <div>
                         <h3 className="font-black text-[#3E2723] text-lg mb-3">延伸練習：韻母查詢（課本官方對照表）</h3>
                         <div className="flex flex-col gap-3">
@@ -564,25 +470,34 @@ export default function PhonicsPage({
                   {(() => {
                     const [lo, hi] = practiceTabRange(practiceTab);
                     const n = Math.min(Math.max(practiceSlideNum, lo), hi);
+                    const group = practiceGroupContaining(n);
                     const sec = SLIDE_SECTIONS_PRACTICE.filter((s) => s.tab === practiceTab).find((s) => n >= s.range[0] && n <= s.range[1]);
-                    const audio = SLIDE_AUDIO_PRACTICE.find((a) => a.afterSlide === n);
+                    const audio = SLIDE_AUDIO_PRACTICE.find((a) => group.includes(a.afterSlide));
+                    // 本節內的分組清單（同一個課本頁碼、逐步顯示的投影片已經合併成一組）
+                    const tabGroups = SLIDE_GROUPS_PRACTICE.filter((g) => g[0] >= lo && g[g.length - 1] <= hi);
+                    const pos = tabGroups.findIndex((g) => g[0] === group[0]);
+                    const goPrev = () => setPracticeSlideNum(pos > 0 ? tabGroups[pos - 1][0] : lo);
+                    const goNext = () => setPracticeSlideNum(pos < tabGroups.length - 1 ? tabGroups[pos + 1][0] : hi);
                     return (
                       <div className="flex flex-col gap-3">
                         {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
-                        <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md bg-[#1a1a1a]">
-                          <img
-                            src={`${import.meta.env.BASE_URL}${slidePracticeUrl(n)}`}
-                            alt={`課本練習篇第 ${n} 頁`}
-                            className="w-full h-auto"
-                          />
+                        <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
+                          {group.map((slideN) => (
+                            <div key={slideN} className="bg-[#1a1a1a]">
+                              <img
+                                src={`${import.meta.env.BASE_URL}${slidePracticeUrl(slideN)}`}
+                                alt={`課本練習篇第 ${slideN} 頁`}
+                                className="w-full h-auto block"
+                              />
+                            </div>
+                          ))}
+                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
                         </div>
-
-                        {audio && <LessonAudio trackKey={audio.trackKey} />}
 
                         <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
                           <button
-                            onClick={() => setPracticeSlideNum(Math.max(lo, n - 1))}
-                            disabled={n <= lo}
+                            onClick={goPrev}
+                            disabled={pos <= 0}
                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-[#EFE8D8] font-black text-sm text-[#5C5548] hover:border-[#4E9B5D] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                           >
                             <ChevronLeft className="w-4 h-4" /> 上一頁
@@ -596,12 +511,12 @@ export default function PhonicsPage({
                             >
                               <Home className="w-4 h-4 text-[#5C5548]" />
                             </button>
-                            <span className="font-mono font-black text-[#8A8378] text-sm">{n - lo + 1} / {hi - lo + 1}</span>
+                            <span className="font-mono font-black text-[#8A8378] text-sm">{pos + 1} / {tabGroups.length}</span>
                           </div>
 
                           <button
-                            onClick={() => setPracticeSlideNum(Math.min(hi, n + 1))}
-                            disabled={n >= hi}
+                            onClick={goNext}
+                            disabled={pos >= tabGroups.length - 1}
                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E9B5D] text-white font-black text-sm hover:bg-[#3E8552] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                           >
                             下一頁 <ChevronRight className="w-4 h-4" />
