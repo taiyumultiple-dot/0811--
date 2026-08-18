@@ -8,7 +8,8 @@ interface BackgroundYouTubeAudioProps {
 export default function BackgroundYouTubeAudio({ videoId = '24Yv0M8T53c' }: BackgroundYouTubeAudioProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&loop=1&playlist=${videoId}&origin=${encodeURIComponent(
+  // autoplay=0 + mute=1：一進站不出聲，等使用者自己按下「背景音樂」才 unMute 播放
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=0&mute=1&loop=1&playlist=${videoId}&origin=${encodeURIComponent(
     typeof window !== 'undefined' ? window.location.origin : ''
   )}`;
 

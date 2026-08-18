@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { initGlobalSoundEffects, startBGM } from './utils/soundEffects';
+import { initGlobalSoundEffects, setBGMTheme } from './utils/soundEffects';
 import BackgroundYouTubeAudio from './components/BackgroundYouTubeAudio';
 import HomePage from './components/HomePage';
 import { getNextGameKey } from './components/games/gamesData';
@@ -50,16 +50,17 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // 只換曲目，不自動播放；音樂由使用者自己從「音樂音量」開
     if (view === 'home') {
-      startBGM('home');
+      setBGMTheme('home');
     } else if (view === 'gamesHub') {
-      startBGM('hub');
+      setBGMTheme('hub');
     } else if (view === 'phonics') {
-      startBGM('phonics');
+      setBGMTheme('phonics');
     } else if (view === 'news' || view === 'record' || view === 'toolbox') {
-      startBGM('relax');
+      setBGMTheme('relax');
     } else if (view.startsWith('game')) {
-      startBGM('game');
+      setBGMTheme('game');
     }
   }, [view]);
 

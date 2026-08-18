@@ -286,6 +286,16 @@ export const notifyBgmState = () => {
 
 export const getCurrentBGMTrackName = () => BGM_TRACKS[currentTheme].name;
 
+/**
+ * 只切換主題曲目，不會自己開始播放。
+ * 換頁時用這個：使用者沒有主動開音樂，就不該因為換一頁就冒出聲音；
+ * 已經在播的情況下才跟著換曲。
+ */
+export const setBGMTheme = (theme: BGMTheme) => {
+  currentTheme = theme;
+  notifyBgmState();
+};
+
 export const startBGM = (theme?: BGMTheme) => {
   if (theme) {
     currentTheme = theme;
