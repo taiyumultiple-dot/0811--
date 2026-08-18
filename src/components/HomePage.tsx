@@ -5,9 +5,6 @@ import { HubShell } from './games/GameShell';
 import {
   heroFull,
   iconPhonics,
-  iconInitials,
-  iconFinals,
-  iconPractice,
   iconTone,
   iconGame,
   iconLinks,
@@ -26,15 +23,14 @@ type SidebarItem = {
   title: string;
   subtitle: string;
   active: boolean;
+  /** 直接跳頁面（不是拼音頁的分頁），例如互動遊戲大廳 */
+  external?: string;
 };
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { icon: iconPhonics, title: '拼音方案', subtitle: '認識聲母、韻母', active: false },
-  { icon: iconInitials, title: '聲母學習', subtitle: '掌握聲母發音', active: false },
-  { icon: iconFinals, title: '韻母學習', subtitle: '單元韻母練習', active: true },
-  { icon: iconPractice, title: '拼音練習', subtitle: '綜合拼音練習', active: false },
+  { icon: iconPhonics, title: '拼音方案', subtitle: '聲母、韻母、拼音一次學', active: true },
   { icon: iconTone, title: '動畫專區', subtitle: '台語精彩動畫影片', active: false },
-  { icon: iconGame, title: '拼音遊戲', subtitle: '遊戲中學拼音', active: false },
+  { icon: iconGame, title: '互動遊戲', subtitle: '遊戲中學台語', active: false, external: 'gamesHub' },
   { icon: iconLinks, title: '相關連結', subtitle: '更多學習資源', active: false },
   // 用 emoji 而不是圖檔：assets/images/homepage/index.ts 已經是 458KB 的 base64，不要再加大首屏
   { emoji: '🧰', title: '台語工具箱', subtitle: '課堂小工具．投影就能用', active: false },
@@ -69,11 +65,7 @@ const FEATURE_CARDS = [
 
 const MAP_SIDEBAR_TABS: Record<string, string> = {
   '拼音方案': 'phonics_scheme',
-  '聲母學習': 'initials_learn',
-  '韻母學習': 'finals_learn',
-  '拼音練習': 'phonics_practice',
   '動畫專區': 'tone_practice',
-  '拼音遊戲': 'phonics_games',
   '相關連結': 'related_links',
 };
 
@@ -114,6 +106,11 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
     // 台語工具箱是獨立頁面，不是拼音頁的分頁
     if (title === '台語工具箱') {
       onNavigate('classroom');
+      return;
+    }
+    const item = SIDEBAR_ITEMS.find((i) => i.title === title);
+    if (item?.external) {
+      onNavigate(item.external);
       return;
     }
     const tabId = MAP_SIDEBAR_TABS[title];
