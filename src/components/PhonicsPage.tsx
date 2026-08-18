@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ChevronRight,
   RotateCcw,
@@ -28,7 +28,7 @@ import {
   SLIDE_SECTIONS_PRACTICE, slidePracticeUrl, SLIDE_AUDIO_PRACTICE,
   SLIDE_GROUPS_PRACTICE, practiceGroupContaining,
 } from '../data/phonicsData';
-import LessonAudio from './LessonAudio';
+import LessonAudio, { type LessonAudioHandle } from './LessonAudio';
 
 /** 拼音練習頁用：依臺羅標調規則把韻母＋聲調組合成正確拼字，不需要每個組合都湊例字 */
 function applyTaiLoTone(final: string, tone: Tone): string {
@@ -63,6 +63,11 @@ export default function PhonicsPage({
   initialTab?: string;
 }) {
   const [activeSidebar, setActiveSidebar] = useState<string>(initialTab);
+
+  // 讓使用者直接點投影片圖片（課本設計稿上的「仔細聽」耳機圖示）就能播放課本錄音，
+  // 不用另外找下面／上面那顆播放鈕。兩本課本各自同時只會顯示一顆 LessonAudio。
+  const introAudioRef = useRef<LessonAudioHandle>(null);
+  const practiceAudioRef = useRef<LessonAudioHandle>(null);
 
   // --- 拼音方案總覽頁：入門篇 / 練習篇兩本課本切換，各自跟 pptx 節次一致，單張投影片播放的感覺 ---
   const [book, setBook] = useState<'intro' | 'practice'>('intro');
@@ -214,8 +219,13 @@ export default function PhonicsPage({
                       <div className="flex flex-col gap-3">
                         {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
                         <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
-                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
-                          <div className="bg-[#1a1a1a]">
+                          {audio && <LessonAudio ref={introAudioRef} trackKey={audio.trackKey} attached />}
+                          <div
+                            className={`bg-[#1a1a1a] ${audio ? 'cursor-pointer' : ''}`}
+                            onClick={audio ? () => introAudioRef.current?.toggle() : undefined}
+                            role={audio ? 'button' : undefined}
+                            aria-label={audio ? '播放課本錄音' : undefined}
+                          >
                             <img
                               src={`${import.meta.env.BASE_URL}${slideUrl(n)}`}
                               alt={`課本入門篇第 ${n} 頁`}
@@ -482,9 +492,15 @@ export default function PhonicsPage({
                       <div className="flex flex-col gap-3">
                         {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
                         <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
-                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
+                          {audio && <LessonAudio ref={practiceAudioRef} trackKey={audio.trackKey} attached />}
                           {group.map((slideN) => (
-                            <div key={slideN} className="bg-[#1a1a1a]">
+                            <div
+                              key={slideN}
+                              className={`bg-[#1a1a1a] ${audio ? 'cursor-pointer' : ''}`}
+                              onClick={audio ? () => practiceAudioRef.current?.toggle() : undefined}
+                              role={audio ? 'button' : undefined}
+                              aria-label={audio ? '播放課本錄音' : undefined}
+                            >
                               <img
                                 src={`${import.meta.env.BASE_URL}${slidePracticeUrl(slideN)}`}
                                 alt={`課本練習篇第 ${slideN} 頁`}

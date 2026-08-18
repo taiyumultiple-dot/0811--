@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Play, Pause } from 'lucide-react';
 
 // 課本真人錄音播放器。
@@ -34,24 +34,21 @@ export const LESSON_TRACKS: Record<string, { label: string; page: string }> = {
   'initial-zero': { label: '零聲母', page: 'P.53' },
 };
 
-export default function LessonAudio({
-  trackKey,
-  title,
-  compact = false,
-  attached = false,
-}: {
+/** 讓外部元件（例如投影片圖片本身——課本設計稿上畫了「仔細聽」耳機圖示，
+ *  使用者會直覺想直接點圖播放）也能觸發同一顆播放鈕的播放/暫停。 */
+export type LessonAudioHandle = { toggle: () => void };
+
+const LessonAudio = forwardRef<LessonAudioHandle, {
   trackKey: string;
   title?: string;
   compact?: boolean;
   /** 直接接在投影片圖片下緣、共用同一個外框卡片時用——拿掉自己的圓角／邊框，
    *  不留間距，靠外層卡片的 overflow-hidden 裁出底部圓角。 */
   attached?: boolean;
-}) {
+}>(function LessonAudio({ trackKey, title, compact = false, attached = false }, ref) {
   const meta = LESSON_TRACKS[trackKey];
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
-
-  if (!meta) return null;
 
   const toggle = () => {
     const el = audioRef.current;
@@ -63,6 +60,10 @@ export default function LessonAudio({
       setPlaying(false);
     }
   };
+
+  useImperativeHandle(ref, () => ({ toggle }));
+
+  if (!meta) return null;
 
   return (
     <div
@@ -89,4 +90,6 @@ export default function LessonAudio({
       </div>
     </div>
   );
-}
+});
+
+export default LessonAudio;
