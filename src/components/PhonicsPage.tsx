@@ -214,6 +214,7 @@ export default function PhonicsPage({
                       <div className="flex flex-col gap-3">
                         {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
                         <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
+                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
                           <div className="bg-[#1a1a1a]">
                             <img
                               src={`${import.meta.env.BASE_URL}${slideUrl(n)}`}
@@ -221,7 +222,6 @@ export default function PhonicsPage({
                               className="w-full h-auto block"
                             />
                           </div>
-                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
                         </div>
 
                         <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
@@ -482,6 +482,7 @@ export default function PhonicsPage({
                       <div className="flex flex-col gap-3">
                         {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
                         <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
+                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
                           {group.map((slideN) => (
                             <div key={slideN} className="bg-[#1a1a1a]">
                               <img
@@ -491,7 +492,6 @@ export default function PhonicsPage({
                               />
                             </div>
                           ))}
-                          {audio && <LessonAudio trackKey={audio.trackKey} attached />}
                         </div>
 
                         <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
