@@ -39,7 +39,7 @@ jobs:
       # GitHub Pages 專案站台在 /<repo>/ 子路徑底下，
       # 用 --base 帶進去就不必改 vite.config.ts，本機開發不受影響
       - name: 建置
-        run: npm run build -- --base=/0811--/
+        run: npm run build -- --base=/0818-Taiwanese/
 
       # enablement: true → 第一次跑就自動幫這個 repo 打開 GitHub Pages，
       # 不必再手動去 Settings → Pages 設定
