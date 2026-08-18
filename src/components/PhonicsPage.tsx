@@ -21,7 +21,9 @@ import {
   Keyboard,
   Type,
   BookMarked,
-  Compass
+  Compass,
+  ChevronLeft,
+  Home
 } from 'lucide-react';
 import { logoMark, frogDecor, heroFull } from '../assets/images/homepage';
 import { HubShell } from './games/GameShell';
@@ -30,7 +32,7 @@ import {
   TONES_DATA, TONE_PRACTICE_WORDS, TONE_NAMES, INITIAL_GROUPS, INITIALS_DATA,
   INITIAL_SYLLABLES, FINAL_GROUPS, type InitialSymbol, type Tone,
   SCHEME_INTRO_LINKS, INPUT_METHODS, CHAR_USAGE_NOTE, DICTIONARIES, LEARNING_RESOURCE_HUB,
-  SLIDE_SECTIONS, slideUrl,
+  SLIDE_SECTIONS, slideUrl, SLIDE_AUDIO,
 } from '../data/phonicsData';
 import LessonAudio from './LessonAudio';
 
@@ -489,10 +491,31 @@ export default function PhonicsPage({
     { id: 'related_links', label: '相關連結', subtitle: '更多學習資源' },
   ];
 
-  // --- 拼音方案總覽頁（跟入門篇 pptx 壹～柒節一致） ---
+  // --- 拼音方案總覽頁（跟入門篇 pptx 壹～柒節一致，單張投影片播放的感覺） ---
   const [schemeTab, setSchemeTab] = useState<
     'intro' | 'tones' | 'scheme' | 'input' | 'chars' | 'dict' | 'resources'
   >('intro');
+  const tabSlideRange = (tab: string): [number, number] => {
+    const secs = SLIDE_SECTIONS.filter((s) => s.tab === tab);
+    return [Math.min(...secs.map((s) => s.range[0])), Math.max(...secs.map((s) => s.range[1]))];
+  };
+  const [slideNum, setSlideNum] = useState<number>(1);
+  const goToScheme = (tab: typeof schemeTab) => {
+    setSchemeTab(tab);
+    setSlideNum(tabSlideRange(tab)[0]);
+  };
+
+  // 左右鍵翻頁，像真的在放 PPT 一樣
+  useEffect(() => {
+    if (activeSidebar !== 'phonics_scheme') return;
+    const [lo, hi] = tabSlideRange(schemeTab);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') setSlideNum((n) => Math.min(hi, n + 1));
+      else if (e.key === 'ArrowLeft') setSlideNum((n) => Math.max(lo, n - 1));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeSidebar, schemeTab]);
 
   // --- 聲母學習 ---
   const [selectedInitial, setSelectedInitial] = useState<InitialSymbol | null>(null);
@@ -611,7 +634,7 @@ export default function PhonicsPage({
                     <span className="text-3xl">📖</span> 臺灣台語羅馬字拼音方案
                   </h1>
                   <p className="text-[#8A8378] text-base">
-                    課本《臺灣台語銜接教材》入門篇原頁截圖，壹～柒節，排版跟課本一模一樣。
+                    教育部民國 95 年公布的官方拼音系統，簡稱「臺羅」。分成壹～柒節，照課本順序一頁一頁學。
                   </p>
                 </div>
 
@@ -627,7 +650,7 @@ export default function PhonicsPage({
                   ] as const).map(([tab, label, TabIcon]) => (
                     <button
                       key={tab}
-                      onClick={() => setSchemeTab(tab)}
+                      onClick={() => goToScheme(tab)}
                       className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-sm transition-all active:scale-95 ${
                         schemeTab === tab
                           ? 'bg-[#4E9B5D] text-white shadow-md scale-105'
@@ -640,36 +663,56 @@ export default function PhonicsPage({
                   ))}
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  {schemeTab === 'scheme' && <LessonAudio trackKey="initials-overview" />}
-                  {schemeTab === 'scheme' && <LessonAudio trackKey="finals-overview" />}
-                  {schemeTab === 'tones' && (
-                    <>
-                      <LessonAudio trackKey="tone-system" />
-                      <LessonAudio trackKey="tone-sandhi-chart" />
-                      <LessonAudio trackKey="tone-derived" />
-                      <LessonAudio trackKey="tone-review" />
-                    </>
-                  )}
-                </div>
-
                 <div className="flex-1 flex flex-col gap-8">
-                  {SLIDE_SECTIONS.filter((s) => s.tab === schemeTab).map((s) => (
-                    <div key={s.title} className="flex flex-col gap-3">
-                      {s.title && <h3 className="font-black text-[#3E2723] text-lg">{s.title}</h3>}
-                      <div className="flex flex-col gap-4">
-                        {Array.from({ length: s.range[1] - s.range[0] + 1 }, (_, i) => s.range[0] + i).map((n) => (
+                  {(() => {
+                    const [lo, hi] = tabSlideRange(schemeTab);
+                    const n = Math.min(Math.max(slideNum, lo), hi);
+                    const sec = SLIDE_SECTIONS.filter((s) => s.tab === schemeTab).find((s) => n >= s.range[0] && n <= s.range[1]);
+                    const audio = SLIDE_AUDIO.find((a) => a.afterSlide === n);
+                    return (
+                      <div className="flex flex-col gap-3">
+                        {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
+                        <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md bg-[#1a1a1a]">
                           <img
-                            key={n}
                             src={`${import.meta.env.BASE_URL}${slideUrl(n)}`}
                             alt={`課本入門篇第 ${n} 頁`}
-                            loading="lazy"
-                            className="w-full h-auto rounded-2xl border border-[#EFE8D8] shadow-sm"
+                            className="w-full h-auto"
                           />
-                        ))}
+                        </div>
+
+                        {audio && <LessonAudio trackKey={audio.trackKey} />}
+
+                        <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
+                          <button
+                            onClick={() => setSlideNum(Math.max(lo, n - 1))}
+                            disabled={n <= lo}
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-[#EFE8D8] font-black text-sm text-[#5C5548] hover:border-[#4E9B5D] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                          >
+                            <ChevronLeft className="w-4 h-4" /> 上一頁
+                          </button>
+
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setSlideNum(lo)}
+                              className="w-10 h-10 rounded-full bg-white border border-[#EFE8D8] flex items-center justify-center hover:border-[#4E9B5D] active:scale-95 transition-all shadow-sm"
+                              aria-label="回到本節第一頁"
+                            >
+                              <Home className="w-4 h-4 text-[#5C5548]" />
+                            </button>
+                            <span className="font-mono font-black text-[#8A8378] text-sm">{n - lo + 1} / {hi - lo + 1}</span>
+                          </div>
+
+                          <button
+                            onClick={() => setSlideNum(Math.min(hi, n + 1))}
+                            disabled={n >= hi}
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E9B5D] text-white font-black text-sm hover:bg-[#3E8552] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                          >
+                            下一頁 <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })()}
 
                   {schemeTab === 'intro' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

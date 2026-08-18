@@ -435,3 +435,14 @@ export const SLIDE_SECTIONS: { tab: string; title: string; range: [number, numbe
 export function slideUrl(n: number): string {
   return `images/phonics/slides/slide-${String(n).padStart(3, '0')}.png`;
 }
+
+/** 投影片本身在 pptx 裡就掛了播放圖示、按「投放」會出聲的那幾張，
+ *  核對自 pptx XML 的 audioFile 關聯（第幾張投影片連到哪個 media 檔），
+ *  音檔一律接在該範圍第一張投影片後面（原本簡報也是整段播一次）。 */
+export const SLIDE_AUDIO: { afterSlide: number; trackKey: string }[] = [
+  { afterSlide: 15, trackKey: 'tone-system' },       // P.07 聲調系統，media1.wav
+  { afterSlide: 21, trackKey: 'tone-sandhi-chart' }, // P.08 變調圖，media2.wav
+  { afterSlide: 24, trackKey: 'tone-derived' },      // P.09 衍生調，media3.wav
+  { afterSlide: 28, trackKey: 'initials-overview' }, // P.10-11 聲母，media4.wav
+  { afterSlide: 35, trackKey: 'finals-overview' },   // P.12-13 韻母，media5.wav
+];
