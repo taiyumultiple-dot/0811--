@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { Home, BookOpen, Gamepad2, ClipboardList, MessageCircle, Music, VolumeX, Sliders, GraduationCap, Wrench } from 'lucide-react';
+import { Home, BookOpen, Gamepad2, ClipboardList, MessageCircle, Music, VolumeX, Sliders, GraduationCap, Wrench, Tv } from 'lucide-react';
 import OldStreetBackground from './OldStreetBackground';
 import AuthModal, { UserProfile } from '../AuthModal';
 import VolumeControlModal from '../VolumeControlModal';
@@ -7,7 +7,8 @@ import { toggleBGM, isBGMActive, cycleBGMTrack, getCurrentBGMTrackName } from '.
 
 export const NAV_ITEMS = [
   { label: '首頁', icon: Home, key: 'home' },
-  { label: '拼音學習', icon: BookOpen, key: 'phonics' },
+  { label: '拼音學習', icon: BookOpen, key: 'phonics', tabId: 'phonics_scheme' },
+  { label: '動畫專區', icon: Tv, key: 'phonics', tabId: 'tone_practice' },
   { label: '互動遊戲', icon: Gamepad2, key: 'games' },
   { label: '學習紀錄', icon: ClipboardList, key: 'record' },
   { label: '最新消息', icon: MessageCircle, key: 'news' },
@@ -57,11 +58,11 @@ export function TopNav({ activeKey = 'games', onHome }: { activeKey?: string; on
     localStorage.removeItem('tai_lo_user');
   };
 
-  const handleNavClick = (key: string) => {
+  const handleNavClick = (key: string, tabId?: string) => {
     if (key === 'home' && !((window as any).globalNavigate)) {
       onHome?.();
     } else {
-      triggerGlobalNavigate(key);
+      triggerGlobalNavigate(key, tabId);
     }
   };
 
@@ -88,16 +89,16 @@ export function TopNav({ activeKey = 'games', onHome }: { activeKey?: string; on
 
         {/* Middle side: Navigation Tabs */}
         <nav className="hidden md:flex items-center gap-2 bg-[#030a16] p-1.5 rounded-2xl border-2 border-cyan-500/40 shadow-inner">
-          {NAV_ITEMS.map(({ label: defaultLabel, icon: DefaultIcon, key }) => {
+          {NAV_ITEMS.map(({ label: defaultLabel, icon: DefaultIcon, key, tabId }) => {
             const isTeacher = currentUser?.role === 'teacher';
             const label = (key === 'record' && isTeacher) ? '教學後台' : defaultLabel;
             const Icon = (key === 'record' && isTeacher) ? GraduationCap : DefaultIcon;
             const active = activeKey === key;
             return (
               <button
-                key={key}
+                key={key + (tabId || '')}
                 data-sound="tab"
-                onClick={() => handleNavClick(key)}
+                onClick={() => handleNavClick(key, tabId)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm md:text-base font-black transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
                   active
                     ? 'bg-gradient-to-r from-emerald-400 to-teal-400 border-2 border-emerald-300 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.4)] scale-105'

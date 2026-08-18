@@ -1,40 +1,12 @@
-import { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
 import { HubShell } from './games/GameShell';
 
 import {
   heroFull,
-  iconPhonics,
-  iconTone,
-  iconGame,
-  iconLinks,
   featureIconPhonics,
   featureIconGame,
   featureIconTone,
   featureIconRecord,
-  frogDecor,
-  bearDecor,
 } from '../assets/images/homepage';
-
-type SidebarItem = {
-  /** 圖檔（base64）。台語工具箱改用 emoji，所以是選填 */
-  icon?: string;
-  emoji?: string;
-  title: string;
-  subtitle: string;
-  active: boolean;
-  /** 直接跳頁面（不是拼音頁的分頁），例如互動遊戲大廳 */
-  external?: string;
-};
-
-const SIDEBAR_ITEMS: SidebarItem[] = [
-  { icon: iconPhonics, title: '拼音方案', subtitle: '聲母、韻母、拼音一次學', active: true },
-  { icon: iconTone, title: '動畫專區', subtitle: '台語精彩動畫影片', active: false },
-  { icon: iconGame, title: '互動遊戲', subtitle: '遊戲中學台語', active: false, external: 'gamesHub' },
-  { icon: iconLinks, title: '相關連結', subtitle: '更多學習資源', active: false },
-  // 用 emoji 而不是圖檔：assets/images/homepage/index.ts 已經是 458KB 的 base64，不要再加大首屏
-  { emoji: '🧰', title: '台語工具箱', subtitle: '課堂小工具．投影就能用', active: false },
-];
 
 const FEATURE_CARDS = [
   {
@@ -63,62 +35,7 @@ const FEATURE_CARDS = [
   },
 ];
 
-const MAP_SIDEBAR_TABS: Record<string, string> = {
-  '拼音方案': 'phonics_scheme',
-  '動畫專區': 'tone_practice',
-  '相關連結': 'related_links',
-};
-
 export default function HomePage({ onNavigate }: { onNavigate: (view: string, tabId?: string) => void }) {
-  const [customImage, setCustomImage] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem('custom_sidebar_decor_img') || null;
-    } catch (e) {
-      return null;
-    }
-  });
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        if (result) {
-          setCustomImage(result);
-          try {
-            localStorage.setItem('custom_sidebar_decor_img', result);
-          } catch (err) {
-            console.warn('Image cached in state');
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleResetImage = () => {
-    setCustomImage(null);
-    localStorage.removeItem('custom_sidebar_decor_img');
-  };
-
-  const handleSidebarClick = (title: string) => {
-    // 台語工具箱是獨立頁面，不是拼音頁的分頁
-    if (title === '台語工具箱') {
-      onNavigate('classroom');
-      return;
-    }
-    const item = SIDEBAR_ITEMS.find((i) => i.title === title);
-    if (item?.external) {
-      onNavigate(item.external);
-      return;
-    }
-    const tabId = MAP_SIDEBAR_TABS[title];
-    if (tabId) {
-      onNavigate('phonics', tabId);
-    }
-  };
-
   const handleFeatureClick = (title: string) => {
     if (title === '拼音學習') onNavigate('phonics', 'phonics_scheme');
     else if (title === '互動遊戲') onNavigate('gamesHub');
@@ -130,50 +47,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
     <HubShell activeKey="home" onHome={() => onNavigate('home')}>
       {/* ---------------- Main Row: Sidebar + Hero ---------------- */}
       <div className="flex flex-col lg:flex-row gap-5 flex-1">
-        {/* Left column: Sidebar */}
-        <div className="lg:w-80 shrink-0 flex flex-col gap-4">
-          <aside className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl p-4 md:p-5 shadow-[0_0_20px_rgba(2,132,199,0.15)]">
-            <div className="mb-4 flex justify-center">
-              <div className="px-5 py-2 rounded-xl bg-emerald-950/90 border border-emerald-400 text-emerald-300 font-black text-base shadow-xs flex items-center gap-2">
-                <span className="text-lg">🧪</span> 學習主題 <span className="text-lg">🧪</span>
-              </div>
-            </div>
-
-            <ul className="flex flex-col gap-3">
-              {SIDEBAR_ITEMS.map((item) => (
-                <li
-                  key={item.title}
-                  onClick={() => handleSidebarClick(item.title)}
-                  className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 cursor-pointer transition-all bg-[#030b17] hover:bg-[#0c1f38] border-2 border-cyan-500/40 hover:border-cyan-300 shadow-md group active:scale-98"
-                >
-                  {item.icon ? (
-                    <img src={item.icon} alt="" className="w-12 h-12 rounded-xl object-contain shrink-0 bg-cyan-950/80 p-1.5 border border-cyan-400/60 shadow-sm" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl shrink-0 bg-cyan-950/80 p-1.5 border border-cyan-400/60 shadow-sm flex items-center justify-center text-2xl">
-                      {item.emoji}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-black text-white text-base md:text-lg group-hover:text-amber-300 transition-colors leading-snug">{item.title}</div>
-                    <div className="text-xs md:text-sm text-cyan-200 font-extrabold mt-0.5 leading-snug">{item.subtitle}</div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-amber-300 shrink-0 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
-                </li>
-              ))}
-            </ul>
-          </aside>
-
-          {/* Photo container below sidebar */}
-          <div className="hidden lg:block mt-auto rounded-3xl overflow-hidden border-2 border-cyan-500/40 relative shadow-md bg-[#030b17]">
-            <img 
-              src={customImage || frogDecor} 
-              alt="宣傳照片" 
-              className="w-full h-auto object-cover" 
-            />
-          </div>
-        </div>
-
-        {/* Hero + Feature cards column */}
+        {/* Hero + Feature cards column（「學習主題」側欄跟宣傳照片都拿掉了，這欄改滿版） */}
         <div className="flex-1 flex flex-col gap-4">
           {/* Hero banner */}
           <div className="relative w-full rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(2,132,199,0.2)]">

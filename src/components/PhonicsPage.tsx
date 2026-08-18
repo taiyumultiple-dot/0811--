@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  BookOpen,
-  Gamepad2,
   ChevronRight,
   Play,
   RotateCcw,
@@ -9,8 +7,6 @@ import {
   AlertCircle,
   ExternalLink,
   Award,
-  Link,
-  Heart,
   Tv,
   Share2,
   Megaphone,
@@ -484,12 +480,6 @@ export default function PhonicsPage({
     return () => clearInterval(interval);
   }, [animIsPlaying]);
 
-  const SIDEBAR_ITEMS: { id: string; label: string; subtitle: string; external?: string }[] = [
-    { id: 'phonics_scheme', label: '拼音方案', subtitle: '聲母、韻母、拼音一次學' },
-    { id: 'tone_practice', label: '動畫專區', subtitle: '台語精彩動畫影片' },
-    { id: 'games_hub', label: '互動遊戲', subtitle: '遊戲中學台語', external: 'gamesHub' },
-    { id: 'related_links', label: '相關連結', subtitle: '更多學習資源' },
-  ];
 
   // --- 拼音方案總覽頁（跟入門篇 pptx 壹～柒節一致，單張投影片播放的感覺） ---
   const [schemeTab, setSchemeTab] = useState<
@@ -531,94 +521,17 @@ export default function PhonicsPage({
   // --- 連讀變調頁 ---
   const [sandhiTone, setSandhiTone] = useState<Tone>(1);
 
+  // 側欄拿掉了（跟頂部導覽列的「拼音學習」「動畫專區」重複），改由 initialTab
+  // 這個 prop 直接決定要顯示哪個分頁；頂部導覽列換頁時 initialTab 會變，
+  // 這裡要跟著同步，不然使用者從動畫專區點回拼音學習會沒反應。
+  useEffect(() => {
+    setActiveSidebar(initialTab);
+  }, [initialTab]);
+
   return (
     <HubShell activeKey="phonics" onHome={() => onNavigate('home')}>
       {/* ---------------- Main Content Body ---------------- */}
-      <div className="flex flex-col lg:flex-row gap-4 flex-1">
-        {/* Left Column: Sidebar Selection */}
-        <div className="lg:w-80 shrink-0 flex flex-col gap-4">
-          <aside className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl p-4 md:p-5 shadow-[0_0_20px_rgba(2,132,199,0.15)]">
-            <ul className="flex flex-col gap-3">
-              {SIDEBAR_ITEMS.map((item) => {
-                const sidebarIcons: Record<string, any> = {
-                  phonics_scheme: BookOpen,
-                  tone_practice: Tv,
-                  games_hub: Gamepad2,
-                  related_links: Link,
-                };
-                const IconComponent = sidebarIcons[item.id] || BookOpen;
-                const isActive = !item.external && activeSidebar === item.id;
-                return (
-                  <li
-                    key={item.id}
-                    onClick={() => (item.external ? onNavigate(item.external) : setActiveSidebar(item.id))}
-                    className={`flex items-center gap-3.5 rounded-2xl px-4 py-3.5 cursor-pointer transition-all border-2 active:scale-98 ${
-                      isActive
-                        ? 'bg-cyan-950/90 border-cyan-400 text-white shadow-[0_0_15px_rgba(34,211,238,0.3)]'
-                        : 'bg-[#030b17] hover:bg-[#0c1f38] text-white border-cyan-500/40 hover:border-cyan-300'
-                    }`}
-                  >
-                    <div className={`p-2.5 rounded-xl shrink-0 ${isActive ? 'bg-cyan-400 text-slate-950' : 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'}`}>
-                      <IconComponent
-                        className="w-6 h-6 shrink-0"
-                        strokeWidth={2.5}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-black text-base md:text-lg leading-snug ${isActive ? 'text-cyan-300' : 'text-white'}`}>
-                        {item.label}
-                      </div>
-                      <div className="text-xs md:text-sm text-cyan-200 font-extrabold mt-0.5 leading-snug">
-                        {item.subtitle}
-                      </div>
-                    </div>
-                    <ChevronRight
-                      className={`w-5 h-5 shrink-0 ${
-                        isActive ? 'text-amber-300' : 'text-cyan-400'
-                      }`}
-                      strokeWidth={2.5}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          </aside>
-
-          {/* Useful Taigi Bottom Card */}
-          <div className="p-4 rounded-3xl bg-[#071322] border-2 border-cyan-500/40 flex items-center gap-3 shadow-md text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-12 h-12 object-contain shrink-0">
-              {/* Flower 1 */}
-              <circle cx="20" cy="14" r="3" fill="#F2C94C" />
-              <circle cx="16" cy="14" r="2.5" fill="#F2994A" />
-              <circle cx="24" cy="14" r="2.5" fill="#F2994A" />
-              <circle cx="20" cy="10" r="2.5" fill="#F2994A" />
-              <circle cx="20" cy="18" r="2.5" fill="#F2994A" />
-              {/* Flower 2 */}
-              <circle cx="30" cy="20" r="2.5" fill="#F2C94C" />
-              <circle cx="27" cy="20" r="2" fill="#F2994A" />
-              <circle cx="33" cy="20" r="2" fill="#F2994A" />
-              <circle cx="30" cy="17" r="2" fill="#F2994A" />
-              <circle cx="30" cy="23" r="2" fill="#F2994A" />
-              {/* Stems */}
-              <path d="M20,18 Q19,28 21,34" fill="none" stroke="#27AE60" strokeWidth="2" strokeLinecap="round" />
-              <path d="M30,23 Q28,29 23,34" fill="none" stroke="#27AE60" strokeWidth="1.5" strokeLinecap="round" />
-              {/* Leaves */}
-              <path d="M19,25 C15,24 15,28 19,28 Z" fill="#219653" />
-              <path d="M24,28 C28,27 28,31 24,31 Z" fill="#219653" />
-              {/* Pot */}
-              <path d="M16,34 L32,34 L29,44 L19,44 Z" fill="#D35400" />
-              <rect x="14" y="32" width="20" height="3" rx="1.5" fill="#E67E22" />
-            </svg>
-            <div className="flex-1">
-              <div className="font-black text-amber-300 text-base leading-tight">用心學台語</div>
-              <div className="font-black text-cyan-100 text-sm leading-tight flex items-center gap-1.5 mt-1">
-                生活更有趣 <Heart className="w-4 h-4 fill-rose-500 text-rose-500 animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Displaying current tab content with high visual fidelity */}
+      <div className="flex flex-col flex-1">
         <div className="flex-1 bg-white rounded-3xl p-5 md:p-7 shadow-sm flex flex-col">
           <AnimatePresence mode="wait">
             {activeSidebar === 'phonics_scheme' && (
@@ -1369,64 +1282,6 @@ export default function PhonicsPage({
               </motion.div>
             )}
 
-            {activeSidebar === 'related_links' && (
-              <motion.div
-                key="related_links"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex flex-col gap-6"
-              >
-                <div className="border-b-2 border-[#EADFCB] pb-5">
-                  <h1 className="font-black text-[#1a1816] text-2xl md:text-3xl mb-2 flex items-center gap-2.5">
-                    <span className="text-3xl">🔗</span> 推薦台語線上延伸學習資源
-                  </h1>
-                  <p className="text-[#3d3831] font-bold text-base md:text-lg">
-                    提供教育部、文藝團體及泰宇出版精選的最新台語數位教學工具與檢定資源
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {[
-                    { title: '教育部臺灣閩南語常用詞辭典', url: 'https://twblg.dict.edu.tw/', desc: '最權威的線上台語字詞、片語查詢工具，附帶標準真人發音與典故說明。', tag: '權威字典' },
-                    { title: '台語羅馬字輸入法工具', url: 'https://chiahpa.github.io/taigi-keyman/', desc: '幫助您輕鬆在電腦與手機端流暢地打出標準台語台羅拼音與特殊聲調符號。', tag: '數位工具' },
-                    { title: '泰宇教育出版 - 台語互動資源網', url: 'https://taiyu.com.tw/', desc: '泰宇專為中小學師生打造的全新台語課本、互動多媒體教材與隨堂學習單。', tag: '泰宇官方' },
-                    { title: '閩南語語言能力認證專區', url: 'https://blg.moe.edu.tw/', desc: '教育部舉辦之閩南語認證考試官方資訊，提供歷屆試題與線上模擬考。', tag: '認證檢定' },
-                    { title: '臺灣閩南語羅馬字拼音方案使用手冊', url: 'https://language.moe.gov.tw/', desc: '教育部官方頒布之台羅拼音規則詳細教學電子書，完整收錄聲母韻母法則。', tag: '官方指南' },
-                    { title: '公視台語台 - 數位學習影音館', url: 'https://www.taigitv.org.tw/', desc: '精選在地台語動畫、卡通、童謠與節目，讓學童透過趣味影音自然學台語。', tag: '影音動畫' }
-                  ].map((link) => (
-                    <a
-                      key={link.title}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-5 md:p-6 rounded-2xl bg-[#FFFDF7] border-2 border-[#EADFCB] hover:border-[#D9A328] hover:shadow-lg transition-all flex flex-col justify-between group gap-4"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-3 mb-2">
-                          <span className="text-xs font-black px-3 py-1 rounded-full bg-[#f2e6cb] text-[#7a4802] border border-[#dfc691]">
-                            {link.tag}
-                          </span>
-                          <ExternalLink className="w-5 h-5 text-[#8c6519] group-hover:text-[#d97706] transition-colors" />
-                        </div>
-                        <h3 className="font-black text-[#1a1816] text-lg md:text-xl group-hover:text-[#b36b00] transition-colors leading-snug">
-                          {link.title}
-                        </h3>
-                        <p className="text-sm md:text-base text-[#2e2a24] font-bold mt-2.5 leading-relaxed">
-                          {link.desc}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-[#F1ECE0] flex items-center justify-between">
-                        <span className="text-xs md:text-sm text-[#186e2e] font-black inline-flex items-center gap-1.5 bg-[#eaf5eb] px-3 py-1.5 rounded-xl border border-[#b2e0b9]">
-                          立即前往網頁 ↗
-                        </span>
-                        <span className="text-xs text-[#8c6519] font-bold">點擊跳轉外部網站</span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </div>

@@ -6,10 +6,22 @@ import {
   RefreshCw,
   Zap,
   CheckCircle2,
-  Bell
+  Bell,
+  ExternalLink
 } from 'lucide-react';
 import { HubShell } from './games/GameShell';
 import { motion, AnimatePresence } from 'motion/react';
+
+/** 推薦台語線上延伸學習資源，原本在拼音頁的「相關連結」分頁，
+ *  2026-08-18 併到最新消息頁，用分類頁籤切換。 */
+const RELATED_LINKS = [
+  { title: '教育部臺灣閩南語常用詞辭典', url: 'https://twblg.dict.edu.tw/', desc: '最權威的線上台語字詞、片語查詢工具，附帶標準真人發音與典故說明。', tag: '權威字典' },
+  { title: '台語羅馬字輸入法工具', url: 'https://chiahpa.github.io/taigi-keyman/', desc: '幫助您輕鬆在電腦與手機端流暢地打出標準台語台羅拼音與特殊聲調符號。', tag: '數位工具' },
+  { title: '泰宇教育出版 - 台語互動資源網', url: 'https://taiyu.com.tw/', desc: '泰宇專為中小學師生打造的全新台語課本、互動多媒體教材與隨堂學習單。', tag: '泰宇官方' },
+  { title: '閩南語語言能力認證專區', url: 'https://blg.moe.edu.tw/', desc: '教育部舉辦之閩南語認證考試官方資訊，提供歷屆試題與線上模擬考。', tag: '認證檢定' },
+  { title: '臺灣閩南語羅馬字拼音方案使用手冊', url: 'https://language.moe.gov.tw/', desc: '教育部官方頒布之台羅拼音規則詳細教學電子書，完整收錄聲母韻母法則。', tag: '官方指南' },
+  { title: '公視台語台 - 數位學習影音館', url: 'https://www.taigitv.org.tw/', desc: '精選在地台語動畫、卡通、童謠與節目，讓學童透過趣味影音自然學台語。', tag: '影音動畫' },
+];
 
 interface NewsItem {
   id: string;
@@ -120,7 +132,7 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
     }, 600);
   };
 
-  const categories = ['全部', '最新即時', '遊戲更新', '系統公告', '教學資源'];
+  const categories = ['全部', '最新即時', '遊戲更新', '系統公告', '教學資源', '相關連結'];
 
   const filteredNews = activeCategory === '全部'
     ? allNews
@@ -185,12 +197,54 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
                   : 'bg-[#071322] border-2 border-cyan-500/40 text-cyan-200 hover:text-white hover:bg-cyan-900/80'
               }`}
             >
-              {cat === '最新即時' ? '⚡ ' + cat : cat}
+              {cat === '最新即時' ? '⚡ ' + cat : cat === '相關連結' ? '🔗 ' + cat : cat}
             </button>
           ))}
         </div>
 
+        {/* --- Related Links Grid（原本拼音頁「相關連結」分頁的內容） --- */}
+        {activeCategory === '相關連結' && (
+          <div className="flex flex-col gap-4">
+            <p className="text-cyan-200/80 text-sm md:text-base font-bold">
+              教育部、文藝團體及泰宇出版精選的台語數位教學工具與檢定資源。
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {RELATED_LINKS.map((link) => (
+                <a
+                  key={link.title}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-5 md:p-6 rounded-2xl bg-[#071322] border-2 border-cyan-500/40 hover:border-cyan-300 hover:shadow-lg transition-all flex flex-col justify-between group gap-4"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-xs font-black px-3 py-1 rounded-full bg-cyan-950 text-cyan-200 border border-cyan-400/60">
+                        {link.tag}
+                      </span>
+                      <ExternalLink className="w-5 h-5 text-cyan-300 group-hover:text-amber-300 transition-colors" />
+                    </div>
+                    <h3 className="font-black text-white text-lg md:text-xl group-hover:text-amber-300 transition-colors leading-snug">
+                      {link.title}
+                    </h3>
+                    <p className="text-sm md:text-base text-cyan-100 font-bold mt-2.5 leading-relaxed">
+                      {link.desc}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-cyan-500/20 flex items-center justify-between">
+                    <span className="text-xs md:text-sm text-emerald-300 font-black inline-flex items-center gap-1.5 bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-400/40">
+                      立即前往網頁 ↗
+                    </span>
+                    <span className="text-xs text-cyan-300/70 font-bold">點擊跳轉外部網站</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* --- News Article Grid --- */}
+        {activeCategory !== '相關連結' && (
         <div className="grid grid-cols-1 gap-5 flex-1">
           {filteredNews.map((article) => (
             <div
@@ -232,6 +286,7 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* --- Article Detail Popup Modal --- */}
