@@ -26,6 +26,7 @@ import {
   INITIAL_SYLLABLES, FINAL_GROUPS, type InitialSymbol, type Tone,
   SCHEME_INTRO_LINKS, INPUT_METHODS, CHAR_USAGE_NOTE, DICTIONARIES, LEARNING_RESOURCE_HUB,
   SLIDE_SECTIONS, slideUrl, SLIDE_AUDIO,
+  SLIDE_SECTIONS_PRACTICE, slidePracticeUrl, SLIDE_AUDIO_PRACTICE,
 } from '../data/phonicsData';
 import LessonAudio from './LessonAudio';
 
@@ -63,7 +64,9 @@ export default function PhonicsPage({
 }) {
   const [activeSidebar, setActiveSidebar] = useState<string>(initialTab);
 
-  // --- 拼音方案總覽頁（跟入門篇 pptx 壹～柒節一致，單張投影片播放的感覺） ---
+  // --- 拼音方案總覽頁：入門篇 / 練習篇兩本課本切換，各自跟 pptx 節次一致，單張投影片播放的感覺 ---
+  const [book, setBook] = useState<'intro' | 'practice'>('intro');
+
   const [schemeTab, setSchemeTab] = useState<
     'intro' | 'tones' | 'scheme' | 'input' | 'chars' | 'dict' | 'resources'
   >('intro');
@@ -77,17 +80,32 @@ export default function PhonicsPage({
     setSlideNum(tabSlideRange(tab)[0]);
   };
 
-  // 左右鍵翻頁，像真的在放 PPT 一樣
+  // --- 練習篇：課本 PART2，5 段（暖身／聲調變調／聲母韻母／調號書寫／逐聲母練習） ---
+  const [practiceTab, setPracticeTab] = useState<
+    'warmup' | 'tones' | 'initials_finals' | 'tone_marks' | 'drills'
+  >('warmup');
+  const practiceTabRange = (tab: string): [number, number] => {
+    const secs = SLIDE_SECTIONS_PRACTICE.filter((s) => s.tab === tab);
+    return [Math.min(...secs.map((s) => s.range[0])), Math.max(...secs.map((s) => s.range[1]))];
+  };
+  const [practiceSlideNum, setPracticeSlideNum] = useState<number>(1);
+  const goToPracticeTab = (tab: typeof practiceTab) => {
+    setPracticeTab(tab);
+    setPracticeSlideNum(practiceTabRange(tab)[0]);
+  };
+
+  // 左右鍵翻頁，像真的在放 PPT 一樣（入門篇／練習篇各自的投影片範圍）
   useEffect(() => {
     if (activeSidebar !== 'phonics_scheme') return;
-    const [lo, hi] = tabSlideRange(schemeTab);
+    const [lo, hi] = book === 'intro' ? tabSlideRange(schemeTab) : practiceTabRange(practiceTab);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') setSlideNum((n) => Math.min(hi, n + 1));
-      else if (e.key === 'ArrowLeft') setSlideNum((n) => Math.max(lo, n - 1));
+      const setNum = book === 'intro' ? setSlideNum : setPracticeSlideNum;
+      if (e.key === 'ArrowRight') setNum((n) => Math.min(hi, n + 1));
+      else if (e.key === 'ArrowLeft') setNum((n) => Math.max(lo, n - 1));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activeSidebar, schemeTab]);
+  }, [activeSidebar, book, schemeTab, practiceTab]);
 
   // --- 聲母學習 ---
   const [selectedInitial, setSelectedInitial] = useState<InitialSymbol | null>(null);
@@ -129,10 +147,33 @@ export default function PhonicsPage({
                     <span className="text-3xl">📖</span> 臺灣台語羅馬字拼音方案
                   </h1>
                   <p className="text-[#8A8378] text-base">
-                    教育部民國 95 年公布的官方拼音系統，簡稱「臺羅」。分成壹～柒節，照課本順序一頁一頁學。
+                    {book === 'intro'
+                      ? '教育部民國 95 年公布的官方拼音系統，簡稱「臺羅」。分成壹～柒節，照課本順序一頁一頁學。'
+                      : '課本 PART2 練習篇：暖身活動、聲調變調練習、聲母韻母學習步驟、調號書寫，最後逐個聲母「10 分鐘練武功」。'}
                   </p>
                 </div>
 
+                <div className="flex gap-2 bg-white border-2 border-[#EFE8D8] p-1.5 rounded-2xl w-fit">
+                  {([
+                    ['intro', '📘 入門篇'],
+                    ['practice', '✏️ 練習篇'],
+                  ] as const).map(([b, label]) => (
+                    <button
+                      key={b}
+                      onClick={() => setBook(b)}
+                      className={`px-5 py-2.5 rounded-xl font-black text-sm transition-all active:scale-95 ${
+                        book === b
+                          ? 'bg-[#2D2A26] text-white shadow-md'
+                          : 'text-[#5C5548] hover:bg-[#FAF8F2]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {book === 'intro' && (
+                <>
                 <div className="flex gap-2 bg-[#FAF8F2] p-1.5 rounded-2xl w-fit flex-wrap">
                   {([
                     ['intro', '壹．認識方案', Info],
@@ -491,6 +532,87 @@ export default function PhonicsPage({
                     </a>
                   )}
                 </div>
+                </>
+                )}
+
+                {book === 'practice' && (
+                <>
+                <div className="flex gap-2 bg-[#FAF8F2] p-1.5 rounded-2xl w-fit flex-wrap">
+                  {([
+                    ['warmup', '暖身：講我的名', Info],
+                    ['tones', '聲調與變調練習', Sparkles],
+                    ['initials_finals', '聲母韻母學習步驟', Megaphone],
+                    ['tone_marks', '調號書寫練習', PenTool],
+                    ['drills', '逐聲母例字', Award],
+                  ] as const).map(([tab, label, TabIcon]) => (
+                    <button
+                      key={tab}
+                      onClick={() => goToPracticeTab(tab)}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl font-black text-sm transition-all active:scale-95 ${
+                        practiceTab === tab
+                          ? 'bg-[#4E9B5D] text-white shadow-md scale-105'
+                          : 'text-[#5C5548] hover:bg-white hover:text-[#4E9B5D]'
+                      }`}
+                    >
+                      <TabIcon className="w-5 h-5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex-1 flex flex-col gap-8">
+                  {(() => {
+                    const [lo, hi] = practiceTabRange(practiceTab);
+                    const n = Math.min(Math.max(practiceSlideNum, lo), hi);
+                    const sec = SLIDE_SECTIONS_PRACTICE.filter((s) => s.tab === practiceTab).find((s) => n >= s.range[0] && n <= s.range[1]);
+                    const audio = SLIDE_AUDIO_PRACTICE.find((a) => a.afterSlide === n);
+                    return (
+                      <div className="flex flex-col gap-3">
+                        {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
+                        <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md bg-[#1a1a1a]">
+                          <img
+                            src={`${import.meta.env.BASE_URL}${slidePracticeUrl(n)}`}
+                            alt={`課本練習篇第 ${n} 頁`}
+                            className="w-full h-auto"
+                          />
+                        </div>
+
+                        {audio && <LessonAudio trackKey={audio.trackKey} />}
+
+                        <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
+                          <button
+                            onClick={() => setPracticeSlideNum(Math.max(lo, n - 1))}
+                            disabled={n <= lo}
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-[#EFE8D8] font-black text-sm text-[#5C5548] hover:border-[#4E9B5D] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                          >
+                            <ChevronLeft className="w-4 h-4" /> 上一頁
+                          </button>
+
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setPracticeSlideNum(lo)}
+                              className="w-10 h-10 rounded-full bg-white border border-[#EFE8D8] flex items-center justify-center hover:border-[#4E9B5D] active:scale-95 transition-all shadow-sm"
+                              aria-label="回到本節第一頁"
+                            >
+                              <Home className="w-4 h-4 text-[#5C5548]" />
+                            </button>
+                            <span className="font-mono font-black text-[#8A8378] text-sm">{n - lo + 1} / {hi - lo + 1}</span>
+                          </div>
+
+                          <button
+                            onClick={() => setPracticeSlideNum(Math.min(hi, n + 1))}
+                            disabled={n >= hi}
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E9B5D] text-white font-black text-sm hover:bg-[#3E8552] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                          >
+                            下一頁 <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                </>
+                )}
               </motion.div>
             )}
 

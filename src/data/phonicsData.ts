@@ -446,3 +446,44 @@ export const SLIDE_AUDIO: { afterSlide: number; trackKey: string }[] = [
   { afterSlide: 28, trackKey: 'initials-overview' }, // P.10-11 聲母，media4.wav
   { afterSlide: 35, trackKey: 'finals-overview' },   // P.12-13 韻母，media5.wav
 ];
+
+// ---------------------------------------------------------------------------
+// 練習篇 pptx 逐張投影片截圖（2026-08-18 比照入門篇做法，PowerPoint 匯出，
+// 跟課本排版一模一樣），檔案在 public/images/phonics/slides-practice/slide-NNN.png，
+// 共 108 張，依課本章節分成 5 段。
+
+export const SLIDE_SECTIONS_PRACTICE: { tab: string; title: string; range: [number, number] }[] = [
+  { tab: 'warmup', title: '暖身：講我的名', range: [1, 4] },
+  { tab: 'tones', title: '聲調與變調練習（P.28-30）', range: [5, 19] },
+  { tab: 'initials_finals', title: '聲母韻母學習步驟（P.31-33）', range: [20, 29] },
+  { tab: 'tone_marks', title: '調號書寫練習', range: [30, 34] },
+  { tab: 'drills', title: '10 分鐘練武功：逐聲母例字（P.36-53）', range: [35, 108] },
+];
+
+export function slidePracticeUrl(n: number): string {
+  return `images/phonics/slides-practice/slide-${String(n).padStart(3, '0')}.png`;
+}
+
+/** 核對自 pptx XML 的 audioFile 關聯，跟入門篇同一批 18 個聲母例字錄音
+ *  ＋ P.30「聲調和變調複習」共用（trackKey 沿用 LessonAudio 既有的表）。 */
+export const SLIDE_AUDIO_PRACTICE: { afterSlide: number; trackKey: string }[] = [
+  { afterSlide: 13, trackKey: 'tone-review' },   // P.30 聲調和變調複習
+  { afterSlide: 37, trackKey: 'initial-p' },     // P.36
+  { afterSlide: 41, trackKey: 'initial-ph' },    // P.37
+  { afterSlide: 45, trackKey: 'initial-b' },     // P.38
+  { afterSlide: 49, trackKey: 'initial-m' },     // P.39
+  { afterSlide: 53, trackKey: 'initial-t' },     // P.40
+  { afterSlide: 57, trackKey: 'initial-th' },    // P.41
+  { afterSlide: 61, trackKey: 'initial-n' },     // P.42
+  { afterSlide: 65, trackKey: 'initial-l' },     // P.43
+  { afterSlide: 69, trackKey: 'initial-ts' },    // P.44
+  { afterSlide: 73, trackKey: 'initial-tsh' },   // P.45
+  { afterSlide: 77, trackKey: 'initial-s' },     // P.46
+  { afterSlide: 81, trackKey: 'initial-j' },     // P.47
+  { afterSlide: 85, trackKey: 'initial-k' },     // P.48
+  { afterSlide: 89, trackKey: 'initial-kh' },    // P.49
+  { afterSlide: 93, trackKey: 'initial-h' },     // P.50
+  { afterSlide: 97, trackKey: 'initial-g' },     // P.51
+  { afterSlide: 101, trackKey: 'initial-ng' },   // P.52
+  { afterSlide: 105, trackKey: 'initial-zero' }, // P.53
+];
