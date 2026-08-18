@@ -38,8 +38,15 @@ function LoadingFallback() {
 
 type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | 'classroom' | `game${number}`;
 
+/** 首次載入時直接用網址決定要開哪一頁，不要等 effect —— 
+ *  等 effect 會跟下面同步網址的 effect 互相打架（一個要設、一個先清）。 */
+function viewFromHash(): View {
+  const key = window.location.hash.replace(/^#\/?/, '');
+  return (key || 'home') as View;
+}
+
 function App() {
-  const [view, setView] = useState<View>('home');
+  const [view, setView] = useState<View>(viewFromHash);
   const [phonicsTab, setPhonicsTab] = useState<string>('phonics_scheme');
 
   useEffect(() => {
@@ -82,24 +89,16 @@ function App() {
   // 網址列同步：#classroom 這種網址可以直接分享、也能加到瀏覽器書籤，
   // 老師把「課堂小工具」設成教室電腦的首頁時就不必每次從首頁點進來。
   useEffect(() => {
-    const fromHash = window.location.hash.replace(/^#\/?/, '');
-    if (fromHash) setView(fromHash as View);
-
-    const onHashChange = () => {
-      const next = window.location.hash.replace(/^#\/?/, '') || 'home';
-      setView(next as View);
-    };
+    // 使用者自己改網址或按上一頁時跟著換畫面
+    const onHashChange = () => setView(viewFromHash());
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   useEffect(() => {
-    const target = view === 'home' ? ' ' : `#${view}`;
-    if (view === 'home') {
-      history.replaceState(null, '', window.location.pathname + window.location.search);
-    } else if (window.location.hash !== target) {
-      history.replaceState(null, '', target);
-    }
+    const target = view === 'home' ? '' : `#${view}`;
+    if (window.location.hash === target) return;
+    history.replaceState(null, '', target || window.location.pathname + window.location.search);
   }, [view]);
 
   // Expose global navigation handler
