@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { Home, BookOpen, Gamepad2, ClipboardList, MessageCircle, Music, VolumeX, Sliders, GraduationCap, Wrench, Tv } from 'lucide-react';
+import { Home, BookOpen, Gamepad2, ClipboardList, MessageCircle, Music, VolumeX, Sliders, GraduationCap, Wrench } from 'lucide-react';
 import OldStreetBackground from './OldStreetBackground';
 import AuthModal, { UserProfile } from '../AuthModal';
 import VolumeControlModal from '../VolumeControlModal';
@@ -8,7 +8,6 @@ import { toggleBGM, isBGMActive, cycleBGMTrack, getCurrentBGMTrackName } from '.
 export const NAV_ITEMS = [
   { label: '首頁', icon: Home, key: 'home' },
   { label: '拼音學習', icon: BookOpen, key: 'phonics', tabId: 'phonics_scheme' },
-  { label: '動畫專區', icon: Tv, key: 'phonics', tabId: 'tone_practice' },
   { label: '互動遊戲', icon: Gamepad2, key: 'games' },
   { label: '學習紀錄', icon: ClipboardList, key: 'record' },
   { label: '最新消息', icon: MessageCircle, key: 'news' },

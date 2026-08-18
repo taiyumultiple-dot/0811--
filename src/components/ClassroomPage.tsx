@@ -14,6 +14,7 @@ import { ScoreTool, GroupTool, SeatingTool, BuzzerTool } from './toolbox/classro
 import { FlashCardTool, WheelTool } from './toolbox/classroom/toolsTaigi';
 import { SpeakingRubricTool, QuizScoreTool, HomeworkTool } from './toolbox/classroom/toolsAssess';
 import { ParentMessageTool, NoticeTool } from './toolbox/classroom/toolsComm';
+import AnimationZone from './AnimationZone';
 
 // 課堂小工具總頁：分類 → 工具卡牆 → 點進去單一工具。
 //
@@ -22,7 +23,7 @@ import { ParentMessageTool, NoticeTool } from './toolbox/classroom/toolsComm';
 
 type ToolKey =
   | 'draw' | 'score' | 'buzzer' | 'timer' | 'group' | 'seating' | 'signal'
-  | 'flashcard' | 'wheel'
+  | 'flashcard' | 'wheel' | 'anime'
   | 'rubric' | 'quiz' | 'homework'
   | 'parentmsg' | 'notice';
 
@@ -67,6 +68,7 @@ const CATEGORIES: Category[] = [
     tools: [
       { key: 'flashcard', name: '台語大字卡', desc: '全螢幕大字投影，可遮住拼音讓學生猜，能聽發音、掃碼帶回家。', emoji: '🃏' },
       { key: 'wheel', name: '台語詞彙轉盤', desc: '隨機轉出一個台語詞讓學生唸，唸完再揭曉拼音。', emoji: '🎡' },
+      { key: 'anime', name: '動畫專區', desc: '教育部推薦的台語動畫片單，可依學齡篩選，字幕能切漢字／羅馬字。', emoji: '📺' },
     ],
   },
   {
@@ -96,10 +98,13 @@ const ALL_TOOLS = CATEGORIES.flatMap((c) => c.tools);
 
 export default function ClassroomPage({
   onNavigate,
+  initialTool = null,
 }: {
   onNavigate: (view: string, tabId?: string) => void;
+  /** 從別頁直接指定要開哪一項工具（首頁的「動畫專區」卡片會傳 'anime'） */
+  initialTool?: string | null;
 }) {
-  const [open, setOpen] = useState<ToolKey | null>(null);
+  const [open, setOpen] = useState<ToolKey | null>((initialTool as ToolKey) ?? null);
   const [search, setSearch] = useState('');
   // 名單一次貼好，抽籤、分組、座位、評量、作業都共用
   const [rosterText, setRosterText] = useState(() => readStored(ROSTER_KEY, ''));
@@ -107,6 +112,11 @@ export default function ClassroomPage({
   useEffect(() => {
     writeStored(ROSTER_KEY, rosterText);
   }, [rosterText]);
+
+  // 外面指定的工具換了就跟著開；沒指定（從導覽列進來）就回到工具卡牆
+  useEffect(() => {
+    setOpen((initialTool as ToolKey) ?? null);
+  }, [initialTool]);
 
   const names = useMemo(() => parseRoster(rosterText), [rosterText]);
   const activeTool = open ? ALL_TOOLS.find((t) => t.key === open) ?? null : null;
@@ -143,6 +153,12 @@ export default function ClassroomPage({
           {open === 'signal' && <SignalTool />}
           {open === 'flashcard' && <FlashCardTool />}
           {open === 'wheel' && <WheelTool />}
+          {/* 動畫專區是原本拼音頁搬過來的，底色是米白的，所以另外包一層白底卡片 */}
+          {open === 'anime' && (
+            <div className="bg-white rounded-3xl p-5 md:p-7 shadow-sm flex flex-col">
+              <AnimationZone />
+            </div>
+          )}
           {open === 'rubric' && <SpeakingRubricTool names={names} />}
           {open === 'quiz' && <QuizScoreTool names={names} />}
           {open === 'homework' && <HomeworkTool names={names} />}

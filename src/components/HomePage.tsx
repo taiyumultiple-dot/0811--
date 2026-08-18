@@ -39,7 +39,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
   const handleFeatureClick = (title: string) => {
     if (title === '拼音學習') onNavigate('phonics', 'phonics_scheme');
     else if (title === '互動遊戲') onNavigate('gamesHub');
-    else if (title === '動畫專區') onNavigate('phonics', 'tone_practice');
+    else if (title === '動畫專區') onNavigate('classroom', 'anime');
     else if (title === '學習紀錄') onNavigate('record');
   };
 

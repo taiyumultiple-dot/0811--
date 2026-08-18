@@ -47,6 +47,9 @@ function viewFromHash(): View {
 function App() {
   const [view, setView] = useState<View>(viewFromHash);
   const [phonicsTab, setPhonicsTab] = useState<string>('phonics_scheme');
+  // 課堂小工具要開哪一項（首頁的「動畫專區」卡片會直接指定 'anime'）；
+  // 從導覽列進來沒指定時要清成 null，不然會一直停在上次那個工具。
+  const [classroomTool, setClassroomTool] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize global Web Audio API interactive click sounds
@@ -79,7 +82,9 @@ function App() {
   };
 
   const handleNavigate = (targetView: string, tabId?: string) => {
-    if (tabId) {
+    if (targetView === 'classroom') {
+      setClassroomTool(tabId ?? null);
+    } else if (tabId) {
       setPhonicsTab(tabId);
     }
     setView(targetView as View);
@@ -126,7 +131,7 @@ function App() {
     }
 
     if (view === 'classroom') {
-      return <ClassroomPage onNavigate={(target) => handleNavigate(target)} />;
+      return <ClassroomPage onNavigate={(target) => handleNavigate(target)} initialTool={classroomTool} />;
     }
 
     if (view === 'game1') return <Game1FoodMatch onHome={goHome} onNext={() => goNext('game1')} />;
