@@ -97,6 +97,7 @@ export function playTonePitch(toneNumber: number) {
 }
 
 import { speakTaiyu, getSandhiTailo, getSandhiTone, detectTonesFromTailo } from '../lib/speech';
+import LessonAudio, { hasLessonAudio } from './LessonAudio';
 
 export function speakText(text: string, tone?: number, tailo?: string, disableSandhi?: boolean, fluid?: boolean) {
   speakTaiyu(text, tone, tailo, disableSandhi, fluid);
@@ -1886,6 +1887,25 @@ export default function PhonicsPage({
                   </button>
                 </div>
 
+                {/* 對照這張表的課本錄音；聲調另外附變調圖與衍生調兩段 */}
+                <div className="flex flex-col gap-2">
+                  <LessonAudio
+                    trackKey={
+                      schemeTab === 'tones'
+                        ? 'tone-system'
+                        : schemeTab === 'finals'
+                          ? 'finals-overview'
+                          : 'initials-overview'
+                    }
+                  />
+                  {schemeTab === 'tones' && (
+                    <>
+                      <LessonAudio trackKey="tone-sandhi-chart" />
+                      <LessonAudio trackKey="tone-derived" />
+                    </>
+                  )}
+                </div>
+
                 {/* Sub-tab Table Render */}
                 <div className="flex-1 overflow-x-auto rounded-2xl border border-[#F1ECE0] shadow-inner bg-[#FCFAF5] p-2">
                   {schemeTab === 'initials' && (
@@ -2210,6 +2230,8 @@ export default function PhonicsPage({
 
                 {initialsViewMode === 'list' && (
                   <div className="flex flex-col gap-6">
+                    {/* 課本的聲母總覽錄音，先整段聽過再一個一個練 */}
+                    <LessonAudio trackKey="initials-overview" />
                     {/* Level 1: Category Selection Tabs */}
                     <div className="flex flex-wrap gap-3 p-2 bg-[#FAF7F0] rounded-2xl border border-[#F1ECE0] w-fit">
                       {['唇音', '舌尖音', '舌根音', '齒齦音'].map((cat) => {
@@ -2329,6 +2351,14 @@ export default function PhonicsPage({
                             </button>
                           </div>
                         </div>
+
+                        {/* 這個聲母在課本裡的真人錄音，比瀏覽器合成音準 */}
+                        {hasLessonAudio(`initial-${selectedInitialsSymbol}`) && (
+                          <LessonAudio
+                            trackKey={`initial-${selectedInitialsSymbol}`}
+                            title={`課本錄音：聲母 ${selectedInitialsSymbol}`}
+                          />
+                        )}
 
                         {initialsViewMode === 'detail' ? (
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -2590,6 +2620,7 @@ export default function PhonicsPage({
 
                 {finalsViewMode === 'list' && (
                   <div className="flex flex-col gap-6">
+                    <LessonAudio trackKey="finals-overview" />
                     {/* Level 1: Category Selection Tabs */}
                     <div className="flex flex-wrap gap-3 p-2 bg-[#FAF7F0] rounded-2xl border border-[#F1ECE0] w-fit">
                       {[
@@ -3570,6 +3601,12 @@ export default function PhonicsPage({
                   <p className="text-[#8A8378] text-sm">
                     台語在連讀時會進行自動聲調轉換（變調）。除了句尾或特定結構的最後一個字，前面的字都必須變調！
                   </p>
+                </div>
+
+                {/* 課本裡講變調的兩段錄音，配下面的規律圖一起聽 */}
+                <div className="flex flex-col gap-2">
+                  <LessonAudio trackKey="tone-sandhi-chart" />
+                  <LessonAudio trackKey="tone-review" />
                 </div>
 
                 {/* 2. Sandhi Cycle Rules Diagram */}
