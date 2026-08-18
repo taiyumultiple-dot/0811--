@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>台語詞卡｜臺羅拼音方塊研究所</title>
+<!--
+  學生端詞卡頁：老師在「課堂小工具」按「掃碼帶著走」，
+  詞卡內容會編碼在網址的 # 後面，這一頁只是把它解開來顯示。
+
+  刻意做成單一檔案、不依賴任何外部資源：
+  學生掃完碼把網頁留著，回家沒網路也還能翻卡片。
+  也因為資料在網址裡，這一頁不需要後端、不會收集任何個資。
+-->
+<style>
+  :root{
+    --bg:#030b17; --card:#071322; --line:#0e7490; --text:#fff;
+    --sub:#a5f3fc; --gold:#fcd34d; --ok:#34d399;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+    font-weight:900;min-height:100vh;display:flex;flex-direction:column;padding:16px;gap:14px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  h1{font-size:18px;margin:0;color:var(--sub)}
+  .count{font-size:14px;color:var(--gold)}
+  .card{flex:1;min-height:52vh;background:var(--card);border:3px solid rgba(14,116,144,.6);
+    border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;padding:20px;text-align:center;cursor:pointer;user-select:none}
+  .han{font-size:clamp(56px,20vw,120px);line-height:1.05;word-break:break-all}
+  .tailo{font-size:clamp(20px,7vw,40px);color:var(--gold)}
+  .zh{font-size:clamp(15px,4.5vw,24px);color:var(--sub)}
+  .hidden{visibility:hidden}
+  .tip{font-size:13px;color:#67e8f9;opacity:.85}
+  .row{display:flex;gap:10px}
+  button{flex:1;padding:16px 10px;border-radius:18px;border:2px solid rgba(14,116,144,.6);
+    background:#0a1626;color:var(--text);font-weight:900;font-size:16px;font-family:inherit;cursor:pointer}
+  button:active{transform:scale(.96)}
+  button.main{background:linear-gradient(90deg,#34d399,#22d3ee);color:#020814;border-color:#5eead4}
+  button:disabled{opacity:.4}
+  .empty{margin:auto;text-align:center;color:var(--sub);font-size:16px;line-height:1.9}
+  footer{text-align:center;font-size:12px;color:#475569}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">台語詞卡</h1>
+  <span class="count" id="count"></span>
+</header>
+
+<div class="card" id="card">
+  <div class="han" id="han">—</div>
+  <div class="tailo hidden" id="tailo"></div>
+  <div class="zh hidden" id="zh"></div>
+  <div class="tip" id="tip">點卡片看拼音</div>
+</div>
+
+<div class="row">
+  <button id="prev">← 上一張</button>
+  <button id="speak">🔊 唸一次</button>
+  <button id="next" class="main">下一張 →</button>
+</div>
+<div class="row">
+  <button id="shuffle">🔀 洗牌</button>
+  <button id="toggle">👁 一直顯示拼音</button>
+</div>
+
+<footer>泰宇出版　臺羅拼音方塊研究所　課堂小工具</footer>
+
+<script>
+(function () {
+  var els = {
+    title: document.getElementById('title'), count: document.getElementById('count'),
+    card: document.getElementById('card'), han: document.getElementById('han'),
+    tailo: document.getElementById('tailo'), zh: document.getElementById('zh'),
+    tip: document.getElementById('tip')
+  };
+
+  /* base64url → UTF-8 字串，跟 qrShare.tsx 的編碼方式對應 */
+  function decodePayload(raw) {
+    var b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  var words = [], idx = 0, revealed = false, always = false;
+
+  try {
+    var hash = location.hash.replace(/^#/, '');
+    if (hash) {
+      var data = decodePayload(hash);
+      els.title.textContent = data.t || '台語詞卡';
+      words = (data.w || []).map(function (w) { return { han: w[0], tailo: w[1] || '', zh: w[2] || '' }; });
+    }
+  } catch (e) {
+    words = [];
+  }
+
+  if (words.length === 0) {
+    document.body.innerHTML =
+      '<div class="empty">這個連結沒有帶詞卡內容。<br>請再掃一次老師投影的 QR 碼。</div>';
+    return;
+  }
+
+  function render() {
+    var w = words[idx];
+    els.han.textContent = w.han;
+    els.tailo.textContent = w.tailo || '（無拼音）';
+    els.zh.textContent = w.zh || '';
+    var show = revealed || always;
+    els.tailo.classList.toggle('hidden', !show);
+    els.zh.classList.toggle('hidden', !show || !w.zh);
+    els.tip.textContent = show ? '點卡片蓋回去' : '先自己唸唸看，再點卡片看拼音';
+    els.count.textContent = (idx + 1) + ' / ' + words.length;
+  }
+
+  function go(step) {
+    idx = (idx + step + words.length) % words.length;
+    revealed = false;
+    render();
+  }
+
+  /* 手機大多沒有台語語音，退而求其次用中文語音唸台羅拼音，
+     至少節奏對得上；有裝台語語音的裝置就會用到真正的台語聲音。 */
+  function speak() {
+    if (!window.speechSynthesis) return;
+    var w = words[idx];
+    var voices = speechSynthesis.getVoices() || [];
+    var nan = voices.filter(function (v) { return /nan|hok|TW/i.test(v.lang || ''); })[0];
+    var u = new SpeechSynthesisUtterance(/nan|hok/i.test((nan && nan.lang) || '') ? w.han : (w.tailo || w.han));
+    if (nan) u.voice = nan;
+    u.lang = (nan && nan.lang) || 'zh-TW';
+    u.rate = 0.85;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+
+  els.card.addEventListener('click', function () { revealed = !revealed; render(); });
+  document.getElementById('prev').addEventListener('click', function () { go(-1); });
+  document.getElementById('next').addEventListener('click', function () { go(1); });
+  document.getElementById('speak').addEventListener('click', speak);
+  document.getElementById('shuffle').addEventListener('click', function () {
+    for (var i = words.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = words[i]; words[i] = words[j]; words[j] = t;
+    }
+    idx = 0; revealed = false; render();
+  });
+  document.getElementById('toggle').addEventListener('click', function () {
+    always = !always;
+    this.textContent = always ? '🙈 先蓋住拼音' : '👁 一直顯示拼音';
+    render();
+  });
+
+  /* 手機上左右滑動翻卡 */
+  var x0 = null;
+  els.card.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  els.card.addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1);
+    x0 = null;
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

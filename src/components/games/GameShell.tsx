@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { Home, BookOpen, Gamepad2, ClipboardList, MessageCircle, Music, VolumeX, Sliders, GraduationCap } from 'lucide-react';
+import { Home, BookOpen, Gamepad2, ClipboardList, MessageCircle, Music, VolumeX, Sliders, GraduationCap, Wrench } from 'lucide-react';
 import OldStreetBackground from './OldStreetBackground';
 import AuthModal, { UserProfile } from '../AuthModal';
 import VolumeControlModal from '../VolumeControlModal';
@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { label: '互動遊戲', icon: Gamepad2, key: 'games' },
   { label: '學習紀錄', icon: ClipboardList, key: 'record' },
   { label: '最新消息', icon: MessageCircle, key: 'news' },
+  { label: '課堂小工具', icon: Wrench, key: 'classroom' },
 ];
 
 // Global navigation helper

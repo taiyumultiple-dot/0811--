@@ -23,6 +23,7 @@ const PhonicsPage = lazy(() => import('./components/PhonicsPage'));
 const RecordPage = lazy(() => import('./components/RecordPage'));
 const NewsPage = lazy(() => import('./components/NewsPage'));
 const ToolboxPage = lazy(() => import('./components/ToolboxPage'));
+const ClassroomPage = lazy(() => import('./components/ClassroomPage'));
 
 function LoadingFallback() {
   return (
@@ -35,7 +36,7 @@ function LoadingFallback() {
   );
 }
 
-type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | `game${number}`;
+type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | 'classroom' | `game${number}`;
 
 function App() {
   const [view, setView] = useState<View>('home');
@@ -57,7 +58,7 @@ function App() {
       setBGMTheme('hub');
     } else if (view === 'phonics') {
       setBGMTheme('phonics');
-    } else if (view === 'news' || view === 'record' || view === 'toolbox') {
+    } else if (view === 'news' || view === 'record' || view === 'toolbox' || view === 'classroom') {
       setBGMTheme('relax');
     } else if (view.startsWith('game')) {
       setBGMTheme('game');
@@ -77,6 +78,29 @@ function App() {
     }
     setView(targetView as View);
   };
+
+  // 網址列同步：#classroom 這種網址可以直接分享、也能加到瀏覽器書籤，
+  // 老師把「課堂小工具」設成教室電腦的首頁時就不必每次從首頁點進來。
+  useEffect(() => {
+    const fromHash = window.location.hash.replace(/^#\/?/, '');
+    if (fromHash) setView(fromHash as View);
+
+    const onHashChange = () => {
+      const next = window.location.hash.replace(/^#\/?/, '') || 'home';
+      setView(next as View);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => {
+    const target = view === 'home' ? ' ' : `#${view}`;
+    if (view === 'home') {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else if (window.location.hash !== target) {
+      history.replaceState(null, '', target);
+    }
+  }, [view]);
 
   // Expose global navigation handler
   useEffect(() => {
@@ -105,6 +129,10 @@ function App() {
 
     if (view === 'toolbox') {
       return <ToolboxPage onNavigate={(target) => handleNavigate(target)} />;
+    }
+
+    if (view === 'classroom') {
+      return <ClassroomPage onNavigate={(target) => handleNavigate(target)} />;
     }
 
     if (view === 'game1') return <Game1FoodMatch onHome={goHome} onNext={() => goNext('game1')} />;

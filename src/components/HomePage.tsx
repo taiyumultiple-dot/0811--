@@ -37,7 +37,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { icon: iconGame, title: '拼音遊戲', subtitle: '遊戲中學拼音', active: false },
   { icon: iconLinks, title: '相關連結', subtitle: '更多學習資源', active: false },
   // 用 emoji 而不是圖檔：assets/images/homepage/index.ts 已經是 458KB 的 base64，不要再加大首屏
-  { emoji: '🧰', title: '台語工具箱', subtitle: 'AI 學習小幫手', active: false },
+  { emoji: '🧰', title: '台語工具箱', subtitle: '課堂小工具．投影就能用', active: false },
 ];
 
 const FEATURE_CARDS = [
@@ -113,7 +113,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
   const handleSidebarClick = (title: string) => {
     // 台語工具箱是獨立頁面，不是拼音頁的分頁
     if (title === '台語工具箱') {
-      onNavigate('toolbox');
+      onNavigate('classroom');
       return;
     }
     const tabId = MAP_SIDEBAR_TABS[title];
