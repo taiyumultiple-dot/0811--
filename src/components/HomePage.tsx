@@ -4,9 +4,14 @@ import { HubShell } from './games/GameShell';
 
 import {
   heroFull,
+  iconPhonics,
+  iconInitials,
+  iconFinals,
+  iconPractice,
   iconTone,
   iconGame,
   iconLinks,
+  featureIconPhonics,
   featureIconGame,
   featureIconTone,
   featureIconRecord,
@@ -24,7 +29,11 @@ type SidebarItem = {
 };
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { icon: iconTone, title: '動畫專區', subtitle: '台語精彩動畫影片', active: true },
+  { icon: iconPhonics, title: '拼音方案', subtitle: '認識聲母、韻母', active: false },
+  { icon: iconInitials, title: '聲母學習', subtitle: '掌握聲母發音', active: false },
+  { icon: iconFinals, title: '韻母學習', subtitle: '單元韻母練習', active: true },
+  { icon: iconPractice, title: '拼音練習', subtitle: '綜合拼音練習', active: false },
+  { icon: iconTone, title: '動畫專區', subtitle: '台語精彩動畫影片', active: false },
   { icon: iconGame, title: '拼音遊戲', subtitle: '遊戲中學拼音', active: false },
   { icon: iconLinks, title: '相關連結', subtitle: '更多學習資源', active: false },
   // 用 emoji 而不是圖檔：assets/images/homepage/index.ts 已經是 458KB 的 base64，不要再加大首屏
@@ -32,6 +41,12 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ];
 
 const FEATURE_CARDS = [
+  {
+    title: '拼音學習',
+    desc: '從聲母韻母開始，打好台語發音基礎！',
+    button: '去學習',
+    icon: featureIconPhonics,
+  },
   {
     title: '互動遊戲',
     desc: '玩遊戲學拼音，寓教於樂更有趣！',
@@ -53,6 +68,10 @@ const FEATURE_CARDS = [
 ];
 
 const MAP_SIDEBAR_TABS: Record<string, string> = {
+  '拼音方案': 'phonics_scheme',
+  '聲母學習': 'initials_learn',
+  '韻母學習': 'finals_learn',
+  '拼音練習': 'phonics_practice',
   '動畫專區': 'tone_practice',
   '拼音遊戲': 'phonics_games',
   '相關連結': 'related_links',
@@ -104,7 +123,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
   };
 
   const handleFeatureClick = (title: string) => {
-    if (title === '互動遊戲') onNavigate('gamesHub');
+    if (title === '拼音學習') onNavigate('phonics', 'phonics_scheme');
+    else if (title === '互動遊戲') onNavigate('gamesHub');
     else if (title === '動畫專區') onNavigate('phonics', 'tone_practice');
     else if (title === '學習紀錄') onNavigate('record');
   };
@@ -162,7 +182,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
           <div className="relative w-full rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(2,132,199,0.2)]">
             <img src={heroFull} alt="歡迎來學台語！用遊戲、互動學習，快樂開口說台語！" className="w-full h-auto block" />
             <button
-              onClick={() => onNavigate('phonics', 'tone_practice')}
+              onClick={() => onNavigate('phonics', 'phonics_scheme')}
               aria-label="開始學習"
               className="absolute cursor-pointer"
               style={{ left: '34.5%', top: '68%', width: '15%', height: '13%' }}
@@ -173,10 +193,10 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
           <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-5 md:p-6 flex flex-col gap-5">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🧪</span>
-              <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">探索三大功能</h2>
+              <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">探索四大功能</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
               {FEATURE_CARDS.map((card) => {
                 const currentUser = (() => {
                   try {

@@ -13,11 +13,43 @@ import {
   Link,
   Heart,
   Tv,
-  Share2
+  Share2,
+  Megaphone,
+  Music,
+  PenTool,
+  Sparkles
 } from 'lucide-react';
 import { logoMark, frogDecor, heroFull } from '../assets/images/homepage';
 import { HubShell } from './games/GameShell';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  TONES_DATA, TONE_PRACTICE_WORDS, TONE_NAMES, INITIAL_GROUPS, INITIALS_DATA,
+  INITIAL_SYLLABLES, FINAL_GROUPS, type InitialSymbol, type Tone,
+} from '../data/phonicsData';
+import LessonAudio from './LessonAudio';
+
+/** 拼音練習頁用：依臺羅標調規則把韻母＋聲調組合成正確拼字，不需要每個組合都湊例字 */
+function applyTaiLoTone(final: string, tone: Tone): string {
+  const TONE_MARKS: Record<number, string> = { 2: '́', 3: '̀', 5: '̂', 7: '̄', 8: '̍' };
+  const entering = /[ptkh]$/.test(final);
+  if (tone === 1 || (tone === 4 && entering)) return final;
+  const mark = TONE_MARKS[tone];
+  if (!mark) return final;
+  // 獨立鼻音 ng／m 當韻母時，調號標在 n（ng）或 m 本身
+  if (final === 'ng') return ('n' + mark).normalize('NFC') + 'g';
+  if (final === 'm') return ('m' + mark).normalize('NFC');
+  let idx = final.startsWith('oo') ? 0 : -1;
+  if (idx === -1) idx = [...final].findIndex((c) => 'aoe'.includes(c));
+  if (idx === -1) {
+    // 只有 i／u：標在後面那個母音上（如 ui -> uì、iu -> iù）
+    const positions = [...final].map((c, i) => ('iu'.includes(c) ? i : -1)).filter((i) => i >= 0);
+    idx = positions.length ? positions[positions.length - 1] : -1;
+  }
+  if (idx === -1) return final;
+  const chars = [...final];
+  chars[idx] = (chars[idx] + mark).normalize('NFC');
+  return chars.join('');
+}
 
 // Speech synthesis and Web Audio API tone generation helper
 export function playTonePitch(toneNumber: number) {
@@ -517,10 +549,32 @@ export default function PhonicsPage({
   }, [animIsPlaying]);
 
   const SIDEBAR_ITEMS = [
+    { id: 'phonics_scheme', label: '拼音方案', subtitle: '認識聲母、韻母' },
+    { id: 'initials_learn', label: '聲母學習', subtitle: '掌握聲母發音' },
+    { id: 'finals_learn', label: '韻母學習', subtitle: '單元韻母練習' },
+    { id: 'phonics_practice', label: '拼音練習', subtitle: '綜合拼音練習' },
+    { id: 'sandhi_tool', label: '連讀變調', subtitle: '台語語音與變調工具' },
     { id: 'tone_practice', label: '動畫專區', subtitle: '台語精彩動畫影片' },
     { id: 'phonics_games', label: '拼音遊戲', subtitle: '遊戲中學拼音' },
     { id: 'related_links', label: '相關連結', subtitle: '更多學習資源' },
   ];
+
+  // --- 拼音方案總覽頁 ---
+  const [schemeTab, setSchemeTab] = useState<'initials' | 'finals' | 'tones'>('initials');
+
+  // --- 聲母學習 ---
+  const [selectedInitial, setSelectedInitial] = useState<InitialSymbol | null>(null);
+
+  // --- 韻母學習 ---
+  const [expandedFinalGroup, setExpandedFinalGroup] = useState<string | null>(FINAL_GROUPS[0].group);
+
+  // --- 拼音練習：聲母＋韻母＋聲調組合器 ---
+  const [comboInitial, setComboInitial] = useState<InitialSymbol>('p');
+  const [comboFinal, setComboFinal] = useState('a');
+  const [comboTone, setComboTone] = useState<Tone>(1);
+
+  // --- 連讀變調頁 ---
+  const [sandhiTone, setSandhiTone] = useState<Tone>(1);
 
   // --- Game State ---
   const [gameState, setGameState] = useState<'start' | 'playing' | 'ended'>('start');
@@ -612,6 +666,11 @@ export default function PhonicsPage({
             <ul className="flex flex-col gap-3">
               {SIDEBAR_ITEMS.map((item) => {
                 const sidebarIcons: Record<string, any> = {
+                  phonics_scheme: BookOpen,
+                  initials_learn: Megaphone,
+                  finals_learn: Music,
+                  phonics_practice: PenTool,
+                  sandhi_tool: Sparkles,
                   tone_practice: Tv,
                   phonics_games: Gamepad2,
                   related_links: Link,
@@ -691,6 +750,418 @@ export default function PhonicsPage({
         {/* Right Column: Displaying current tab content with high visual fidelity */}
         <div className="flex-1 bg-white rounded-3xl p-5 md:p-7 shadow-sm flex flex-col">
           <AnimatePresence mode="wait">
+            {activeSidebar === 'phonics_scheme' && (
+              <motion.div
+                key="phonics_scheme"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col gap-6"
+              >
+                <div className="pb-2">
+                  <h1 className="font-black text-[#2D2A26] text-2xl mb-1 flex items-center gap-2">
+                    <span className="text-3xl">📖</span> 臺灣台語羅馬字拼音方案
+                  </h1>
+                  <p className="text-[#8A8378] text-base">
+                    教育部民國 95 年公布的官方拼音系統，簡稱「臺羅」。以下對照表整理自《臺灣台語銜接教材》P.7-13。
+                  </p>
+                </div>
+
+                <div className="flex gap-2 bg-[#FAF8F2] p-1.5 rounded-2xl w-fit">
+                  {(['initials', 'finals', 'tones'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setSchemeTab(tab)}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-base transition-all active:scale-95 ${
+                        schemeTab === tab
+                          ? 'bg-[#4E9B5D] text-white shadow-md scale-105'
+                          : 'text-[#5C5548] hover:bg-white hover:text-[#4E9B5D]'
+                      }`}
+                    >
+                      {tab === 'initials' ? <Megaphone className="w-5 h-5" /> : tab === 'finals' ? <Music className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+                      {tab === 'initials' ? '聲母 (Initials)' : tab === 'finals' ? '韻母 (Finals)' : '聲調 (Tones)'}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <LessonAudio trackKey={schemeTab === 'initials' ? 'initials-overview' : schemeTab === 'finals' ? 'finals-overview' : 'tone-system'} />
+                  {schemeTab === 'tones' && (
+                    <>
+                      <LessonAudio trackKey="tone-sandhi-chart" />
+                      <LessonAudio trackKey="tone-derived" />
+                    </>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-x-auto rounded-2xl border border-[#F1ECE0] shadow-inner bg-[#FCFAF5] p-2">
+                  {schemeTab === 'initials' && (
+                    <table className="w-full border-collapse rounded-xl overflow-hidden text-base md:text-base">
+                      <thead>
+                        <tr className="bg-[#5C8A5A] text-white font-extrabold text-left">
+                          <th className="py-3.5 px-4 text-center font-black w-28">發音部位</th>
+                          <th className="py-3.5 px-4 text-center font-black w-24">臺羅音標</th>
+                          <th className="py-3.5 px-4 text-left font-black">發音方法</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#EFE8D8]">
+                        {INITIAL_GROUPS.map((g) => g.symbols.map((sym, idx) => {
+                          const d = INITIALS_DATA[sym];
+                          return (
+                            <tr key={sym} className="hover:bg-[#F5F1E5] transition-colors">
+                              {idx === 0 && (
+                                <td rowSpan={g.symbols.length} className="bg-[#FAF4E5] py-3 px-4 text-center border-r border-[#EFE8D8] align-middle font-black text-[#5C5548]">
+                                  {g.group}
+                                </td>
+                              )}
+                              <td className="py-3 px-4 text-center font-mono font-black text-[#2D2A26]">{d.label}</td>
+                              <td className="py-3 px-4 text-[#5C5548]">
+                                {d.desc}
+                                {d.example && <span className="ml-2 text-[#E4772E] font-bold">例：{d.example.hanzi} {d.example.tailo}</span>}
+                              </td>
+                            </tr>
+                          );
+                        }))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {schemeTab === 'finals' && (
+                    <div className="flex flex-col gap-4 p-2">
+                      {FINAL_GROUPS.map((g) => (
+                        <div key={g.group} className="bg-white rounded-2xl border border-[#EFE8D8] p-4">
+                          <div className="font-black text-[#4E9B5D] text-base mb-3">{g.group}</div>
+                          <div className="flex flex-wrap gap-2">
+                            {g.items.map((it) => (
+                              <div key={it.symbol} className="px-3 py-2 rounded-xl bg-[#FFF9EC] border border-[#EFE8D8] flex items-baseline gap-2">
+                                <span className="font-mono font-black text-[#2D2A26]">{it.symbol}</span>
+                                <span className="text-sm text-[#8A8378]">{it.desc}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {schemeTab === 'tones' && (
+                    <table className="w-full border-collapse rounded-xl overflow-hidden text-base md:text-base">
+                      <thead>
+                        <tr className="bg-[#E14D2A] text-white font-extrabold text-left">
+                          <th className="py-3.5 px-4 text-center font-black w-20">調號</th>
+                          <th className="py-3.5 px-4 text-center font-black">調類</th>
+                          <th className="py-3.5 px-4 text-center font-black">調符標記</th>
+                          <th className="py-3.5 px-4 text-center font-black">例字</th>
+                          <th className="py-3.5 px-4 text-center font-black">臺羅</th>
+                          <th className="py-3.5 px-4 text-center font-black">調值</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#EFE8D8]">
+                        {TONES_DATA.map((t) => (
+                          <tr key={t.tone} className="hover:bg-[#F5F1E5] transition-colors">
+                            <td className="py-3.5 px-4 text-center">
+                              <div className="w-9 h-9 mx-auto rounded-full bg-[#E14D2A] text-white font-black flex items-center justify-center">{t.tone}</div>
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-black text-[#5C5548]">{t.category}</td>
+                            <td className="py-3.5 px-4 text-center text-[#5C5548]">{t.mark}</td>
+                            <td className="py-3.5 px-4 text-center font-black text-lg text-[#2D2A26]">{t.example}</td>
+                            <td className="py-3.5 px-4 text-center font-mono font-black text-[#E4772E]">{t.tailo}</td>
+                            <td className="py-3.5 px-4 text-center text-[#8A8378] font-bold">{t.pitch}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {schemeTab === 'tones' && (
+                    <div className="mt-4 rounded-2xl overflow-hidden border border-[#EFE8D8] bg-white p-3">
+                      <img
+                        src={`${import.meta.env.BASE_URL}images/phonics/tone-chart.png`}
+                        alt="臺灣台語八聲調官方對照表：陰平44、陰上53、陰去21、陰入32、陽平23、陽去33、陽入4"
+                        className="w-full h-auto rounded-xl"
+                      />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeSidebar === 'initials_learn' && (
+              <motion.div
+                key="initials_learn"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col gap-6"
+              >
+                <div className="pb-2">
+                  <h1 className="font-black text-[#2D2A26] text-2xl mb-1 flex items-center gap-2">
+                    <span className="text-3xl">🗣️</span> 聲母學習
+                  </h1>
+                  <p className="text-[#8A8378] text-base">
+                    17 個聲母＋零聲母，點選查看發音方法跟課本「10 分鐘練武功」的例字。
+                  </p>
+                </div>
+
+                {!selectedInitial ? (
+                  <div className="flex flex-col gap-5">
+                    {INITIAL_GROUPS.map((g) => (
+                      <div key={g.group}>
+                        <div className="text-sm font-black text-[#8A8378] tracking-widest mb-2">{g.group}</div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                          {g.symbols.map((sym) => (
+                            <button
+                              key={sym}
+                              onClick={() => setSelectedInitial(sym)}
+                              className="aspect-square rounded-2xl bg-white border-2 border-[#EFE8D8] hover:border-[#4E9B5D] active:scale-95 transition-all flex items-center justify-center font-mono font-black text-2xl text-[#4E9B5D] shadow-sm"
+                            >
+                              {INITIALS_DATA[sym].label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-6 bg-[#FCFAF5] p-5 md:p-6 rounded-3xl border border-[#EFE8D8]">
+                    <div className="flex justify-between items-center border-b border-[#EFE8D8] pb-4">
+                      <button
+                        onClick={() => setSelectedInitial(null)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-white border border-[#EFE8D8] rounded-xl font-bold text-sm text-[#5C5548] hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                      >
+                        ← 返回聲母列表
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-5">
+                      <div className="w-24 h-24 rounded-2xl bg-[#4E9B5D]/5 border-2 border-[#4E9B5D] flex items-center justify-center shrink-0">
+                        <span className="text-5xl font-black text-[#4E9B5D]">{INITIALS_DATA[selectedInitial].label}</span>
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-[#2D2A26] mb-1">{INITIALS_DATA[selectedInitial].label} 聲母</h2>
+                        <p className="text-base text-[#5C5548] font-bold">{INITIALS_DATA[selectedInitial].desc}</p>
+                        {INITIALS_DATA[selectedInitial].example && (
+                          <p className="text-base text-[#E4772E] font-black mt-1">
+                            例：{INITIALS_DATA[selectedInitial].example!.hanzi}（{INITIALS_DATA[selectedInitial].example!.tailo}）
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <LessonAudio
+                      trackKey={`initial-${selectedInitial}`}
+                      title={`課本錄音：聲母 ${INITIALS_DATA[selectedInitial].label}`}
+                    />
+
+                    <div className="bg-white p-4 rounded-2xl border border-[#EFE8D8] shadow-sm">
+                      <div className="text-sm font-black text-[#8A8378] tracking-widest mb-3">課本「10 分鐘練武功」例字（P.36-53）</div>
+                      <div className="flex flex-wrap gap-2.5">
+                        {INITIAL_SYLLABLES[selectedInitial].map((s) => (
+                          <div key={s.tone} className="px-4 py-2.5 rounded-xl bg-[#FFF7EE] border-2 border-[#E4772E]/40 flex items-baseline gap-2">
+                            <span className="text-sm font-black text-[#E4772E] bg-[#E4772E]/10 rounded-full w-5 h-5 inline-flex items-center justify-center">{s.tone}</span>
+                            <span className="text-lg font-black text-[#2D2A26] font-mono">{s.syllable}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeSidebar === 'finals_learn' && (
+              <motion.div
+                key="finals_learn"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col gap-6"
+              >
+                <div className="pb-2">
+                  <h1 className="font-black text-[#2D2A26] text-2xl mb-1 flex items-center gap-2">
+                    <span className="text-3xl">🎵</span> 韻母學習
+                  </h1>
+                  <p className="text-[#8A8378] text-base">
+                    課本 P.12-13 官方韻母對照表，共約 70 個韻母組合，依類型分組。
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {FINAL_GROUPS.map((g) => {
+                    const isOpen = expandedFinalGroup === g.group;
+                    return (
+                      <div key={g.group} className="bg-white rounded-2xl border border-[#EFE8D8] shadow-sm overflow-hidden">
+                        <button
+                          onClick={() => setExpandedFinalGroup(isOpen ? null : g.group)}
+                          className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#FAF8F2] transition-colors"
+                        >
+                          <span className="font-black text-[#3E2723]">{g.group}</span>
+                          <span className="flex items-center gap-2 text-sm text-[#8A8378] font-bold">
+                            共 {g.items.length} 個
+                            <ChevronRight className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                          </span>
+                        </button>
+                        {isOpen && (
+                          <div className="px-5 pb-5 flex flex-wrap gap-2">
+                            {g.items.map((it) => (
+                              <div key={it.symbol} className="px-3.5 py-2.5 rounded-xl bg-[#FFF9EC] border border-[#EFE8D8] flex items-baseline gap-2">
+                                <span className="font-mono font-black text-[#2D2A26] text-base">{it.symbol}</span>
+                                <span className="text-sm text-[#8A8378] font-bold">{it.desc}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {activeSidebar === 'phonics_practice' && (
+              <motion.div
+                key="phonics_practice"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col gap-6"
+              >
+                <div className="pb-2">
+                  <h1 className="font-black text-[#2D2A26] text-2xl mb-1 flex items-center gap-2">
+                    <span className="text-3xl">🧩</span> 拼音練習：聲母＋韻母＋聲調組合器
+                  </h1>
+                  <p className="text-[#8A8378] text-base">
+                    選聲母、韻母、聲調，看看正確的臺羅拼字要怎麼標調號。
+                  </p>
+                </div>
+
+                <div className="max-w-2xl bg-[#FCFAF5] rounded-3xl border border-[#EFE8D8] p-6 flex flex-col gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm font-black text-[#8A8378] tracking-widest mb-2">聲母</div>
+                      <select
+                        value={comboInitial}
+                        onChange={(e) => setComboInitial(e.target.value as InitialSymbol)}
+                        className="w-full px-3 py-2.5 rounded-xl border-2 border-[#EFE8D8] font-mono font-black text-[#2D2A26] bg-white"
+                      >
+                        {INITIAL_GROUPS.flatMap((g) => g.symbols).map((sym) => (
+                          <option key={sym} value={sym}>{INITIALS_DATA[sym].label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-[#8A8378] tracking-widest mb-2">韻母</div>
+                      <select
+                        value={comboFinal}
+                        onChange={(e) => setComboFinal(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border-2 border-[#EFE8D8] font-mono font-black text-[#2D2A26] bg-white"
+                      >
+                        {FINAL_GROUPS.flatMap((g) => g.items).map((it) => (
+                          <option key={it.symbol} value={it.symbol}>{it.symbol}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-[#8A8378] tracking-widest mb-2">聲調</div>
+                      <select
+                        value={comboTone}
+                        onChange={(e) => setComboTone(Number(e.target.value) as Tone)}
+                        className="w-full px-3 py-2.5 rounded-xl border-2 border-[#EFE8D8] font-mono font-black text-[#2D2A26] bg-white"
+                      >
+                        {TONES_DATA.map((t) => (
+                          <option key={t.tone} value={t.tone}>第 {t.tone} 聲</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border-2 border-[#4E9B5D]/30 p-6 flex flex-col items-center gap-2">
+                    <div className="text-sm font-black text-[#8A8378] tracking-widest">拼字結果</div>
+                    <div className="text-5xl font-black text-[#4E9B5D] font-mono">
+                      {comboInitial === 'zero' ? '' : INITIALS_DATA[comboInitial].label}
+                      {applyTaiLoTone(comboFinal, comboTone)}
+                    </div>
+                    <div className="text-sm text-[#8A8378]">
+                      {(comboInitial === 'zero' ? '' : INITIALS_DATA[comboInitial].label)} + {comboFinal} + 第{comboTone}聲
+                    </div>
+                  </div>
+                </div>
+
+                <div className="max-w-3xl flex flex-col gap-2">
+                  <div className="text-sm font-black text-[#8A8378] tracking-widest">課本官方音節表節錄（聲母＋韻母實際會拼出的字）</div>
+                  <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] bg-white p-3">
+                    <img
+                      src={`${import.meta.env.BASE_URL}images/phonics/syllable-table.png`}
+                      alt="臺灣台語音節表節錄：聲母 p/ph/m/b/t/th/n/l 對照各韻母的實際拼字與例字"
+                      className="w-full h-auto rounded-xl"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeSidebar === 'sandhi_tool' && (
+              <motion.div
+                key="sandhi_tool"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col gap-6"
+              >
+                <div className="pb-2">
+                  <h1 className="font-black text-[#2D2A26] text-2xl mb-1 flex items-center gap-2">
+                    <span className="text-3xl">🗣️</span> 台語連讀變調 (Tone Sandhi)
+                  </h1>
+                  <p className="text-[#8A8378] text-base">
+                    台語詞彙連讀時，除了詞尾或句末最後一個字，前面的字大多要變調。以下是課本 P.29-30「AA 型重疊詞」練習，前字變調、後字本調，最好體會變調的感覺。
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <LessonAudio trackKey="tone-sandhi-chart" />
+                  <LessonAudio trackKey="tone-review" />
+                </div>
+
+                <div className="p-5 rounded-2xl bg-[#FDFBF6] border border-[#EFE8D8]">
+                  <p className="text-base text-[#5C5548] leading-relaxed">
+                    每個字都有本調（字典音），但連讀時前字常常要變調。台語變調規則多、地方差異也大，最簡略的說法是：只要不是出現在詞尾、句末或語段末，就需要變調。下面挑一個聲調看它的疊字例，體會前字（變調）跟後字（本調）的差別。
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {TONES_DATA.map((t) => (
+                    <button
+                      key={t.tone}
+                      onClick={() => setSandhiTone(t.tone)}
+                      className={`px-5 py-2.5 rounded-xl font-black text-base transition-all active:scale-95 ${
+                        sandhiTone === t.tone
+                          ? 'bg-[#4E9B5D] text-white shadow-md'
+                          : 'bg-white border-2 border-[#EFE8D8] text-[#5C5548] hover:border-[#4E9B5D]'
+                      }`}
+                    >
+                      第 {t.tone} 聲
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {TONE_PRACTICE_WORDS[sandhiTone].map((w) => (
+                    <div key={w.hanzi} className="bg-white p-4 rounded-2xl border border-[#EFE8D8] shadow-sm flex items-center justify-between">
+                      <span className="text-xl font-black text-[#2D2A26]">{w.hanzi}</span>
+                      <span className="font-mono font-black text-[#E4772E]">{w.tailo}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-emerald-50/40 flex items-start gap-2.5">
+                  <AlertCircle className="w-4.5 h-4.5 text-[#4E9B5D] shrink-0 mt-0.5" />
+                  <p className="text-base text-[#3E7D4C] leading-relaxed">
+                    💡 AA 型重疊詞的第一個字要變調、第二個字讀本調——例如「{TONE_PRACTICE_WORDS[sandhiTone][0]?.hanzi}」的前字聲調，跟{TONE_NAMES[sandhiTone]}的字典本調聽起來不一樣，這就是連讀變調。
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {activeSidebar === 'tone_practice' && (
               <motion.div
                 key="tone_practice"
