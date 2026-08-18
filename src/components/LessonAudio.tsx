@@ -54,6 +54,52 @@ function mmss(sec: number) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * 一顆按鈕就播某段課本錄音，給原本掛瀏覽器合成音的地方替換用。
+ * 沒有對應錄音時回傳 null，呼叫端不必自己判斷。
+ */
+export function RealAudioButton({
+  trackKey,
+  label,
+  className = '',
+}: {
+  trackKey: string;
+  label?: string;
+  className?: string;
+}) {
+  const meta = LESSON_TRACKS[trackKey];
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  if (!meta) return null;
+
+  return (
+    <button
+      onClick={() => {
+        const el = audioRef.current;
+        if (!el) return;
+        if (el.paused) {
+          el.currentTime = 0;
+          el.play().then(() => setPlaying(true), () => {});
+        } else {
+          el.pause();
+          setPlaying(false);
+        }
+      }}
+      className={className}
+    >
+      <audio
+        ref={audioRef}
+        src={`${import.meta.env.BASE_URL}audio/phonics/${trackKey}.mp3`}
+        preload="none"
+        onEnded={() => setPlaying(false)}
+      />
+      {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+      {label ?? `課本錄音 ${meta.page}`}
+    </button>
+  );
+}
+
 export default function LessonAudio({
   trackKey,
   title,

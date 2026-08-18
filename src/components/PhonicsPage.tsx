@@ -97,7 +97,7 @@ export function playTonePitch(toneNumber: number) {
 }
 
 import { speakTaiyu, getSandhiTailo, getSandhiTone, detectTonesFromTailo } from '../lib/speech';
-import LessonAudio, { hasLessonAudio } from './LessonAudio';
+import LessonAudio, { hasLessonAudio, RealAudioButton } from './LessonAudio';
 
 export function speakText(text: string, tone?: number, tailo?: string, disableSandhi?: boolean, fluid?: boolean) {
   speakTaiyu(text, tone, tailo, disableSandhi, fluid);
@@ -2401,17 +2401,16 @@ export default function PhonicsPage({
                                         {detail.bopomofo}
                                       </span>
                                     </div>
-                                    <p className="text-sm text-[#8A8378] mt-1.5 font-bold">點擊右側按鈕，聆聽真人發音口訣謠！</p>
+                                    <p className="text-sm text-[#8A8378] mt-1.5 font-bold">真人發音來自課本錄音；標示「合成音」的按鈕是電腦合成，聲調僅供參考</p>
                                   </div>
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
-                                  <button
-                                    onClick={() => speakText(selectedInitialsSymbol)}
-                                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#4E9B5D] text-white font-black text-base hover:bg-[#3D8552] active:scale-95 transition-all shadow-md flex-1 md:flex-none"
-                                  >
-                                    <Volume2 className="w-5 h-5" /> 聽符號發音
-                                  </button>
+                                  <RealAudioButton
+                                    trackKey={`initial-${selectedInitialsSymbol}`}
+                                    label="聽真人發音"
+                                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#4E9B5D] text-white font-black text-base hover:bg-[#3D8552] active:scale-95 transition-all shadow-md flex-1 md:flex-none cursor-pointer"
+                                  />
                                   <button
                                     onClick={() => {
                                       const sentence = detail.chant.replace(/[a-zA-Z]/g, '').trim();
@@ -2419,7 +2418,7 @@ export default function PhonicsPage({
                                     }}
                                     className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#E4772E] text-white font-black text-base hover:bg-[#C9601E] active:scale-95 transition-all shadow-md flex-1 md:flex-none"
                                   >
-                                    <Music className="w-5 h-5" /> 唸歌謠唱誦
+                                    <Music className="w-5 h-5" /> 唸謠（合成音）
                                   </button>
                                 </div>
                               </div>
@@ -2772,17 +2771,16 @@ export default function PhonicsPage({
                                         {detail.bopomofo}
                                       </span>
                                     </div>
-                                    <p className="text-xs text-[#8A8378] mt-1 font-bold">點擊右側發音喇叭，即刻聆聽發音童謠！</p>
+                                    <p className="text-xs text-[#8A8378] mt-1 font-bold">真人發音來自課本錄音；標示「合成音」的按鈕是電腦合成，聲調僅供參考</p>
                                   </div>
                                 </div>
 
                                 <div className="flex flex-col md:flex-row gap-2.5 w-full md:w-auto">
-                                  <button
-                                    onClick={() => speakText(selectedFinalsSymbol)}
-                                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#E4772E] text-white font-extrabold text-sm hover:bg-[#C9601E] active:scale-95 transition-all shadow-sm flex-1 md:flex-none"
-                                  >
-                                    <Volume2 className="w-4 h-4" /> 聽符號發音
-                                  </button>
+                                  <RealAudioButton
+                                    trackKey="finals-overview"
+                                    label="聽課本韻母錄音"
+                                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#E4772E] text-white font-extrabold text-sm hover:bg-[#C9601E] active:scale-95 transition-all shadow-sm flex-1 md:flex-none cursor-pointer"
+                                  />
                                   <button
                                     onClick={() => {
                                       const sentence = detail.chant.replace(/[a-zA-Z]/g, '').trim();
@@ -2790,7 +2788,7 @@ export default function PhonicsPage({
                                     }}
                                     className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#4E9B5D] text-white font-extrabold text-sm hover:bg-[#3D8552] active:scale-95 transition-all shadow-sm flex-1 md:flex-none"
                                   >
-                                    <Music className="w-4 h-4" /> 聽童韻唸謠
+                                    <Music className="w-4 h-4" /> 唸謠（合成音）
                                   </button>
                                 </div>
                               </div>
