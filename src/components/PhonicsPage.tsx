@@ -529,7 +529,7 @@ export default function PhonicsPage({
   }, [initialTab]);
 
   return (
-    <HubShell activeKey="phonics" onHome={() => onNavigate('home')}>
+    <HubShell activeKey={activeSidebar} onHome={() => onNavigate('home')}>
       {/* ---------------- Main Content Body ---------------- */}
       <div className="flex flex-col flex-1">
         <div className="flex-1 bg-white rounded-3xl p-5 md:p-7 shadow-sm flex flex-col">

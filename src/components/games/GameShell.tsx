@@ -93,7 +93,9 @@ export function TopNav({ activeKey = 'games', onHome }: { activeKey?: string; on
             const isTeacher = currentUser?.role === 'teacher';
             const label = (key === 'record' && isTeacher) ? '教學後台' : defaultLabel;
             const Icon = (key === 'record' && isTeacher) ? GraduationCap : DefaultIcon;
-            const active = activeKey === key;
+            // 「拼音學習」跟「動畫專區」同屬 phonics 這個 view，只差在分頁，
+            // 所以有 tabId 的項目要拿 tabId 去比，不然兩顆按鈕會一起亮。
+            const active = activeKey === (tabId || key);
             return (
               <button
                 key={key + (tabId || '')}
