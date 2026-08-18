@@ -46,7 +46,7 @@ function viewFromHash(): View {
 
 function App() {
   const [view, setView] = useState<View>(viewFromHash);
-  const [phonicsTab, setPhonicsTab] = useState<string>('phonics_scheme');
+  const [phonicsTab, setPhonicsTab] = useState<string>('tone_practice');
 
   useEffect(() => {
     // Initialize global Web Audio API interactive click sounds
