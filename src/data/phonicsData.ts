@@ -418,3 +418,20 @@ export const LEARNING_RESOURCE_HUB = {
     '傳統民俗文化、節慶典故', '延伸語音資料庫',
   ],
 };
+
+/** 入門篇 pptx 逐張投影片截圖（PowerPoint 匯出，跟課本排版一模一樣），
+ *  檔案在 public/images/phonics/slides/slide-NNN.png，按壹～柒節分組。 */
+export const SLIDE_SECTIONS: { tab: string; title: string; range: [number, number] }[] = [
+  { tab: 'intro', title: '封面／目錄', range: [1, 2] },
+  { tab: 'intro', title: '壹．認識「臺灣台語羅馬字拼音方案」', range: [3, 8] },
+  { tab: 'tones', title: '貳．台語的聲調與變調', range: [9, 24] },
+  { tab: 'scheme', title: '參．台語的聲母與韻母', range: [25, 57] },
+  { tab: 'input', title: '肆．台語常用輸入法', range: [58, 73] },
+  { tab: 'chars', title: '伍．漢字使用規範', range: [74, 81] },
+  { tab: 'dict', title: '陸．辭典使用指南', range: [82, 97] },
+  { tab: 'resources', title: '柒．台語學習資源綜合包', range: [98, 100] },
+];
+
+export function slideUrl(n: number): string {
+  return `images/phonics/slides/slide-${String(n).padStart(3, '0')}.png`;
+}
