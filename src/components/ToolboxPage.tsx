@@ -1,10 +1,6 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, Star, ArrowLeft, Wrench } from 'lucide-react';
 import { HubShell } from './games/GameShell';
-
-// 課堂小工具本身不小（抽籤／計分／倒數／分組四個工具），
-// 沿用全站的 lazy 慣例，沒點進去就不下載。
-const ClassroomTools = lazy(() => import('./toolbox/ClassroomTools'));
 
 const FAV_KEY = 'taigi_toolbox_favs';
 
@@ -72,7 +68,7 @@ const TOOLS: Tool[] = [
   {
     id: 'classroom',
     name: '課堂小工具',
-    desc: '抽籤點名、計分板、倒數計時、隨機分組，上課直接投影用。',
+    desc: '抽籤、計分、搶答、座位、大字卡、評量、親師訊息共 14 個工具，上課直接投影用。',
     emoji: '🎲',
     group: 'teacher',
     ready: true,
@@ -147,18 +143,8 @@ export default function ToolboxPage({
             <span>回到工具箱</span>
           </button>
 
-          {activeTool.ready ? (
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center py-20 text-cyan-300 font-black">
-                  載入中…
-                </div>
-              }
-            >
-              <ClassroomTools />
-            </Suspense>
-          ) : (
-            <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl p-8 md:p-12 flex flex-col items-center text-center gap-4 shadow-[0_0_20px_rgba(2,132,199,0.15)]">
+          {/* 課堂小工具已經是獨立分頁，這裡剩下的都是還沒開工的工具 */}
+          <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl p-8 md:p-12 flex flex-col items-center text-center gap-4 shadow-[0_0_20px_rgba(2,132,199,0.15)]">
               <div className="text-6xl md:text-7xl">{activeTool.emoji}</div>
               <h2 className="font-black text-white text-2xl md:text-3xl tracking-wide">
                 {activeTool.name}
@@ -169,8 +155,7 @@ export default function ToolboxPage({
               <div className="mt-2 px-6 py-3 rounded-2xl bg-amber-400 text-slate-950 font-black text-base md:text-lg border-2 border-amber-300 shadow-md">
                 🚧 即將推出
               </div>
-            </div>
-          )}
+          </div>
         </div>
       </HubShell>
     );
@@ -256,7 +241,9 @@ export default function ToolboxPage({
                       </p>
 
                       <button
-                        onClick={() => setOpenTool(tool.id)}
+                        onClick={() =>
+                          tool.id === 'classroom' ? onNavigate('classroom') : setOpenTool(tool.id)
+                        }
                         data-sound="pop"
                         className={`w-full py-2.5 md:py-3 rounded-xl font-black text-sm md:text-base transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
                           tool.ready

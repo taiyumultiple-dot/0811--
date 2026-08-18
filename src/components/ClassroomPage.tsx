@@ -234,6 +234,17 @@ export default function ClassroomPage({
         <Panel>
           <RosterInput value={rosterText} onChange={setRosterText} count={names.length} />
         </Panel>
+
+        {/* 翻譯機、學習單產生器那些還沒開工的工具留在原本的工具箱頁 */}
+        <div className="text-center pt-2 border-t border-cyan-500/30">
+          <button
+            onClick={() => onNavigate('toolbox')}
+            data-sound="pop"
+            className="text-xs md:text-sm text-cyan-300 hover:text-amber-300 font-extrabold underline underline-offset-4 transition-colors cursor-pointer"
+          >
+            其他台語工具（翻譯機、學習單產生器…籌備中）❯
+          </button>
+        </div>
       </div>
     </HubShell>
   );
