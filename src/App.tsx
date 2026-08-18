@@ -22,7 +22,6 @@ const Game10Souvenirs = lazy(() => import('./components/games/Game10Souvenirs'))
 const PhonicsPage = lazy(() => import('./components/PhonicsPage'));
 const RecordPage = lazy(() => import('./components/RecordPage'));
 const NewsPage = lazy(() => import('./components/NewsPage'));
-const ToolboxPage = lazy(() => import('./components/ToolboxPage'));
 const ClassroomPage = lazy(() => import('./components/ClassroomPage'));
 
 function LoadingFallback() {
@@ -36,7 +35,7 @@ function LoadingFallback() {
   );
 }
 
-type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'toolbox' | 'classroom' | `game${number}`;
+type View = 'home' | 'gamesHub' | 'phonics' | 'record' | 'news' | 'classroom' | `game${number}`;
 
 /** 首次載入時直接用網址決定要開哪一頁，不要等 effect —— 
  *  等 effect 會跟下面同步網址的 effect 互相打架（一個要設、一個先清）。 */
@@ -65,7 +64,7 @@ function App() {
       setBGMTheme('hub');
     } else if (view === 'phonics') {
       setBGMTheme('phonics');
-    } else if (view === 'news' || view === 'record' || view === 'toolbox' || view === 'classroom') {
+    } else if (view === 'news' || view === 'record' || view === 'classroom') {
       setBGMTheme('relax');
     } else if (view.startsWith('game')) {
       setBGMTheme('game');
@@ -124,10 +123,6 @@ function App() {
 
     if (view === 'news') {
       return <NewsPage onNavigate={(target) => handleNavigate(target)} />;
-    }
-
-    if (view === 'toolbox') {
-      return <ToolboxPage onNavigate={(target) => handleNavigate(target)} />;
     }
 
     if (view === 'classroom') {
