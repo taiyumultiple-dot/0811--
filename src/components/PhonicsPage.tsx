@@ -98,6 +98,34 @@ export function playTonePitch(toneNumber: number) {
 
 import { speakTaiyu, getSandhiTailo, getSandhiTone, detectTonesFromTailo } from '../lib/speech';
 import LessonAudio, { hasLessonAudio, RealAudioButton } from './LessonAudio';
+import { wordsForInitial, wordAudioUrl } from '../data/words50';
+
+/** 課本《鬥看覓》的例字：一個字一段真人錄音，點了就唸 */
+function WordChips({ symbol }: { symbol: string }) {
+  const words = wordsForInitial(symbol);
+  if (words.length === 0) return null;
+  return (
+    <div className="bg-white p-4 rounded-2xl border border-[#EFE8D8] shadow-sm flex flex-col gap-3">
+      <div className="text-xs font-black text-[#8A8378] tracking-widest">課本例字（真人發音）</div>
+      <div className="flex flex-wrap gap-2.5">
+        {words.map((w) => (
+          <button
+            key={w.id}
+            onClick={() => {
+              const a = new Audio(wordAudioUrl(w.id));
+              a.play().catch(() => {});
+            }}
+            className="px-4 py-2.5 rounded-xl bg-[#FFF7EE] border-2 border-[#E4772E]/40 hover:border-[#E4772E] active:scale-95 transition-all cursor-pointer flex items-baseline gap-2"
+          >
+            <span className="text-xl font-black text-[#2D2A26]">{w.han}</span>
+            <span className="text-sm font-black text-[#E4772E]">{w.tailo}</span>
+            <span className="text-xs text-[#8A8378]">🔊</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function speakText(text: string, tone?: number, tailo?: string, disableSandhi?: boolean, fluid?: boolean) {
   speakTaiyu(text, tone, tailo, disableSandhi, fluid);
@@ -2359,6 +2387,8 @@ export default function PhonicsPage({
                             title={`課本錄音：聲母 ${selectedInitialsSymbol}`}
                           />
                         )}
+
+                        <WordChips symbol={selectedInitialsSymbol} />
 
                         {initialsViewMode === 'detail' ? (
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
