@@ -253,3 +253,168 @@ export const FINAL_GROUPS: { group: string; items: { symbol: string; desc: strin
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// 以下核對自《臺灣台語銜接教材》PART1 入門篇壹、肆、伍、陸、柒節，
+// 2026-08-18 補上，讓「拼音方案」頁完整跟著課本這一章的順序走。
+
+/** 壹、認識「臺灣台語羅馬字拼音方案」P.04-06：官方資源連結 */
+export const SCHEME_INTRO_LINKS = [
+  {
+    title: '臺灣台語羅馬字拼音方案使用手冊',
+    desc: '教育部官方 PDF：聲母韻母符號、調號標記位置、音節結構、連字符使用原則。',
+    url: 'https://language.moe.gov.tw/001/Upload/FileUpload/3677-15601/Documents/tshiutsheh_1081017.pdf',
+  },
+  {
+    title: '教育部臺灣台語羅馬字拼音教學網',
+    desc: '拼音方案、聲母學習、韻母學習、拼音練習、聲調練習、拼音遊戲、相關連結，本頁內容的主要參考來源。',
+    url: 'https://tailo.moe.edu.tw/',
+  },
+];
+
+/** 貳、衍生調 P.09：第九調、輕聲，臺羅八聲調之外的兩個特殊標記 */
+export const DERIVED_TONES = [
+  {
+    name: '第九調',
+    mark: '兩小撇「˝」標在韻母上，如 a̋',
+    desc: '音值約 35，比第五調高，只在變調、合音或外語借詞時使用。',
+    examples: [
+      { hanzi: '久久久', tailo: 'kú-kú-kú', note: '實際唸成 kű-ku-kú' },
+      { hanzi: '昨昏', tailo: 'tsa-hng', note: '合音唸作 tsa̋ng' },
+      { hanzi: '看板（日語借詞）', tailo: '—', note: '實際唸 kha̋ng-páng' },
+    ],
+  },
+  {
+    name: '輕聲',
+    mark: '兩槓「--」標記，槓前讀本調、槓後讀輕聲',
+    desc: '沒有實際調值，跟華語的輕聲用法不完全相同。',
+    examples: [
+      { hanzi: '食落去', tailo: 'tsia̍h--lo̍h-khì', note: '實際唸 tsia̍h--lò-khì' },
+      { hanzi: '我先來去囉', tailo: 'guá sing lâi-khì--looh', note: '實際唸 gua sīng laih--looh' },
+    ],
+  },
+];
+
+/** 肆、台語常用輸入法 P.14-19 */
+export const INPUT_METHODS = [
+  {
+    name: '羅漢跤 Lohankha 台語輸入法',
+    platform: '手機、平板（iPhone／iPad）',
+    features: [
+      '支援臺羅拼音（TL）及白話字（POJ），支援第六調、第九調',
+      '可打出台語或華語常用正體漢字七千餘字',
+      '支援簡拼（只打聲符或字首母音），如 tuu → 台灣話',
+      '選詞列顯示 ruby 拼音，可輸出全羅詞、漢字詞或並列，支援漢字詞發音查詢',
+    ],
+    url: 'https://lohankha.tw/',
+  },
+  {
+    name: 'PhahTaigi 台語輸入法',
+    platform: '手機、平板（Android）',
+    features: [
+      '支援白話字，教育部漢字、拼音',
+      '可無聲調選詞',
+      '支援簡拼（多音節字詞只打各音節字首母音），例：sbh → sam-bûn-hî',
+      '無網路訊號下可使用',
+    ],
+    url: 'https://play.google.com/store/apps/details?id=com.taccotap.phahtaigi&hl=zh_TW',
+  },
+  {
+    name: '臺灣台語漢字輸入法',
+    platform: '桌上型電腦／筆記型電腦',
+    features: [
+      '教育部開發，可以正確打出臺灣台語漢字',
+      '用《臺灣台語羅馬字拼音方案》輸入臺羅拼音，即可從所有對應漢字選用，不用先知道華語字音',
+      '內建《臺灣台語常用詞辭典》詞庫，使用者也可自編詞庫',
+    ],
+    url: 'https://language.moe.gov.tw/files/people_files/blgsujip%201110721.pdf',
+  },
+  {
+    name: '信望愛台語文輸入法 FHL TaigiIME',
+    platform: '桌上型電腦／筆記型電腦',
+    features: [
+      '可以在任何地方、任何應用程式內打字',
+      '可自訂詞庫，可即時切換漢字／羅馬字順序',
+      '教典中罕用漢字（如 𪜶 in、𫝛 siāng）用拼音輸入法在手機能顯示，但某些系統可能無法正常顯示，遇到時就用拼音',
+    ],
+    url: 'https://taigiol.fhl.net/vcd/rotaiugbk.php?user=taigi&bid=131&proc=list&msgno=5',
+  },
+];
+
+/** 伍、漢字使用規範 P.20-21 */
+export const CHAR_USAGE_NOTE = {
+  intro: '台語文創作出版作品越來越多，漢字使用上教育部陸續推出數批推薦用字，作為認證、競賽、教科書用字的規準。民間用字不一定與推薦用字相同，有些人傾向使用「汝」「儂」等本字，而不用教育部的借字「你」「人」。',
+  principles: [
+    { name: '本字', desc: '傳統習用原則：優先採用傳統上通用的字。' },
+    { name: '訓用字', desc: '若傳統通俗用字易產生混淆，改用華文習見之訓讀字。' },
+    { name: '借音字', desc: '若以上通俗用字仍可能混淆，建議採用古漢字。' },
+  ],
+  resources: [
+    {
+      title: '臺灣台語推薦用字 700 字詞手冊及字卡',
+      desc: '教育部語文成果網製作成便於攜帶閱讀的 PDF 檔，供使用者自行下載列印。',
+      url: 'https://language.moe.gov.tw/result_l.aspx?classify_sn=23&subclassify_sn=439&thirdclassify_sn=476&content_sn=52',
+    },
+    {
+      title: '教育部電子報專欄：臺灣閩南語按呢寫',
+      desc: '詳細解釋推薦用字選用理由及參考資料，附用字解析清單。',
+      url: 'https://sutian.moe.edu.tw/media/annesia.zip',
+    },
+    {
+      title: '教育部電子報「閱讀越懂閩客語」專欄',
+      desc: '收錄許多詞條，由專業老師提供單字、造句及閩客語字彙文章，收錄 102～110 年度文章。',
+      url: 'https://language.moe.gov.tw/Result.aspx?classify_sn=46&subclassify_sn=497',
+    },
+  ],
+  marsExamples: [
+    { wrong: '婚逃賣卵蛋', correct: '菸蒂勿亂丟', note: '公共場所常見標語（火星文誤寫）' },
+    { wrong: '薰頭莫亂擲', correct: '菸蒂勿亂丟', note: '正確台語漢字寫法' },
+    { wrong: '美塞桃慢喔', correct: '不可偷採喔', note: '果園農場常見標語（火星文誤寫）' },
+    { wrong: '袂使偷挽喔', correct: '不可偷採喔', note: '正確台語漢字寫法' },
+  ],
+};
+
+/** 陸、辭典使用指南 P.22-25 */
+export const DICTIONARIES = [
+  {
+    name: '教育部臺灣台語常用詞辭典',
+    features: [
+      '收錄多數地方的語音差異（腔口差），如黃 n̂g／uînn，與用詞差異',
+      '首頁有四種查詢法：用臺灣台語查詞目／查用例、用華語查用例／查全文，也可語音輸入查詢',
+      '進階查詢可用 Python 正規表達式，如輸入「^食」查「食」「食物」「食品」「食暗」',
+      '索引查詢與附錄可查特定領域分類詞彙（天文、地理、人物品評…）與字姓、人名音讀、俗諺、地名等專項附錄',
+    ],
+    url: 'https://sutian.moe.edu.tw/zh-hant/',
+  },
+  {
+    name: 'ChhoeTaigi 台語辭典＋',
+    features: [
+      '各大辭典集合在此查詢平台，輸入一次各大辭典內容全部列出，古早用字、文言詞彙都能找到',
+      '「Kéng ê 方式」可選「Kāng 款--ê」（完全一樣）或「相關--ê」（有相關的）',
+      '可用白話字或臺羅拼音查詢；用字可能與教典用字不同',
+    ],
+    url: 'https://chhoe.taigi.info/',
+  },
+  {
+    name: 'iTaigi 愛台語',
+    features: [
+      '邀請大眾一起提供詞彙、編輯的平台，可以看到多元新出的詞彙',
+      '「你的名字」可查詢姓名的台語發音；教典、ChhoeTaigi 都找不到時可在「查辭典」搜尋',
+      '大眾提供的詞彙不一定完全正確，僅供參考；「好工具」列有其他相關學習資源',
+    ],
+    url: 'https://itaigi.tw/k',
+  },
+];
+
+/** 柒、台語學習資源綜合包 P.26 */
+export const LEARNING_RESOURCE_HUB = {
+  title: '「栽一欉臺文語言樹」部落格匯整分類',
+  desc: '幫學習者節省搜尋時間的分類匯整，類別廣泛，可善加利用。',
+  url: 'https://estefaniajenlanguagetree.blogspot.com/2023/01/blog-post_81.html',
+  categories: [
+    '自修學習地圖', '字典', '臺羅拼音學習', '朗讀', '認證', '輸入法相關', '舊地名', '文化、綜合影音',
+    '歌謠創作', 'Google 播客', '語言復振', '聽看覓 台語尪仔冊', '延伸閱讀 語言學', '醫用臺語',
+    '口說實況類', '面冊網站', '演講講座類', '研討會議類', '廣告和創作', '植物ê 台語名', '諺語',
+    '傳統民俗文化、節慶典故', '延伸語音資料庫',
+  ],
+};
