@@ -368,134 +368,95 @@ html,body{ background:#1B2740; }
    一、題庫資料（可持續擴充至 50 題以上，格式固定，直接在陣列中新增物件即可）
    ====================================================================== */
 const QUESTION_BANK = [
-  { id:1, category:"華語選台語", mandarinPrompt:"請找出「麵茶」的台語說法。", keyword:"麵茶",
-    correct:{ hanji:"麵茶", tailo:"mī-tê", audio:"audio/q01.mp3" },
-    distractors:[ {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"} ],
-    explanation:"麵茶的台語說作 mī-tê。" },
+  { id:1, category:"華語選台語", mandarinPrompt:"請找出「三輪車」的台語說法。", keyword:"三輪車",
+    correct:{ hanji:"三輪車", tailo:"sann-lián-tshia", audio:"audio/q01.mp3" },
+    distractors:[ {hanji:"葵扇",tailo:"khuê-sìnn"}, {hanji:"鋩角",tailo:"mê-kak"}, {hanji:"跋桮",tailo:"pua̍h-pue"} ],
+    explanation:"三輪車的台語說作 sann-lián-tshia。" },
 
-  { id:2, category:"華語選台語", mandarinPrompt:"請找出「牛舌餅」的台語說法。", keyword:"牛舌餅",
-    correct:{ hanji:"牛舌餅", tailo:"gû-tsi̍h-piánn", audio:"audio/q02.mp3" },
-    distractors:[ {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"肉包",tailo:"bah-pau"}, {hanji:"粉粿",tailo:"hún-kué"} ],
-    explanation:"牛舌餅的台語說作 gû-tsi̍h-piánn。" },
+  { id:2, category:"華語選台語", mandarinPrompt:"請找出「糖葫蘆」的台語說法。", keyword:"糖葫蘆",
+    correct:{ hanji:"李仔攕", tailo:"lí-á-tshiám", audio:"audio/q02.mp3" },
+    distractors:[ {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"麻粩",tailo:"muâ-láu"} ],
+    explanation:"糖葫蘆的台語漢字是「李仔攕」，說作 lí-á-tshiám。" },
 
-  { id:3, category:"華語選台語", mandarinPrompt:"請找出「湯圓湯」的台語說法。", keyword:"湯圓湯",
-    correct:{ hanji:"圓仔湯", tailo:"înn-á-thng", audio:"audio/q03.mp3" },
-    distractors:[ {hanji:"麵線糊",tailo:"mī-suànn-kôo"}, {hanji:"芋丸",tailo:"ōo-uân"}, {hanji:"麵茶",tailo:"mī-tê"} ],
-    explanation:"湯圓的台語漢字是「圓仔湯」，說作 înn-á-thng。" },
-
-  { id:4, category:"華語選台語", mandarinPrompt:"請找出「麻粩」的台語說法。", keyword:"麻粩",
-    correct:{ hanji:"麻粩", tailo:"muâ-láu", audio:"audio/q04.mp3" },
-    distractors:[ {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"} ],
-    explanation:"麻粩的台語說作 muâ-láu。" },
-
-  { id:5, category:"華語選台語", mandarinPrompt:"請找出「芋丸」的台語說法。", keyword:"芋丸",
-    correct:{ hanji:"芋丸", tailo:"ōo-uân", audio:"audio/q05.mp3" },
-    distractors:[ {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"肉包",tailo:"bah-pau"}, {hanji:"粉粿",tailo:"hún-kué"} ],
-    explanation:"芋丸的台語說作 ōo-uân。" },
-
-  { id:6, category:"華語選台語", mandarinPrompt:"請找出「肉包」的台語說法。", keyword:"肉包",
-    correct:{ hanji:"肉包", tailo:"bah-pau", audio:"audio/q06.mp3" },
-    distractors:[ {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"麻粩",tailo:"muâ-láu"} ],
+  { id:3, category:"華語選台語", mandarinPrompt:"請找出「肉包」的台語說法。", keyword:"肉包",
+    correct:{ hanji:"肉包", tailo:"bah-pau", audio:"audio/q03.mp3" },
+    distractors:[ {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"麻粩",tailo:"muâ-láu"} ],
     explanation:"肉包的台語說作 bah-pau。" },
 
-  { id:7, category:"華語選台語", mandarinPrompt:"請找出「粉粿」的台語說法。", keyword:"粉粿",
-    correct:{ hanji:"粉粿", tailo:"hún-kué", audio:"audio/q07.mp3" },
-    distractors:[ {hanji:"芋丸",tailo:"ōo-uân"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"}, {hanji:"麵茶",tailo:"mī-tê"} ],
-    explanation:"粉粿的台語說作 hún-kué。" },
+  { id:4, category:"華語選台語", mandarinPrompt:"請找出「糕餅」的台語說法。", keyword:"糕餅",
+    correct:{ hanji:"糕仔餅", tailo:"ko-á-piánn", audio:"audio/q04.mp3" },
+    distractors:[ {hanji:"肉包",tailo:"bah-pau"}, {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"} ],
+    explanation:"糕餅的台語漢字是「糕仔餅」，說作 ko-á-piánn。" },
 
-  { id:8, category:"華語選台語", mandarinPrompt:"請找出「糯米炸」的台語說法。", keyword:"糯米炸",
-    correct:{ hanji:"秫米糋", tailo:"tsu̍t-bí-tsìnn", audio:"audio/q08.mp3" },
+  { id:5, category:"華語選台語", mandarinPrompt:"請找出「糯米炸」的台語說法。", keyword:"糯米炸",
+    correct:{ hanji:"秫米糋", tailo:"tsu̍t-bí-tsìnn", audio:"audio/q05.mp3" },
     distractors:[ {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"} ],
     explanation:"糯米炸的台語漢字是「秫米糋」，說作 tsu̍t-bí-tsìnn。" },
 
-  { id:9, category:"華語選台語", mandarinPrompt:"請找出「糖葫蘆」的台語說法。", keyword:"糖葫蘆",
-    correct:{ hanji:"李仔攕", tailo:"lí-á-tshiám", audio:"audio/q09.mp3" },
-    distractors:[ {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"肉包",tailo:"bah-pau"} ],
-    explanation:"糖葫蘆的台語漢字是「李仔攕」，說作 lí-á-tshiám。" },
+  { id:6, category:"華語選台語", mandarinPrompt:"請找出「芋丸」的台語說法。", keyword:"芋丸",
+    correct:{ hanji:"芋丸", tailo:"ōo-uân", audio:"audio/q06.mp3" },
+    distractors:[ {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"肉包",tailo:"bah-pau"}, {hanji:"鹿港粉粿",tailo:"Lo̍k-káng hún-kué"} ],
+    explanation:"芋丸的台語說作 ōo-uân。" },
 
-  { id:10, category:"華語選台語", mandarinPrompt:"請找出「三輪車」的台語說法。", keyword:"三輪車",
-    correct:{ hanji:"三輪車", tailo:"sann-lián-tshia", audio:"audio/q10.mp3" },
-    distractors:[ {hanji:"火車",tailo:"hué-tshia"}, {hanji:"高鐵",tailo:"ko-thih"}, {hanji:"汽車",tailo:"ki-tshia"} ],
-    explanation:"三輪車的台語說作 sann-lián-tshia。" },
+  { id:7, category:"華語選台語", mandarinPrompt:"請找出「鹿港麵線糊」的台語說法。", keyword:"鹿港麵線糊",
+    correct:{ hanji:"鹿港麵線糊", tailo:"Lo̍k-káng mī-suànn-kôo", audio:"audio/q07.mp3" },
+    distractors:[ {hanji:"鹿港粉粿",tailo:"Lo̍k-káng hún-kué"}, {hanji:"麵茶",tailo:"mī-tê"}, {hanji:"圓仔湯",tailo:"înn-á-thng"} ],
+    explanation:"鹿港麵線糊的台語說作 Lo̍k-káng mī-suànn-kôo。" },
 
-  { id:11, category:"華語選台語", mandarinPrompt:"請找出「牙刷」的台語說法。", keyword:"牙刷",
-    correct:{ hanji:"齒抿仔", tailo:"khí-bín-á", audio:"audio/q11.mp3" },
-    distractors:[ {hanji:"齒膏",tailo:"khí-ko"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"}, {hanji:"跋桮",tailo:"pua̍h-pue"} ],
+  { id:8, category:"華語選台語", mandarinPrompt:"請找出「牙刷」的台語說法。", keyword:"牙刷",
+    correct:{ hanji:"齒抿仔", tailo:"khí-bín-á", audio:"audio/q08.mp3" },
+    distractors:[ {hanji:"齒膏",tailo:"khí-ko"}, {hanji:"葵扇",tailo:"khuê-sìnn"}, {hanji:"跋桮",tailo:"pua̍h-pue"} ],
     explanation:"牙刷的台語漢字是「齒抿仔」，說作 khí-bín-á。" },
 
-  { id:12, category:"華語選台語", mandarinPrompt:"請找出「牙膏」的台語說法。", keyword:"牙膏",
-    correct:{ hanji:"齒膏", tailo:"khí-ko", audio:"audio/q12.mp3" },
+  { id:9, category:"華語選台語", mandarinPrompt:"請找出「牙膏」的台語說法。", keyword:"牙膏",
+    correct:{ hanji:"齒膏", tailo:"khí-ko", audio:"audio/q09.mp3" },
     distractors:[ {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"鋩角",tailo:"mê-kak"}, {hanji:"葵扇",tailo:"khuê-sìnn"} ],
     explanation:"牙膏的台語漢字是「齒膏」，說作 khí-ko。" },
 
-  { id:13, category:"華語選台語", mandarinPrompt:"請找出「扇子」的台語說法。", keyword:"扇子",
-    correct:{ hanji:"葵扇", tailo:"khuê-sìnn", audio:"audio/q13.mp3" },
-    distractors:[ {hanji:"旗袍",tailo:"kî-phâu"}, {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"三輪車",tailo:"sann-lián-tshia"} ],
-    explanation:"扇子的台語漢字是「葵扇」，說作 khuê-sìnn。" },
+  { id:10, category:"華語選台語", mandarinPrompt:"請找出「細節」的台語說法。", keyword:"細節",
+    correct:{ hanji:"鋩角", tailo:"mê-kak", audio:"audio/q10.mp3" },
+    distractors:[ {hanji:"跋桮",tailo:"pua̍h-pue"}, {hanji:"齒膏",tailo:"khí-ko"}, {hanji:"葵扇",tailo:"khuê-sìnn"} ],
+    explanation:"細節的台語漢字是「鋩角」，說作 mê-kak。" },
 
-  { id:14, category:"華語選台語", mandarinPrompt:"請找出「擲筊」的台語說法。", keyword:"擲筊",
-    correct:{ hanji:"跋桮", tailo:"pua̍h-pue", audio:"audio/q14.mp3" },
-    distractors:[ {hanji:"拜拜",tailo:"pài-pài"}, {hanji:"祈求",tailo:"kî-kiû"}, {hanji:"好耍",tailo:"tshit-thô"} ],
+  { id:11, category:"華語選台語", mandarinPrompt:"請找出「麵茶」的台語說法。", keyword:"麵茶",
+    correct:{ hanji:"麵茶", tailo:"mī-tê", audio:"audio/q11.mp3" },
+    distractors:[ {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"} ],
+    explanation:"麵茶的台語說作 mī-tê。" },
+
+  { id:12, category:"華語選台語", mandarinPrompt:"請找出「麻糬」的台語說法。", keyword:"麻糬",
+    correct:{ hanji:"麻粩", tailo:"muâ-láu", audio:"audio/q12.mp3" },
+    distractors:[ {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"牛舌餅",tailo:"gû-tsi̍h-piánn"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"} ],
+    explanation:"麻糬的台語漢字是「麻粩」，說作 muâ-láu。" },
+
+  { id:13, category:"華語選台語", mandarinPrompt:"請找出「擲筊」的台語說法。", keyword:"擲筊",
+    correct:{ hanji:"跋桮", tailo:"pua̍h-pue", audio:"audio/q13.mp3" },
+    distractors:[ {hanji:"鋩角",tailo:"mê-kak"}, {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"葵扇",tailo:"khuê-sìnn"} ],
     explanation:"擲筊的台語漢字是「跋桮」，說作 pua̍h-pue。" },
 
-  { id:15, category:"華語選台語", mandarinPrompt:"請找出「鹿港」的台語說法。", keyword:"鹿港",
-    correct:{ hanji:"鹿港", tailo:"Lo̍k-káng", audio:"audio/q15.mp3" },
-    distractors:[ {hanji:"府城",tailo:"Hú-siânn"}, {hanji:"阿里山",tailo:"A-lí-san"}, {hanji:"臺南",tailo:"Tâi-lâm"} ],
-    explanation:"鹿港的台語說作 Lo̍k-káng。" },
+  { id:14, category:"華語選台語", mandarinPrompt:"請找出「鹿港粉粿」的台語說法。", keyword:"鹿港粉粿",
+    correct:{ hanji:"鹿港粉粿", tailo:"Lo̍k-káng hún-kué", audio:"audio/q14.mp3" },
+    distractors:[ {hanji:"鹿港麵線糊",tailo:"Lo̍k-káng mī-suànn-kôo"}, {hanji:"芋丸",tailo:"ōo-uân"}, {hanji:"麵茶",tailo:"mī-tê"} ],
+    explanation:"鹿港粉粿的台語說作 Lo̍k-káng hún-kué。" },
 
-  { id:16, category:"華語選台語", mandarinPrompt:"請找出「老街」的台語說法。", keyword:"老街",
-    correct:{ hanji:"老街", tailo:"lāu-kue", audio:"audio/q16.mp3" },
-    distractors:[ {hanji:"老厝",tailo:"lāu-tshù"}, {hanji:"古蹟",tailo:"kóo-tsik"}, {hanji:"市場",tailo:"tshī-tiûnn"} ],
-    explanation:"老街的台語說作 lāu-kue。" },
+  { id:15, category:"華語選台語", mandarinPrompt:"請找出「牛舌餅」的台語說法。", keyword:"牛舌餅",
+    correct:{ hanji:"牛舌餅", tailo:"gû-tsi̍h-piánn", audio:"audio/q15.mp3" },
+    distractors:[ {hanji:"肉包",tailo:"bah-pau"}, {hanji:"麻粩",tailo:"muâ-láu"}, {hanji:"糕仔餅",tailo:"ko-á-piánn"} ],
+    explanation:"牛舌餅的台語說作 gû-tsi̍h-piánn。" },
 
-  { id:17, category:"華語選台語", mandarinPrompt:"請找出「拜拜」的台語說法。", keyword:"拜拜",
-    correct:{ hanji:"拜拜", tailo:"pài-pài", audio:"audio/q17.mp3" },
-    distractors:[ {hanji:"跋桮",tailo:"pua̍h-pue"}, {hanji:"祈求",tailo:"kî-kiû"}, {hanji:"好耍",tailo:"tshit-thô"} ],
-    explanation:"拜拜的台語說作 pài-pài。" },
+  { id:16, category:"華語選台語", mandarinPrompt:"請找出「湯圓湯」的台語說法。", keyword:"湯圓湯",
+    correct:{ hanji:"圓仔湯", tailo:"înn-á-thng", audio:"audio/q16.mp3" },
+    distractors:[ {hanji:"芋丸",tailo:"ōo-uân"}, {hanji:"秫米糋",tailo:"tsu̍t-bí-tsìnn"}, {hanji:"麵茶",tailo:"mī-tê"} ],
+    explanation:"湯圓的台語漢字是「圓仔湯」，說作 înn-á-thng。" },
 
-  { id:18, category:"華語選台語", mandarinPrompt:"請找出「旗袍」的台語說法。", keyword:"旗袍",
-    correct:{ hanji:"旗袍", tailo:"kî-phâu", audio:"audio/q18.mp3" },
-    distractors:[ {hanji:"洋裝",tailo:"iûnn-tsong"}, {hanji:"外套",tailo:"guā-thò"}, {hanji:"草帽",tailo:"tsháu-bō-á"} ],
-    explanation:"旗袍的台語說作 kî-phâu。" },
+  { id:17, category:"華語選台語", mandarinPrompt:"請找出「扇子」的台語說法。", keyword:"扇子",
+    correct:{ hanji:"葵扇", tailo:"khuê-sìnn", audio:"audio/q17.mp3" },
+    distractors:[ {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"三輪車",tailo:"sann-lián-tshia"}, {hanji:"跋桮",tailo:"pua̍h-pue"} ],
+    explanation:"扇子的台語漢字是「葵扇」，說作 khuê-sìnn。" }
 
-  { id:19, category:"華語選台語", mandarinPrompt:"請找出「全家福」的台語說法。", keyword:"全家福",
-    correct:{ hanji:"全家福", tailo:"tsuân-ka-hok", audio:"audio/q19.mp3" },
-    distractors:[ {hanji:"家庭旅遊",tailo:"ka-tîng lí-iû"}, {hanji:"百年老厝",tailo:"pah-nî lāu-tshù"}, {hanji:"出名",tailo:"tshut-miâ"} ],
-    explanation:"全家福的台語說作 tsuân-ka-hok。" },
-
-  { id:20, category:"華語選台語", mandarinPrompt:"請找出「伴手禮」的台語說法。", keyword:"伴手禮",
-    correct:{ hanji:"等路", tailo:"tán-lōo", audio:"audio/q20.mp3" },
-    distractors:[ {hanji:"好料",tailo:"hó-liāu"}, {hanji:"李仔攕",tailo:"lí-á-tshiám"}, {hanji:"紀念",tailo:"kì-liām"} ],
-    explanation:"伴手禮的台語漢字是「等路」，說作 tán-lōo。" },
-
-  { id:21, category:"華語選台語", mandarinPrompt:"請找出「高鐵」的台語說法。", keyword:"高鐵",
-    correct:{ hanji:"高鐵", tailo:"ko-thih", audio:"audio/q21.mp3" },
-    distractors:[ {hanji:"火車",tailo:"hué-tshia"}, {hanji:"三輪車",tailo:"sann-lián-tshia"}, {hanji:"台灣好行",tailo:"Tâi-uân hó-hîng"} ],
-    explanation:"高鐵的台語說作 ko-thih。" },
-
-  { id:22, category:"華語選台語", mandarinPrompt:"請找出「阿公」的台語說法。", keyword:"阿公",
-    correct:{ hanji:"阿公", tailo:"a-kong", audio:"audio/q22.mp3" },
-    distractors:[ {hanji:"考試",tailo:"khó-tshì"}, {hanji:"順利",tailo:"sūn-lī"}, {hanji:"過暝",tailo:"kuè-mî"} ],
-    explanation:"阿公的台語說作 a-kong。" },
-
-  { id:23, category:"華語選台語", mandarinPrompt:"請找出「考試」的台語說法。", keyword:"考試",
-    correct:{ hanji:"考試", tailo:"khó-tshì", audio:"audio/q23.mp3" },
-    distractors:[ {hanji:"阿公",tailo:"a-kong"}, {hanji:"順利",tailo:"sūn-lī"}, {hanji:"祈求",tailo:"kî-kiû"} ],
-    explanation:"考試的台語說作 khó-tshì。" },
-
-  { id:24, category:"華語選台語", mandarinPrompt:"請找出「鹿港麵線糊」的台語說法。", keyword:"鹿港麵線糊",
-    correct:{ hanji:"鹿港麵線糊", tailo:"Lo̍k-káng mī-suànn-kôo", audio:"audio/q24.mp3" },
-    distractors:[ {hanji:"麵茶冰",tailo:"mī-tê-ping"}, {hanji:"粉粿",tailo:"hún-kué"}, {hanji:"肉包",tailo:"bah-pau"} ],
-    explanation:"鹿港麵線糊的台語說作 Lo̍k-káng mī-suànn-kôo。" },
-
-  { id:25, category:"華語選台語", mandarinPrompt:"請找出「麵茶冰」的台語說法。", keyword:"麵茶冰",
-    correct:{ hanji:"麵茶冰", tailo:"mī-tê-ping", audio:"audio/q25.mp3" },
-    distractors:[ {hanji:"圓仔湯",tailo:"înn-á-thng"}, {hanji:"粉粿",tailo:"hún-kué"}, {hanji:"鹿港麵線糊",tailo:"Lo̍k-káng mī-suànn-kôo"} ],
-    explanation:"麵茶冰的台語說作 mī-tê-ping。" }
-
-  // 若要繼續擴充到 50 題，只要依照上面同樣的物件格式，
-  // 在此陣列中繼續新增 { id, category, mandarinPrompt, keyword, correct, distractors, explanation } 即可，
-  // 不需要更動下方任何遊戲邏輯程式碼。
+  // 這 17 個詞來自課本《臺灣台語會話讀本－旅行篇》第一篇（01 鹿港）單元詞彙頁，
+  // 2026-08-19 由使用者提供課本截圖核對過。若要擴充成 50 題，依照上面同樣的
+  // 物件格式在此陣列中繼續新增 { id, category, mandarinPrompt, keyword, correct,
+  // distractors, explanation } 即可，不需要更動下方任何遊戲邏輯程式碼。
 ];
 
 /* ======================================================================
