@@ -1,6 +1,6 @@
 import { HubShell } from './games/GameShell';
 
-import { heroFull } from '../assets/images/homepage';
+
 
 // 四大功能卡片。插圖是水彩繪本風的手繪圖（跟課本動畫同一種畫風），檔案放在
 // public/images/home/，不走 base64 內嵌以免把 JS bundle 撐大。每張卡片有自己
@@ -50,15 +50,28 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
       <div className="flex flex-col lg:flex-row gap-5 flex-1">
         {/* Hero + Feature cards column（「學習主題」側欄跟宣傳照片都拿掉了，這欄改滿版） */}
         <div className="flex-1 flex flex-col gap-4">
-          {/* Hero banner */}
+          {/* Hero banner：標題文字已經畫在插畫裡（跟課本動畫同一種水彩畫風），
+              所以這裡不再疊 HTML 文字，只留一顆真的按鈕。圖片維持原始比例、
+              不裁切，按鈕用百分比定位，縮放時會跟著文字走。整張橫幅也可以點。 */}
           <div className="relative w-full rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(2,132,199,0.2)]">
-            <img src={heroFull} alt="歡迎來學台語！用遊戲、互動學習，快樂開口說台語！" className="w-full h-auto block" />
             <button
               onClick={() => onNavigate('phonics', 'phonics_scheme')}
               aria-label="開始學習"
-              className="absolute cursor-pointer"
-              style={{ left: '34.5%', top: '68%', width: '15%', height: '13%' }}
-            />
+              className="block w-full cursor-pointer group"
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}images/home/hero.jpg`}
+                alt="歡迎來學台語！用遊戲、互動學習，快樂開口說台語！一起來探索台語的聲音與奧妙！"
+                className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+            </button>
+            <button
+              onClick={() => onNavigate('phonics', 'phonics_scheme')}
+              data-sound="pop"
+              className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-7 py-1.5 sm:py-2 md:py-3 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-white font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5 md:gap-2"
+            >
+              開始學習 <span className="text-[9px] sm:text-xs">▶</span>
+            </button>
           </div>
 
           {/* Feature Cards Container */}
