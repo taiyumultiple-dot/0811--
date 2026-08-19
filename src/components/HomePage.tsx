@@ -1,38 +1,38 @@
 import { HubShell } from './games/GameShell';
-import { ArtPhonics, ArtGame, ArtAnime, ArtRecord } from './HomeFeatureArt';
 
 import { heroFull } from '../assets/images/homepage';
 
-// 四大功能卡片。插圖改成自己畫的向量圖（見 HomeFeatureArt.tsx），每張卡片
-// 有自己的主色，圖、標題、箭頭都吃同一個色，四張並排才看得出是一組的。
+// 四大功能卡片。插圖是水彩繪本風的手繪圖（跟課本動畫同一種畫風），檔案放在
+// public/images/home/，不走 base64 內嵌以免把 JS bundle 撐大。每張卡片有自己
+// 的主色，邊框與箭頭吃同一個色，四張並排才看得出是一組的。
 const FEATURE_CARDS = [
   {
     title: '拼音學習',
     desc: '照著課本一頁一頁學，聲母韻母、聲調變調都有真人錄音。',
     button: '去學習',
     accent: '#34d399',
-    Art: ArtPhonics,
+    img: 'images/home/feature-phonics.jpg',
   },
   {
     title: '互動遊戲',
     desc: '十款遊戲邊玩邊記，把課本學到的拼音真的用出來。',
     button: '去遊戲',
     accent: '#a78bfa',
-    Art: ArtGame,
+    img: 'images/home/feature-game.jpg',
   },
   {
     title: '動畫專區',
     desc: '教育部推薦的台語動畫片單，可依學齡挑，字幕能切漢字／羅馬字。',
     button: '去觀看',
     accent: '#fbbf24',
-    Art: ArtAnime,
+    img: 'images/home/feature-anime.jpg',
   },
   {
     title: '學習紀錄',
     desc: '看得到自己練到哪、通關幾關，進步都留著。',
     button: '看記錄',
     accent: '#38bdf8',
-    Art: ArtRecord,
+    img: 'images/home/feature-record.jpg',
   },
 ];
 
@@ -69,7 +69,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
-              {FEATURE_CARDS.map(({ title: cardTitle, desc: cardDesc, button, accent, Art }) => {
+              {FEATURE_CARDS.map(({ title: cardTitle, desc: cardDesc, button, accent, img }) => {
                 const currentUser = (() => {
                   try {
                     const stored = localStorage.getItem('tai_lo_user');
@@ -102,15 +102,15 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
                   >
                     {/* 插圖 */}
                     <div
-                      className="w-full h-28 md:h-32 rounded-2xl flex items-center justify-center overflow-hidden"
-                      style={{
-                        background: `radial-gradient(120% 120% at 30% 15%, ${accent}2e, rgba(3,11,23,0) 72%), #030b17`,
-                        border: `1px solid ${accent}33`,
-                      }}
+                      className="w-full aspect-[4/3] rounded-2xl overflow-hidden"
+                      style={{ border: `1px solid ${accent}59` }}
                     >
-                      <div className="transition-transform group-hover:scale-110">
-                        <Art accent={accent} />
-                      </div>
+                      <img
+                        src={`${import.meta.env.BASE_URL}${img}`}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     </div>
 
                     <h3 className="font-black text-white text-lg md:text-xl tracking-wide">{title}</h3>
