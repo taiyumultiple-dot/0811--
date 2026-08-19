@@ -65,7 +65,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
           <button
             onClick={() => onNavigate('phonics', 'phonics_scheme')}
             data-sound="pop"
-            className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-6 py-1.5 md:py-2.5 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-[#3E2723] font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
+            className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-6 py-1.5 md:py-2.5 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-white font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
           >
             開始學習 <span className="text-[9px] sm:text-xs">▶</span>
           </button>
