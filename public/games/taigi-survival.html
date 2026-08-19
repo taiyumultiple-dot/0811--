@@ -216,6 +216,46 @@
   table.review td.no{ color:var(--red); font-weight:700; }
   .result-btns{ display:flex; gap:12px; margin-top:6px; }
 
+  /* ---------- 測驗模式（安靜的選擇題，不用瞄準／碰撞，答案不會被誤觸） ---------- */
+  #quiz-screen{
+    flex-direction:column; align-items:center; justify-content:center; padding:24px; gap:16px;
+    background:var(--bg-deep);
+  }
+  .quiz-progress{ color:var(--text-dim); font-size:13px; letter-spacing:1px; font-weight:700; }
+  .quiz-prompt-panel{
+    width:100%; max-width:560px; text-align:center;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(34,226,240,0.25);
+    border-radius:16px; padding:20px 24px;
+  }
+  .quiz-prompt-panel .q{ font-size:clamp(16px,3vw,22px); font-weight:900; color:var(--text); line-height:1.4; }
+  .quiz-prompt-panel .theme{ font-size:11px; color:var(--cyan); letter-spacing:2px; margin-top:6px; }
+  .quiz-prompt-panel .prompt-btns{ display:flex; justify-content:center; gap:8px; margin-top:12px; }
+  .quiz-options{
+    width:100%; max-width:560px; display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  }
+  @media (max-width:520px){ .quiz-options{ grid-template-columns:1fr; } }
+  .quiz-opt{
+    background:rgba(255,255,255,0.03); border:2px solid rgba(34,226,240,0.35); border-radius:14px;
+    padding:16px 14px; text-align:center; color:var(--text); cursor:pointer;
+    transition:transform .1s ease, border-color .15s ease, background .15s ease;
+  }
+  .quiz-opt:hover:not(:disabled){ border-color:var(--cyan); transform:translateY(-2px); }
+  .quiz-opt:active:not(:disabled){ transform:scale(0.97); }
+  .quiz-opt:disabled{ cursor:default; }
+  .quiz-opt .hanji{ font-size:clamp(18px,3.4vw,24px); font-weight:900; }
+  .quiz-opt .tailo{ font-size:12px; color:var(--text-dim); margin-top:4px; font-family:var(--font-mono); }
+  .quiz-opt.chosen-correct{ border-color:var(--green); background:rgba(61,220,132,0.14); }
+  .quiz-opt.chosen-wrong{ border-color:var(--red); background:rgba(255,95,109,0.14); }
+  .quiz-opt.reveal-correct{ border-color:var(--green); background:rgba(61,220,132,0.14); }
+  .quiz-feedback{ min-height:20px; font-size:13px; font-weight:800; letter-spacing:1px; }
+  .quiz-feedback.ok{ color:var(--green); }
+  .quiz-feedback.no{ color:var(--red); }
+  .quiz-summary-wrap{
+    width:100%; max-width:720px; display:flex; flex-direction:column; align-items:center; gap:14px;
+  }
+  .quiz-accuracy{ font-size:clamp(32px,6vw,48px); font-weight:900; color:var(--orange); }
+  .quiz-accuracy .lbl{ font-size:12px; color:var(--text-dim); font-weight:700; letter-spacing:2px; display:block; margin-bottom:4px; }
+
   .visually-hidden{ position:absolute; width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0); }
 </style>
 <style id="paper-skin">
@@ -254,7 +294,44 @@ html,body{ background:#1B2740; }
         </ul>
       </div>
       <button class="btn primary" id="btnStart" style="font-size:18px;padding:14px 40px;">開始任務</button>
+      <button class="btn" id="btnQuizMode">📝 測驗模式（安靜作答，正確率給老師看）</button>
       <button class="btn small" id="btnHowTo">操作方式 ／ 圖例</button>
+    </div>
+
+    <!-- ============ 測驗模式：安靜的選擇題，不用瞄準／碰撞，答案不會被誤觸 ============ -->
+    <div class="screen" id="quiz-screen">
+      <div class="quiz-progress" id="quizProgress">第 1／49 題</div>
+      <div class="quiz-prompt-panel">
+        <div class="q" id="quizPromptText">請找出「麵茶」的台語說法</div>
+        <div class="theme">測驗模式・每題只有一次作答機會</div>
+        <div class="prompt-btns">
+          <button class="btn small" id="btnQuizPlayPrompt">▶ 播放題目</button>
+        </div>
+      </div>
+      <div class="quiz-options" id="quizOptions"></div>
+      <div class="quiz-feedback" id="quizFeedback"></div>
+      <button class="btn small" id="btnQuizQuitToHome">結束測驗，返回首頁</button>
+    </div>
+
+    <!-- ============ 測驗結算 ============ -->
+    <div class="screen" id="quiz-result-screen">
+      <div class="quiz-summary-wrap">
+        <h2>測驗結算</h2>
+        <div class="quiz-accuracy"><span class="lbl">正確率 ACCURACY</span><span id="quizAccuracyVal">0%</span></div>
+        <div class="stat-grid" id="quizStatGrid"></div>
+        <div class="review-wrap scrollbox">
+          <table class="review">
+            <thead>
+              <tr><th>華語題目</th><th>你選的答案</th><th>正確台語漢字</th><th>正確臺羅拼音</th><th>是否答對</th></tr>
+            </thead>
+            <tbody id="quizReviewBody"></tbody>
+          </table>
+        </div>
+        <div class="result-btns">
+          <button class="btn primary" id="btnQuizRetry">再測一次</button>
+          <button class="btn" id="btnQuizHome">返回首頁</button>
+        </div>
+      </div>
     </div>
 
     <!-- ============ 遊戲畫面 ============ -->
@@ -1962,6 +2039,123 @@ function drawParticles(){
 }
 
 /* ======================================================================
+   十三之二、測驗模式（安靜的選擇題，不用瞄準／碰撞，答案不會被誤觸）
+   ------------------------------------------------------------------
+   給老師要「準確率」的情境用：動作遊戲模式裡答錯有可能只是操作失誤
+   （太空船不小心撞到旁邊的隕石），不代表學生真的不會；測驗模式把每題
+   變成安靜的四選一，點下去才算數，資料才乾淨。題庫跟動作模式共用
+   QUESTION_BANK，正確率一樣透過 TAIYU_GAME_RESULT 回報給 progressStore。
+   ====================================================================== */
+const quizState = {
+  queue: [], index: -1, current: null,
+  correctCount: 0, wrongCount: 0, log: [], locked: false,
+};
+const quizEl = {
+  progress: document.getElementById('quizProgress'),
+  promptText: document.getElementById('quizPromptText'),
+  options: document.getElementById('quizOptions'),
+  feedback: document.getElementById('quizFeedback'),
+};
+
+function buildQuizQueue(){
+  // 測驗模式：題庫裡每個詞只考一次，不重複、不湊數，答完就是整份題庫都考過了
+  return shuffle(QUESTION_BANK);
+}
+
+function startQuiz(){
+  quizState.queue = buildQuizQueue();
+  quizState.index = -1;
+  quizState.correctCount = 0; quizState.wrongCount = 0; quizState.log = [];
+  showScreen('quiz-screen');
+  nextQuizQuestion();
+}
+
+function nextQuizQuestion(){
+  quizState.index++;
+  if(quizState.index >= quizState.queue.length){ endQuiz(); return; }
+  quizState.current = quizState.queue[quizState.index];
+  quizState.locked = false;
+  quizEl.progress.textContent = `第 ${quizState.index+1}／${quizState.queue.length} 題`;
+  quizEl.promptText.textContent = quizState.current.mandarinPrompt;
+  quizEl.feedback.textContent = '';
+  quizEl.feedback.className = 'quiz-feedback';
+
+  const options = shuffle([quizState.current.correct, ...quizState.current.distractors.slice(0,3)]);
+  quizEl.options.innerHTML = '';
+  options.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.innerHTML = `<div class="hanji">${opt.hanji}</div><div class="tailo">${opt.tailo}</div>`;
+    btn.addEventListener('click', ()=> chooseQuizOption(btn, opt));
+    quizEl.options.appendChild(btn);
+  });
+
+  Speech.speakMandarin(quizState.current.mandarinPrompt);
+}
+
+function chooseQuizOption(btn, opt){
+  if(quizState.locked) return;
+  quizState.locked = true;
+  const q = quizState.current;
+  const isCorrect = opt.hanji === q.correct.hanji;
+
+  Array.from(quizEl.options.children).forEach(el=>el.disabled = true);
+  if(isCorrect){
+    btn.classList.add('chosen-correct');
+    quizEl.feedback.textContent = `答對了！${q.correct.hanji}（${q.correct.tailo}）`;
+    quizEl.feedback.classList.add('ok');
+    quizState.correctCount++;
+  } else {
+    btn.classList.add('chosen-wrong');
+    Array.from(quizEl.options.children).forEach(el=>{
+      if(el.textContent.includes(q.correct.hanji)) el.classList.add('reveal-correct');
+    });
+    quizEl.feedback.textContent = `答錯了，正確答案是「${q.correct.hanji}」（${q.correct.tailo}）`;
+    quizEl.feedback.classList.add('no');
+    quizState.wrongCount++;
+  }
+  quizState.log.push({
+    mandarinPrompt: q.mandarinPrompt, chosenHanji: opt.hanji,
+    correctHanji: q.correct.hanji, correctTailo: q.correct.tailo, isCorrect,
+  });
+
+  setTimeout(nextQuizQuestion, 1400);
+}
+
+function endQuiz(){
+  const total = quizState.correctCount + quizState.wrongCount;
+  const accuracy = total > 0 ? Math.round((quizState.correctCount/total)*100) : 0;
+
+  document.getElementById('quizAccuracyVal').textContent = accuracy + '%';
+  document.getElementById('quizStatGrid').innerHTML = `
+    <div class="stat-card"><div class="k">總題數</div><div class="v">${total}</div></div>
+    <div class="stat-card"><div class="k">答對</div><div class="v">${quizState.correctCount}</div></div>
+    <div class="stat-card"><div class="k">答錯</div><div class="v">${quizState.wrongCount}</div></div>
+    <div class="stat-card"><div class="k">正確率</div><div class="v">${accuracy}%</div></div>
+  `;
+  const tbody = document.getElementById('quizReviewBody');
+  tbody.innerHTML = quizState.log.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.mandarinPrompt)}</td>
+      <td>${escapeHtml(r.chosenHanji)}</td>
+      <td>${escapeHtml(r.correctHanji)}</td>
+      <td>${escapeHtml(r.correctTailo)}</td>
+      <td class="${r.isCorrect?'ok':'no'}">${r.isCorrect?'✓':'✗'}</td>
+    </tr>`).join('');
+
+  showScreen('quiz-result-screen');
+
+  try{
+    window.parent.postMessage({
+      type: 'TAIYU_GAME_RESULT',
+      gameKey: 'game1',
+      score: quizState.correctCount,
+      accuracy,
+    }, window.location.origin);
+  }catch(e){ /* 不在 iframe 中執行時忽略即可 */ }
+}
+
+/* ======================================================================
    十四、按鈕事件綁定
    ====================================================================== */
 document.getElementById('btnStart').addEventListener('click', ()=>{
@@ -1989,6 +2183,20 @@ document.getElementById('btnQuitToHome').addEventListener('click', ()=>{
 });
 document.getElementById('btnRetry').addEventListener('click', startGame);
 document.getElementById('btnHome').addEventListener('click', ()=>{ showScreen('home-screen'); });
+
+document.getElementById('btnQuizMode').addEventListener('click', ()=>{
+  if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); }
+  startQuiz();
+});
+document.getElementById('btnQuizPlayPrompt').addEventListener('click', ()=>{
+  if(quizState.current) Speech.speakMandarin(quizState.current.mandarinPrompt);
+});
+document.getElementById('btnQuizQuitToHome').addEventListener('click', ()=>{
+  Speech.stopAll();
+  showScreen('home-screen');
+});
+document.getElementById('btnQuizRetry').addEventListener('click', startQuiz);
+document.getElementById('btnQuizHome').addEventListener('click', ()=>{ showScreen('home-screen'); });
 
 /* ======================================================================
    十五、初始化
