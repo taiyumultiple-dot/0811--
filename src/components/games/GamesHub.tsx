@@ -48,7 +48,7 @@ export default function GamesHub({
                   src={gameArt(g.id)}
                   alt=""
                   loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                 />
                 <span className="absolute top-2 left-2 w-8 h-8 rounded-xl bg-[#FFFDF9]/85 border border-[#D9CFB8] text-[#3E2723] font-black text-sm flex items-center justify-center shadow-md">
                   {String(g.id).padStart(2, '0')}
