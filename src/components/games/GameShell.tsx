@@ -77,12 +77,9 @@ export function TopNav({ activeKey = 'games', onHome }: { activeKey?: string; on
             🧪
           </div>
           <div>
-            <h1 className="font-black text-white text-base md:text-xl lg:text-2xl tracking-wide leading-tight drop-shadow-sm flex items-center gap-2">
-              <span className="text-amber-300">臺羅拼音方塊研究所</span>
+            <h1 className="font-black text-base md:text-xl lg:text-2xl tracking-wide leading-tight drop-shadow-sm">
+              <span className="text-amber-300">泰宇出版 X 閩南語互動學習遊戲</span>
             </h1>
-            <p className="text-xs md:text-sm lg:text-base text-cyan-100 font-black tracking-wider mt-0.5">
-              + 泰宇出版Ｘ互動學習遊戲平台 +
-            </p>
           </div>
         </div>
 
