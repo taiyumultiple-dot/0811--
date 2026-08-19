@@ -8,28 +8,28 @@ import { HubShell } from './games/GameShell';
 const FEATURE_CARDS = [
   {
     title: '拼音學習',
-    desc: '照著課本一頁一頁學，聲母韻母、聲調變調都有真人錄音。',
+    desc: '跟著課本學發音，有真人錄音',
     button: '去學習',
     accent: '#34d399',
     img: 'images/home/feature-phonics.jpg',
   },
   {
     title: '互動遊戲',
-    desc: '十款遊戲邊玩邊記，把課本學到的拼音真的用出來。',
+    desc: '十款遊戲，邊玩邊記詞彙',
     button: '去遊戲',
     accent: '#a78bfa',
     img: 'images/home/feature-game.jpg',
   },
   {
     title: '動畫專區',
-    desc: '教育部推薦的台語動畫片單，可依學齡挑，字幕能切漢字／羅馬字。',
+    desc: '教育部推薦的台語動畫',
     button: '去觀看',
     accent: '#fbbf24',
     img: 'images/home/feature-anime.jpg',
   },
   {
     title: '學習紀錄',
-    desc: '看得到自己練到哪、通關幾關，進步都留著。',
+    desc: '看自己練到哪、通關幾關',
     button: '看記錄',
     accent: '#38bdf8',
     img: 'images/home/feature-record.jpg',
@@ -46,110 +46,104 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
 
   return (
     <HubShell activeKey="home" onHome={() => onNavigate('home')}>
-      {/* ---------------- Main Row: Sidebar + Hero ---------------- */}
-      <div className="flex flex-col lg:flex-row gap-5 flex-1">
-        {/* Hero + Feature cards column（「學習主題」側欄跟宣傳照片都拿掉了，這欄改滿版） */}
-        <div className="flex-1 flex flex-col gap-4">
-          {/* Hero banner：標題文字已經畫在插畫裡（跟課本動畫同一種水彩畫風），
-              所以這裡不再疊 HTML 文字，只留一顆真的按鈕。圖片維持原始比例、
-              不裁切，按鈕用百分比定位，縮放時會跟著文字走。整張橫幅也可以點。 */}
-          <div className="relative w-full rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(2,132,199,0.2)]">
-            <button
-              onClick={() => onNavigate('phonics', 'phonics_scheme')}
-              aria-label="開始學習"
-              className="block w-full cursor-pointer group"
-            >
-              <img
-                src={`${import.meta.env.BASE_URL}images/home/hero.jpg`}
-                alt="歡迎來學台語！用遊戲、互動學習，快樂開口說台語！一起來探索台語的聲音與奧妙！"
-                className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
-              />
-            </button>
-            <button
-              onClick={() => onNavigate('phonics', 'phonics_scheme')}
-              data-sound="pop"
-              className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-7 py-1.5 sm:py-2 md:py-3 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-white font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5 md:gap-2"
-            >
-              開始學習 <span className="text-[9px] sm:text-xs">▶</span>
-            </button>
+      {/* 首頁要「一個畫面看完」：桌機左右兩欄——左邊橫幅照原比例滿版（不裁切也
+          不留白邊），右邊四大功能排成 2×2 的橫式小卡。手機才上下堆疊。 */}
+      <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 min-h-0">
+        {/* Hero banner：標題文字已經畫在插畫裡，這裡只留一顆真的按鈕 */}
+        <div className="relative lg:w-[60%] shrink-0 self-start rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(2,132,199,0.2)]">
+          <button
+            onClick={() => onNavigate('phonics', 'phonics_scheme')}
+            aria-label="開始學習"
+            className="block w-full cursor-pointer group"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}images/home/hero.jpg`}
+              alt="歡迎來學台語！用遊戲、互動學習，快樂開口說台語！一起來探索台語的聲音與奧妙！"
+              className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+          </button>
+          <button
+            onClick={() => onNavigate('phonics', 'phonics_scheme')}
+            data-sound="pop"
+            className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-6 py-1.5 md:py-2.5 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-white font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
+          >
+            開始學習 <span className="text-[9px] sm:text-xs">▶</span>
+          </button>
+        </div>
+
+        {/* 四大功能：2×2 橫式小卡 */}
+        <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-3.5 md:p-4 flex flex-col gap-3 flex-1 min-h-0">
+          <div className="flex flex-wrap items-baseline gap-2 shrink-0">
+            <h2 className="font-black text-white text-lg md:text-xl tracking-wide">探索四大功能</h2>
+            <span className="font-black text-cyan-300 text-xs md:text-sm">點卡片就進去</span>
           </div>
 
-          {/* Feature Cards Container */}
-          <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-5 md:p-6 flex flex-col gap-5">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">探索四大功能</h2>
-              <span className="font-black text-cyan-300 text-sm md:text-base">點卡片就進去，四個都跟課本接得起來</span>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-0">
+            {FEATURE_CARDS.map(({ title: cardTitle, desc: cardDesc, button, accent, img }) => {
+              const currentUser = (() => {
+                try {
+                  const stored = localStorage.getItem('tai_lo_user');
+                  return stored ? JSON.parse(stored) : null;
+                } catch (e) {
+                  return null;
+                }
+              })();
+              const isTeacher = currentUser?.role === 'teacher';
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
-              {FEATURE_CARDS.map(({ title: cardTitle, desc: cardDesc, button, accent, img }) => {
-                const currentUser = (() => {
-                  try {
-                    const stored = localStorage.getItem('tai_lo_user');
-                    return stored ? JSON.parse(stored) : null;
-                  } catch (e) {
-                    return null;
-                  }
-                })();
-                const isTeacher = currentUser?.role === 'teacher';
+              const title = (cardTitle === '學習紀錄' && isTeacher) ? '教學後台' : cardTitle;
+              const desc = (cardTitle === '學習紀錄' && isTeacher) ? '學生成效與班級管理' : cardDesc;
+              const buttonText = (cardTitle === '學習紀錄' && isTeacher) ? '進入後台' : button;
 
-                const title = (cardTitle === '學習紀錄' && isTeacher) ? '教學後台' : cardTitle;
-                const desc = (cardTitle === '學習紀錄' && isTeacher) ? '學生作答成效、通關率與教師班級管理。' : cardDesc;
-                const buttonText = (cardTitle === '學習紀錄' && isTeacher) ? '進入後台' : button;
-
-                return (
-                  <button
-                    key={cardTitle}
-                    onClick={() => handleFeatureClick(cardTitle)}
-                    data-sound="pop"
-                    className="group text-left rounded-3xl p-4 md:p-5 flex flex-col gap-3.5 bg-[#040e1c] border-2 transition-all hover:-translate-y-1 active:scale-[0.99] cursor-pointer"
-                    style={{ borderColor: `${accent}59` }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = accent;
-                      e.currentTarget.style.boxShadow = `0 0 24px ${accent}40`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = `${accent}59`;
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
+              return (
+                <button
+                  key={cardTitle}
+                  onClick={() => handleFeatureClick(cardTitle)}
+                  data-sound="pop"
+                  className="group text-left rounded-2xl p-3 flex items-center gap-3 min-h-0 bg-[#040e1c] border-2 transition-all hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer"
+                  style={{ borderColor: `${accent}59` }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = accent;
+                    e.currentTarget.style.boxShadow = `0 0 24px ${accent}40`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = `${accent}59`;
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <div
+                    className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-xl overflow-hidden"
+                    style={{ border: `1px solid ${accent}59` }}
                   >
-                    {/* 插圖 */}
-                    <div
-                      className="w-full aspect-[4/3] rounded-2xl overflow-hidden"
-                      style={{ border: `1px solid ${accent}59` }}
-                    >
-                      <img
-                        src={`${import.meta.env.BASE_URL}${img}`}
-                        alt=""
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
+                    <img
+                      src={`${import.meta.env.BASE_URL}${img}`}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                  </div>
 
-                    <h3 className="font-black text-white text-lg md:text-xl tracking-wide">{title}</h3>
-
-                    <p className="text-xs md:text-sm text-cyan-100/85 font-bold leading-relaxed flex-1">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <h3 className="font-black text-white text-base md:text-lg tracking-wide">{title}</h3>
+                    <p className="text-[11px] md:text-xs text-cyan-100/85 font-bold leading-snug">
                       {desc}
                     </p>
-
                     <span
-                      className="font-black text-sm md:text-base flex items-center gap-1.5"
+                      className="font-black text-xs md:text-sm flex items-center gap-1.5"
                       style={{ color: accent }}
                     >
                       {buttonText}
-                      <span className="text-xs transition-transform group-hover:translate-x-1">❯</span>
+                      <span className="text-[10px] transition-transform group-hover:translate-x-1">❯</span>
                     </span>
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-            {/* Bottom Tip Bar */}
-            <div className="mt-2 pt-4 border-t border-cyan-500/30 flex flex-wrap items-center gap-2 md:gap-3 text-sm md:text-base text-white font-black bg-cyan-950/50 p-4 rounded-2xl border border-cyan-500/40 shadow-sm">
-              <span className="text-xl">💡</span>
-              <span className="font-black text-amber-300 shrink-0">學習小提醒：</span>
-              <span className="text-cyan-100 leading-normal">每天學習 15 分鐘，持續練習，台語會越來越流利！</span>
-            </div>
+          <div className="shrink-0 flex flex-wrap items-center gap-2 text-xs md:text-sm font-black bg-cyan-950/50 px-3 py-2 rounded-xl border border-cyan-500/40">
+            <span>💡</span>
+            <span className="text-amber-300 shrink-0">學習小提醒：</span>
+            <span className="text-cyan-100">每天學習 15 分鐘，台語會越來越流利！</span>
           </div>
         </div>
       </div>
