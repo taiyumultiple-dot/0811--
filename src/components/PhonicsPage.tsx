@@ -26,7 +26,7 @@ import {
   SCHEME_INTRO_LINKS, INPUT_METHODS, CHAR_USAGE_NOTE, DICTIONARIES, LEARNING_RESOURCE_HUB,
   SLIDE_SECTIONS, slideUrl, SLIDE_AUDIO,
   SLIDE_SECTIONS_PRACTICE, slidePracticeUrl, SLIDE_AUDIO_PRACTICE,
-  SLIDE_GROUPS_PRACTICE, practiceGroupContaining,
+  SLIDE_GROUPS, SLIDE_GROUPS_PRACTICE, groupContaining, type SlideGroup,
 } from '../data/phonicsData';
 import LessonAudio, { type LessonAudioHandle } from './LessonAudio';
 
@@ -69,7 +69,11 @@ export default function PhonicsPage({
   const introAudioRef = useRef<LessonAudioHandle>(null);
   const practiceAudioRef = useRef<LessonAudioHandle>(null);
 
-  // --- 拼音方案總覽頁：入門篇 / 練習篇兩本課本切換，各自跟 pptx 節次一致，單張投影片播放的感覺 ---
+  /** 這一節（投影片 lo~hi）裡面有哪幾個課本頁 */
+  const sectionGroups = (all: SlideGroup[], lo: number, hi: number) =>
+    all.filter((g) => g.slides[0] >= lo && g.slides[g.slides.length - 1] <= hi);
+
+  // --- 拼音方案總覽頁：入門篇 / 練習篇兩本課本切換，各自跟 pptx 節次一致，一頁課本一頁的播放感 ---
   const [book, setBook] = useState<'intro' | 'practice'>('intro');
 
   const [schemeTab, setSchemeTab] = useState<
@@ -99,24 +103,22 @@ export default function PhonicsPage({
     setPracticeSlideNum(practiceTabRange(tab)[0]);
   };
 
-  // 左右鍵翻頁，像真的在放 PPT 一樣（入門篇／練習篇各自的投影片範圍；
-  // 練習篇的投影片有分組，翻頁要跳到下一組的第一張，不是單純 +1）
+  // 左右鍵翻頁，像真的在放 PPT 一樣。兩本課本都以「課本頁」為單位翻，
+  // 同一頁課本被拆成的那幾張投影片是一起顯示的，所以翻頁要跳到下一組的第一張。
   useEffect(() => {
     if (activeSidebar !== 'phonics_scheme') return;
-    const [lo, hi] = book === 'intro' ? tabSlideRange(schemeTab) : practiceTabRange(practiceTab);
-    const tabGroups = SLIDE_GROUPS_PRACTICE.filter((g) => g[0] >= lo && g[g.length - 1] <= hi);
+    const intro = book === 'intro';
+    const [lo, hi] = intro ? tabSlideRange(schemeTab) : practiceTabRange(practiceTab);
+    const all = intro ? SLIDE_GROUPS : SLIDE_GROUPS_PRACTICE;
+    const tabGroups = sectionGroups(all, lo, hi);
+    const setNum = intro ? setSlideNum : setPracticeSlideNum;
     const onKey = (e: KeyboardEvent) => {
-      if (book === 'intro') {
-        if (e.key === 'ArrowRight') setSlideNum((n) => Math.min(hi, n + 1));
-        else if (e.key === 'ArrowLeft') setSlideNum((n) => Math.max(lo, n - 1));
-        return;
-      }
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-      setPracticeSlideNum((n) => {
-        const group = practiceGroupContaining(n);
-        const pos = tabGroups.findIndex((g) => g[0] === group[0]);
-        if (e.key === 'ArrowRight') return pos < tabGroups.length - 1 ? tabGroups[pos + 1][0] : hi;
-        return pos > 0 ? tabGroups[pos - 1][0] : lo;
+      setNum((n) => {
+        const group = groupContaining(all, n);
+        const pos = tabGroups.findIndex((g) => g.slides[0] === group.slides[0]);
+        if (e.key === 'ArrowRight') return pos < tabGroups.length - 1 ? tabGroups[pos + 1].slides[0] : hi;
+        return pos > 0 ? tabGroups[pos - 1].slides[0] : lo;
       });
     };
     window.addEventListener('keydown', onKey);
@@ -213,31 +215,43 @@ export default function PhonicsPage({
                   {(() => {
                     const [lo, hi] = tabSlideRange(schemeTab);
                     const n = Math.min(Math.max(slideNum, lo), hi);
+                    const group = groupContaining(SLIDE_GROUPS, n);
                     const sec = SLIDE_SECTIONS.filter((s) => s.tab === schemeTab).find((s) => n >= s.range[0] && n <= s.range[1]);
-                    const audio = SLIDE_AUDIO.find((a) => a.afterSlide === n);
+                    const audio = SLIDE_AUDIO.find((a) => group.slides.includes(a.afterSlide));
+                    // 這一節裡的課本頁清單（同一頁課本的投影片已經合併成一組）
+                    const tabGroups = sectionGroups(SLIDE_GROUPS, lo, hi);
+                    const pos = tabGroups.findIndex((g) => g.slides[0] === group.slides[0]);
+                    const goPrev = () => setSlideNum(pos > 0 ? tabGroups[pos - 1].slides[0] : lo);
+                    const goNext = () => setSlideNum(pos < tabGroups.length - 1 ? tabGroups[pos + 1].slides[0] : hi);
                     return (
                       <div className="flex flex-col gap-3">
-                        {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
+                          {group.page && <span className="font-black text-[#8A8378] text-sm">課本 {group.page}</span>}
+                        </div>
                         <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
                           {audio && <LessonAudio ref={introAudioRef} trackKey={audio.trackKey} attached />}
-                          <div
-                            className={`bg-[#1a1a1a] ${audio ? 'cursor-pointer' : ''}`}
-                            onClick={audio ? () => introAudioRef.current?.toggle() : undefined}
-                            role={audio ? 'button' : undefined}
-                            aria-label={audio ? '播放課本錄音' : undefined}
-                          >
-                            <img
-                              src={`${import.meta.env.BASE_URL}${slideUrl(n)}`}
-                              alt={`課本入門篇第 ${n} 頁`}
-                              className="w-full h-auto block"
-                            />
-                          </div>
+                          {group.slides.map((slideN) => (
+                            <div
+                              key={slideN}
+                              className={`bg-[#1a1a1a] ${audio ? 'cursor-pointer' : ''}`}
+                              onClick={audio ? () => introAudioRef.current?.toggle() : undefined}
+                              role={audio ? 'button' : undefined}
+                              aria-label={audio ? '播放課本錄音' : undefined}
+                            >
+                              <img
+                                src={`${import.meta.env.BASE_URL}${slideUrl(slideN)}`}
+                                alt={`課本入門篇${group.page ? ' ' + group.page : ''}（第 ${slideN} 張）`}
+                                className="w-full h-auto block"
+                              />
+                            </div>
+                          ))}
                         </div>
 
                         <div className="flex items-center justify-between bg-[#FAF8F2] rounded-2xl px-4 py-3">
                           <button
-                            onClick={() => setSlideNum(Math.max(lo, n - 1))}
-                            disabled={n <= lo}
+                            onClick={goPrev}
+                            disabled={pos <= 0}
                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-[#EFE8D8] font-black text-sm text-[#5C5548] hover:border-[#4E9B5D] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                           >
                             <ChevronLeft className="w-4 h-4" /> 上一頁
@@ -251,12 +265,12 @@ export default function PhonicsPage({
                             >
                               <Home className="w-4 h-4 text-[#5C5548]" />
                             </button>
-                            <span className="font-mono font-black text-[#8A8378] text-sm">{n - lo + 1} / {hi - lo + 1}</span>
+                            <span className="font-mono font-black text-[#8A8378] text-sm">{pos + 1} / {tabGroups.length}</span>
                           </div>
 
                           <button
-                            onClick={() => setSlideNum(Math.min(hi, n + 1))}
-                            disabled={n >= hi}
+                            onClick={goNext}
+                            disabled={pos >= tabGroups.length - 1}
                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E9B5D] text-white font-black text-sm hover:bg-[#3E8552] active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                           >
                             下一頁 <ChevronRight className="w-4 h-4" />
@@ -480,20 +494,23 @@ export default function PhonicsPage({
                   {(() => {
                     const [lo, hi] = practiceTabRange(practiceTab);
                     const n = Math.min(Math.max(practiceSlideNum, lo), hi);
-                    const group = practiceGroupContaining(n);
+                    const group = groupContaining(SLIDE_GROUPS_PRACTICE, n);
                     const sec = SLIDE_SECTIONS_PRACTICE.filter((s) => s.tab === practiceTab).find((s) => n >= s.range[0] && n <= s.range[1]);
-                    const audio = SLIDE_AUDIO_PRACTICE.find((a) => group.includes(a.afterSlide));
-                    // 本節內的分組清單（同一個課本頁碼、逐步顯示的投影片已經合併成一組）
-                    const tabGroups = SLIDE_GROUPS_PRACTICE.filter((g) => g[0] >= lo && g[g.length - 1] <= hi);
-                    const pos = tabGroups.findIndex((g) => g[0] === group[0]);
-                    const goPrev = () => setPracticeSlideNum(pos > 0 ? tabGroups[pos - 1][0] : lo);
-                    const goNext = () => setPracticeSlideNum(pos < tabGroups.length - 1 ? tabGroups[pos + 1][0] : hi);
+                    const audio = SLIDE_AUDIO_PRACTICE.find((a) => group.slides.includes(a.afterSlide));
+                    // 本節內的課本頁清單（同一頁課本的投影片已經合併成一組）
+                    const tabGroups = sectionGroups(SLIDE_GROUPS_PRACTICE, lo, hi);
+                    const pos = tabGroups.findIndex((g) => g.slides[0] === group.slides[0]);
+                    const goPrev = () => setPracticeSlideNum(pos > 0 ? tabGroups[pos - 1].slides[0] : lo);
+                    const goNext = () => setPracticeSlideNum(pos < tabGroups.length - 1 ? tabGroups[pos + 1].slides[0] : hi);
                     return (
                       <div className="flex flex-col gap-3">
-                        {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          {sec?.title && <h3 className="font-black text-[#3E2723] text-lg">{sec.title}</h3>}
+                          {group.page && <span className="font-black text-[#8A8378] text-sm">課本 {group.page}</span>}
+                        </div>
                         <div className="rounded-2xl overflow-hidden border border-[#EFE8D8] shadow-md">
                           {audio && <LessonAudio ref={practiceAudioRef} trackKey={audio.trackKey} attached />}
-                          {group.map((slideN) => (
+                          {group.slides.map((slideN) => (
                             <div
                               key={slideN}
                               className={`bg-[#1a1a1a] ${audio ? 'cursor-pointer' : ''}`}
@@ -503,7 +520,7 @@ export default function PhonicsPage({
                             >
                               <img
                                 src={`${import.meta.env.BASE_URL}${slidePracticeUrl(slideN)}`}
-                                alt={`課本練習篇第 ${slideN} 頁`}
+                                alt={`課本練習篇${group.page ? ' ' + group.page : ''}（第 ${slideN} 張）`}
                                 className="w-full h-auto block"
                               />
                             </div>

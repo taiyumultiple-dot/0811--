@@ -453,11 +453,11 @@ export const SLIDE_AUDIO: { afterSlide: number; trackKey: string }[] = [
 // 共 108 張，依課本章節分成 5 段。
 
 export const SLIDE_SECTIONS_PRACTICE: { tab: string; title: string; range: [number, number] }[] = [
-  { tab: 'warmup', title: '暖身：講我的名', range: [1, 4] },
-  { tab: 'tones', title: '聲調與變調練習（P.28-30）', range: [5, 19] },
-  { tab: 'initials_finals', title: '聲母韻母學習步驟（P.31-33）', range: [20, 29] },
-  { tab: 'tone_marks', title: '調號書寫練習', range: [30, 34] },
-  { tab: 'drills', title: '10 分鐘練武功：逐聲母例字（P.36-53）', range: [35, 108] },
+  { tab: 'warmup', title: '暖身：講我的名（P.28）', range: [1, 7] },
+  { tab: 'tones', title: '聲調與變調練習（P.29-30）', range: [8, 19] },
+  { tab: 'initials_finals', title: '聲母韻母學習步驟（P.31-32）', range: [20, 28] },
+  { tab: 'tone_marks', title: '調號書寫練習（P.33-34）', range: [29, 34] },
+  { tab: 'drills', title: '10 分鐘練武功：逐聲母例字（P.35-53）', range: [35, 108] },
 ];
 
 export function slidePracticeUrl(n: number): string {
@@ -488,20 +488,43 @@ export const SLIDE_AUDIO_PRACTICE: { afterSlide: number; trackKey: string }[] = 
   { afterSlide: 105, trackKey: 'initial-zero' }, // P.53
 ];
 
-/** pptx 裡同一個課本頁碼常被拆成好幾張「逐步顯示」的投影片（每張只多露出一行）。
- *  用 python-pptx 核對每張投影片的文字內容，把相鄰、標題文字完全一樣的投影片歸成
- *  同一組，頁面播放器一次顯示同一組全部投影片（由上往下疊），不用為了同一頁課本
- *  翻好幾次頁。2026-08-18 產生。 */
-export const SLIDE_GROUPS_PRACTICE: number[][] = [
-  [1], [2], [3, 4], [5, 6, 7], [8], [9, 10, 11], [12], [13, 14, 15, 16, 17, 18, 19],
-  [20], [21], [22, 23], [24], [25, 26], [27], [28], [29], [30, 31, 32, 33, 34],
-  [35], [36], [37, 38], [39], [40], [41, 42], [43], [44], [45, 46], [47], [48],
-  [49, 50], [51], [52], [53, 54], [55], [56], [57, 58], [59], [60], [61, 62], [63], [64],
-  [65, 66], [67], [68], [69, 70], [71], [72], [73, 74], [75], [76], [77, 78], [79], [80],
-  [81, 82], [83], [84], [85, 86], [87], [88], [89, 90], [91], [92], [93, 94], [95], [96],
-  [97, 98], [99], [100], [101, 102], [103], [104], [105, 106], [107], [108],
+/** 課本同一頁常被拆成好幾張投影片（有的是逐步顯示，有的是同一張表格分批列出，
+ *  有的是「點選放大」的全螢幕圖）。頁碼直接讀自 pptx 每張投影片的文字（P.xx），
+ *  同一個課本頁碼的投影片歸成一組，播放器一次把整組由上往下顯示完，
+ *  這樣「一頁課本＝網頁上的一頁」，不用為了同一頁翻好幾次。
+ *  沒有頁碼的封面、目錄、節次跨頁自成一組；沒頁碼又緊接在某頁後面的（放大圖）
+ *  併進前一頁。2026-08-19 依 pptx 重新產生。 */
+export type SlideGroup = { page: string | null; slides: number[] };
+
+/** 入門篇 100 張投影片 → 32 頁 */
+export const SLIDE_GROUPS: SlideGroup[] = [
+  { page: null, slides: [1] }, { page: null, slides: [2] }, { page: null, slides: [3] },
+  { page: 'P.04', slides: [4, 5, 6] }, { page: 'P.05', slides: [7, 8] }, { page: null, slides: [9] },
+  { page: 'P.06', slides: [10, 11] }, { page: 'P.07', slides: [12, 13, 14, 15] }, { page: 'P.08', slides: [16, 17, 18, 19, 20, 21] },
+  { page: 'P.09', slides: [22, 23, 24] }, { page: null, slides: [25] }, { page: 'P.10', slides: [26, 27] },
+  { page: 'P.11', slides: [28, 29, 30, 31, 32, 33, 34] }, { page: 'P.12', slides: [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48] }, { page: 'P.13', slides: [49, 50, 51, 52, 53, 54, 55, 56, 57] },
+  { page: null, slides: [58] }, { page: 'P.14', slides: [59, 60, 61] }, { page: 'P.15', slides: [62] },
+  { page: 'P.16', slides: [63, 64, 65] }, { page: 'P.17', slides: [66, 67] }, { page: 'P.18', slides: [68, 69] },
+  { page: 'P.19', slides: [70, 71, 72, 73] }, { page: null, slides: [74] }, { page: 'P.20', slides: [75, 76, 77, 78] },
+  { page: 'P.21', slides: [79, 80, 81] }, { page: null, slides: [82] }, { page: 'P.22', slides: [83, 84, 85] },
+  { page: 'P.23', slides: [86, 87, 88, 89, 90] }, { page: 'P.24', slides: [91, 92, 93] }, { page: 'P.25', slides: [94, 95, 96, 97] },
+  { page: null, slides: [98] }, { page: 'P.26', slides: [99, 100] },
 ];
 
-export function practiceGroupContaining(n: number): number[] {
-  return SLIDE_GROUPS_PRACTICE.find((g) => g.includes(n)) ?? [n];
+/** 練習篇 108 張投影片 → 28 頁 */
+export const SLIDE_GROUPS_PRACTICE: SlideGroup[] = [
+  { page: null, slides: [1] }, { page: null, slides: [2] }, { page: 'P.28', slides: [3, 4, 5, 6, 7] },
+  { page: 'P.29', slides: [8, 9, 10, 11] }, { page: 'P.30', slides: [12, 13, 14, 15, 16, 17, 18, 19] }, { page: 'P.31', slides: [20, 21, 22, 23] },
+  { page: 'P.32', slides: [24, 25, 26, 27, 28] }, { page: 'P.33', slides: [29, 30, 31] }, { page: 'P.34', slides: [32, 33, 34] },
+  { page: 'P.35', slides: [35, 36] }, { page: 'P.36', slides: [37, 38, 39, 40] }, { page: 'P.37', slides: [41, 42, 43, 44] },
+  { page: 'P.38', slides: [45, 46, 47, 48] }, { page: 'P.39', slides: [49, 50, 51, 52] }, { page: 'P.40', slides: [53, 54, 55, 56] },
+  { page: 'P.41', slides: [57, 58, 59, 60] }, { page: 'P.42', slides: [61, 62, 63, 64] }, { page: 'P.43', slides: [65, 66, 67, 68] },
+  { page: 'P.44', slides: [69, 70, 71, 72] }, { page: 'P.45', slides: [73, 74, 75, 76] }, { page: 'P.46', slides: [77, 78, 79, 80] },
+  { page: 'P.47', slides: [81, 82, 83, 84] }, { page: 'P.48', slides: [85, 86, 87, 88] }, { page: 'P.49', slides: [89, 90, 91, 92] },
+  { page: 'P.50', slides: [93, 94, 95, 96] }, { page: 'P.51', slides: [97, 98, 99, 100] }, { page: 'P.52', slides: [101, 102, 103, 104] },
+  { page: 'P.53', slides: [105, 106, 107, 108] },
+];
+
+export function groupContaining(groups: SlideGroup[], n: number): SlideGroup {
+  return groups.find((g) => g.slides.includes(n)) ?? { page: null, slides: [n] };
 }
