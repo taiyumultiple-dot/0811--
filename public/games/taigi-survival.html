@@ -1329,8 +1329,9 @@ function nextQuestion(){
 }
 
 function currentDistractorCount(){
-  // 難度提升時增加干擾隕石數量（對應規格「難度2：出現5個答案」）
-  return state.difficultyLevel >= 2 ? 4 : 3;
+  // 2026-08-19 使用者反應答案隕石太多、太擠，容易手滑撞錯——調降干擾隕石數量
+  // （原本難度1是3個、難度2是4個，現在改成2個／3個，畫面上同時出現的答案變少）。
+  return state.difficultyLevel >= 2 ? 3 : 2;
 }
 
 function spawnAsteroidsForCurrentQuestion(){
@@ -1348,18 +1349,24 @@ function spawnAsteroidsForCurrentQuestion(){
   const chosen = [q.correct].concat(pool.slice(0, needed));
   const items = shuffle(chosen);
   items.forEach((it,idx)=>{
-    asteroids.push(makeAsteroid(it, it.hanji===q.correct.hanji));
+    asteroids.push(makeAsteroid(it, it.hanji===q.correct.hanji, idx, items.length));
   });
 }
 
-function makeAsteroid(item, isCorrect){
+function makeAsteroid(item, isCorrect, idx, total){
   const speedBase = 55 + state.difficultyLevel*14;
+  // 2026-08-19 使用者反應單字容易撞錯——把畫面高度切成 total 個區塊，每顆隕石
+  // 各自落在自己的區塊裡，彼此保持最小垂直間距；出場的水平位置也依序錯開，
+  // 不會同時擠在同一批飛進畫面，讓學生有更多空間跟時間分辨、瞄準正確答案。
+  const bandH = (H-140) / Math.max(total,1);
+  const bandTop = 70 + bandH*idx;
+  const margin = bandH*0.18;
   return {
     id: Math.random().toString(36).slice(2),
-    x: W + rand(40,220),
-    y: rand(70, H-70),
+    x: W + rand(60,180) + idx*160,
+    y: rand(bandTop+margin, bandTop+bandH-margin),
     vx: -rand(speedBase*0.85, speedBase*1.15),
-    vy: rand(-8,8),
+    vy: rand(-6,6),
     radius: rand(34,42),
     hanji: item.hanji,
     tailo: item.tailo,
