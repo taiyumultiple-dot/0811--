@@ -437,14 +437,17 @@ export function slideUrl(n: number): string {
 }
 
 /** 投影片本身在 pptx 裡就掛了播放圖示、按「投放」會出聲的那幾張，
- *  核對自 pptx XML 的 audioFile 關聯（第幾張投影片連到哪個 media 檔），
- *  音檔一律接在該範圍第一張投影片後面（原本簡報也是整段播一次）。 */
+ *  核對自 pptx 每張投影片的 rels（第幾張投影片關聯到哪個 media 檔）。
+ *  一段錄音常常橫跨同一個課本頁的好幾張投影片，甚至跨到下一頁（例如韻母
+ *  那段從投影片 35 一路關聯到 50，橫跨 P.12 與 P.13），所以**每個有掛到
+ *  該 media 的課本頁都要各給一筆**，那一頁才會出現播放鈕、點圖也才會出聲。 */
 export const SLIDE_AUDIO: { afterSlide: number; trackKey: string }[] = [
-  { afterSlide: 15, trackKey: 'tone-system' },       // P.07 聲調系統，media1.wav
-  { afterSlide: 21, trackKey: 'tone-sandhi-chart' }, // P.08 變調圖，media2.wav
-  { afterSlide: 24, trackKey: 'tone-derived' },      // P.09 衍生調，media3.wav
-  { afterSlide: 28, trackKey: 'initials-overview' }, // P.10-11 聲母，media4.wav
-  { afterSlide: 35, trackKey: 'finals-overview' },   // P.12-13 韻母，media5.wav
+  { afterSlide: 15, trackKey: 'tone-system' },       // P.07 聲調系統，media1（投影片 13、15）
+  { afterSlide: 21, trackKey: 'tone-sandhi-chart' }, // P.08 變調圖，media2（投影片 21）
+  { afterSlide: 24, trackKey: 'tone-derived' },      // P.09 衍生調，media3（投影片 24）
+  { afterSlide: 28, trackKey: 'initials-overview' }, // P.11 聲母，media4（投影片 28-32）
+  { afterSlide: 35, trackKey: 'finals-overview' },   // P.12 韻母，media5（投影片 35-48）
+  { afterSlide: 49, trackKey: 'finals-overview' },   // P.13 也掛同一段（media5 一路關聯到投影片 50）
 ];
 
 // ---------------------------------------------------------------------------

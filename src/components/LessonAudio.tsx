@@ -86,7 +86,10 @@ const LessonAudio = forwardRef<LessonAudioHandle, {
       </button>
       <div className="flex flex-col">
         <span className="font-black text-[#2D2A26] text-base">🎧 {title ?? `課本錄音：${meta.label}`}</span>
-        <span className="text-[#8A8378] font-bold text-sm">課本 {meta.page}</span>
+        <span className="text-[#8A8378] font-bold text-sm">
+          課本 {meta.page}
+          {attached && <span className="ml-2">・點下面的課本圖也可以播</span>}
+        </span>
       </div>
     </div>
   );
