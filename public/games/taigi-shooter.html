@@ -173,6 +173,23 @@
   table.review td.no{ color:var(--red); font-weight:700; }
   .result-btns{ display:flex; gap:12px; margin-top:4px; }
 </style>
+<style id="paper-skin">
+/* ---- 水彩紙感皮膚（2026-08-19 外掛，不動原本結構） ---- */
+:root{
+  --bg-deep:#243352; --bg-panel:#2E4064;
+  --cyan:#F3E8D2; --cyan-dim:#7C8CAF;
+  --orange:#E4772E; --green:#8CC7A1; --red:#E08A7A;
+  --text:#FBF6EA; --text-dim:#B9C3D6;
+}
+html,body{ background:#1B2740; }
+#app{ background:radial-gradient(ellipse at 50% 0%, #3A4E78 0%, #243352 55%, #1B2740 100%); }
+.stage{ background:var(--bg-deep); box-shadow:0 10px 40px rgba(27,39,64,.45); border-radius:18px; }
+.btn{
+  background:linear-gradient(180deg,#FDFAF4,#F1ECE0);
+  border:2px solid #E4772E; color:#8A4B1E;
+  box-shadow:0 3px 10px rgba(27,39,64,.35);
+}
+</style>
 </head>
 <body>
 <div id="app">

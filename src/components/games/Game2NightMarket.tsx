@@ -35,7 +35,7 @@ export default function Game2NightMarket({
 
   return (
     <div ref={wrapRef} className="fixed inset-0 bg-black flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-950 border-b border-cyan-500/20 shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 bg-[#FDFAF4] border-b border-[#E7DFCF] shrink-0">
         <button
           onClick={onHome}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-slate-900 border border-cyan-500/40 text-cyan-400 text-xs font-black hover:bg-slate-800 transition-colors cursor-pointer"

@@ -437,7 +437,7 @@ export default function Game7Airport({ onNext, onHome }: { onNext: () => void; o
               className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                 mode === 'basic'
                   ? 'bg-sky-500 text-white shadow-sm'
-                  : 'text-sky-300/70 hover:text-white'
+                  : 'text-sky-300/70 hover:text-[#3E2723]'
               }`}
             >
               基礎 (漢字)
@@ -447,7 +447,7 @@ export default function Game7Airport({ onNext, onHome }: { onNext: () => void; o
               className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                 mode === 'standard'
                   ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-emerald-300/70 hover:text-white'
+                  : 'text-emerald-300/70 hover:text-[#3E2723]'
               }`}
             >
               標準 (漢字+臺羅)
@@ -457,7 +457,7 @@ export default function Game7Airport({ onNext, onHome }: { onNext: () => void; o
               className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                 mode === 'challenge'
                   ? 'bg-amber-500 text-white shadow-sm'
-                  : 'text-amber-300/70 hover:text-white'
+                  : 'text-amber-300/70 hover:text-[#3E2723]'
               }`}
             >
               挑戰 (純臺羅)
@@ -742,7 +742,7 @@ export default function Game7Airport({ onNext, onHome }: { onNext: () => void; o
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-50 p-6 flex flex-col items-center justify-center text-center overflow-y-auto"
+              className="absolute inset-0 bg-[#FDFAF4]/90 backdrop-blur-md z-50 p-6 flex flex-col items-center justify-center text-center overflow-y-auto"
             >
               <div className="bg-[#0F172A] border-2 border-emerald-500/60 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl flex flex-col items-center gap-5 text-white">
                 <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-3xl animate-bounce">
