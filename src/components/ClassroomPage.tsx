@@ -133,12 +133,12 @@ export default function ClassroomPage({
             <button
               onClick={() => setOpen(null)}
               data-sound="pop"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-950 border-2 border-cyan-500/50 text-cyan-100 hover:text-white hover:bg-cyan-900 font-black text-sm md:text-base transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F5F0E4] border-2 border-[#E7DFCF] text-[#5C5548] hover:text-[#3E2723] hover:bg-[#F1ECE0] font-black text-sm md:text-base transition-all active:scale-95 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" strokeWidth={2.5} />
               <span>回到課堂小工具</span>
             </button>
-            <h2 className="font-black text-white text-lg md:text-2xl flex items-center gap-2">
+            <h2 className="font-black text-[#3E2723] text-lg md:text-2xl flex items-center gap-2">
               <span>{activeTool.emoji}</span>
               {activeTool.name}
             </h2>
@@ -178,23 +178,23 @@ export default function ClassroomPage({
   // ── 工具卡牆 ──
   return (
     <HubShell activeKey="classroom" onHome={() => onNavigate('home')}>
-      <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-5 md:p-6 flex flex-col gap-6 flex-1">
+      <div className="bg-[#FFFDF9] border-2 border-[#E7DFCF] rounded-3xl shadow-sm p-5 md:p-6 flex flex-col gap-6 flex-1">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧑‍🏫</span>
-            <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">課堂小工具</h2>
-            <span className="text-amber-300 font-black text-sm md:text-base">不用網路、不用 AI，開了就能投影</span>
+            <h2 className="font-black text-[#3E2723] text-xl md:text-2xl tracking-wide">課堂小工具</h2>
+            <span className="text-[#E4772E] font-black text-sm md:text-base">不用網路、不用 AI，開了就能投影</span>
           </div>
 
           <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400 pointer-events-none" strokeWidth={2.5} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8A8378] pointer-events-none" strokeWidth={2.5} />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜尋工具…"
               aria-label="搜尋工具"
-              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-[#030b17] border-2 border-cyan-500/40 focus:border-cyan-300 outline-hidden text-white font-black text-sm md:text-base placeholder:text-cyan-200/50 transition-colors"
+              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] focus:border-cyan-300 outline-hidden text-[#3E2723] font-black text-sm md:text-base placeholder:text-[#A79E8C] transition-colors"
             />
           </div>
         </div>
@@ -207,8 +207,8 @@ export default function ClassroomPage({
             <div key={cat.key} className="flex flex-col gap-4">
               <div className="flex flex-wrap items-baseline gap-2 border-l-4 border-amber-300 pl-3">
                 <span className="text-xl">{cat.emoji}</span>
-                <h3 className="font-black text-white text-lg md:text-xl tracking-wide">{cat.label}</h3>
-                <span className="font-black text-cyan-300 text-xs md:text-sm">{cat.hint}</span>
+                <h3 className="font-black text-[#3E2723] text-lg md:text-xl tracking-wide">{cat.label}</h3>
+                <span className="font-black text-[#8A8378] text-xs md:text-sm">{cat.hint}</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
@@ -217,20 +217,20 @@ export default function ClassroomPage({
                     key={tool.key}
                     onClick={() => setOpen(tool.key)}
                     data-sound="pop"
-                    className="text-left rounded-2xl bg-[#030b17] p-4 md:p-5 flex flex-col gap-3 border-2 border-cyan-500/40 hover:border-cyan-300 shadow-xl transition-all group hover:-translate-y-0.5 cursor-pointer"
+                    className="text-left rounded-2xl bg-[#FFFDF9] p-4 md:p-5 flex flex-col gap-3 border-2 border-[#E7DFCF] hover:border-[#4E9B5D] shadow-xl transition-all group hover:-translate-y-0.5 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl shrink-0 bg-cyan-950/80 border border-cyan-400/60 shadow-sm flex items-center justify-center text-2xl">
+                      <div className="w-12 h-12 rounded-xl shrink-0 bg-[#F5F0E4] border border-[#E7DFCF] shadow-sm flex items-center justify-center text-2xl">
                         {tool.emoji}
                       </div>
-                      <div className="font-black text-white text-base md:text-lg leading-snug group-hover:text-amber-300 transition-colors">
+                      <div className="font-black text-[#3E2723] text-base md:text-lg leading-snug group-hover:text-[#E4772E] transition-colors">
                         {tool.name}
                       </div>
                     </div>
 
-                    <p className="text-xs md:text-sm text-cyan-50 font-black leading-relaxed flex-1">{tool.desc}</p>
+                    <p className="text-xs md:text-sm text-[#5C5548] font-black leading-relaxed flex-1">{tool.desc}</p>
 
-                    <span className="w-full py-2.5 rounded-xl font-black text-sm md:text-base bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 shadow-md flex items-center justify-center gap-1.5">
+                    <span className="w-full py-2.5 rounded-xl font-black text-sm md:text-base bg-[#4E9B5D] text-white shadow-md flex items-center justify-center gap-1.5">
                       開始使用 <span className="text-xs font-bold">❯</span>
                     </span>
                   </button>
@@ -242,8 +242,8 @@ export default function ClassroomPage({
 
         {ALL_TOOLS.filter(matched).length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <Wrench className="w-10 h-10 text-cyan-500/60" strokeWidth={2.5} />
-            <p className="text-cyan-100 font-black text-base">找不到「{search}」相關的工具</p>
+            <Wrench className="w-10 h-10 text-[#5C5548]0/60" strokeWidth={2.5} />
+            <p className="text-[#5C5548] font-black text-base">找不到「{search}」相關的工具</p>
           </div>
         )}
 

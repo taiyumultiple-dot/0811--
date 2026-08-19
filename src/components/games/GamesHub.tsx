@@ -26,47 +26,47 @@ export default function GamesHub({
 }) {
   return (
     <HubShell activeKey="games" onHome={onHome}>
-      <div className="bg-[#030b17]/95 backdrop-blur-md rounded-[28px] border-2 border-cyan-500/40 shadow-[0_0_30px_rgba(2,132,199,0.2)] p-4 md:p-6 lg:p-7 flex-1 flex flex-col gap-5">
+      <div className="bg-[#FFFDF9]  rounded-[28px] border-2 border-[#E7DFCF] shadow-md p-4 md:p-6 lg:p-7 flex-1 flex flex-col gap-5">
         <div className="flex flex-wrap items-baseline gap-2">
-          <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">互動遊戲</h2>
-          <span className="font-black text-cyan-300 text-sm md:text-base">
+          <h2 className="font-black text-[#3E2723] text-xl md:text-2xl tracking-wide">互動遊戲</h2>
+          <span className="font-black text-[#8A8378] text-sm md:text-base">
             十款遊戲，題目都取自課本詞彙與鹿港在地文化
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4 md:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {GAMES.map((g) => (
             <button
               key={g.key}
               onClick={() => onSelectGame(g.key)}
               data-sound="pop"
-              className="group text-left rounded-3xl p-3.5 md:p-4 flex flex-col gap-3 bg-[#040e1c] border-2 border-cyan-500/35 hover:border-cyan-300 hover:-translate-y-1 hover:shadow-[0_0_24px_rgba(34,211,238,0.25)] active:scale-[0.99] transition-all cursor-pointer"
+              className="group text-left rounded-2xl p-2.5 md:p-3 flex flex-col gap-2 bg-white border-2 border-[#E7DFCF] hover:border-[#4E9B5D] hover:-translate-y-1 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
             >
               {/* 插畫＋編號 */}
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden border border-cyan-500/35">
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-[#E7DFCF]">
                 <img
                   src={gameArt(g.id)}
                   alt=""
                   loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <span className="absolute top-2 left-2 w-8 h-8 rounded-xl bg-[#030b17]/85 border border-cyan-400 text-white font-black text-sm flex items-center justify-center shadow-md">
+                <span className="absolute top-2 left-2 w-8 h-8 rounded-xl bg-[#FFFDF9]/85 border border-[#D9CFB8] text-[#3E2723] font-black text-sm flex items-center justify-center shadow-md">
                   {String(g.id).padStart(2, '0')}
                 </span>
-                <span className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-[#030b17]/85 border border-amber-300/70 text-amber-300 font-black text-[11px] shadow-md">
+                <span className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-[#FFFDF9]/85 border border-amber-300/70 text-[#E4772E] font-black text-[11px] shadow-md">
                   {CATEGORY_LABEL[g.category]}
                 </span>
               </div>
 
-              <h3 className="font-black text-white text-base md:text-lg leading-snug tracking-wide">
+              <h3 className="font-black text-[#3E2723] text-base md:text-lg leading-snug tracking-wide">
                 {g.title}
               </h3>
 
-              <p className="text-xs md:text-sm text-cyan-100/85 font-bold leading-relaxed flex-1">
+              <p className="text-xs md:text-sm text-[#6B6357] font-bold leading-relaxed flex-1">
                 {g.desc}
               </p>
 
-              <span className="font-black text-sm md:text-base text-emerald-300 flex items-center gap-1.5">
+              <span className="font-black text-sm md:text-base text-[#4E9B5D] flex items-center gap-1.5">
                 進入遊戲
                 <span className="text-xs transition-transform group-hover:translate-x-1">❯</span>
               </span>

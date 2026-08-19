@@ -236,7 +236,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
     return (
       <HubShell activeKey="record" onHome={() => onNavigate('home')}>
         <div className="w-full flex flex-col gap-4">
-          <Suspense fallback={<div className="text-center text-cyan-300 py-10 font-black">載入教學後台中…</div>}>
+          <Suspense fallback={<div className="text-center text-[#8A8378] py-10 font-black">載入教學後台中…</div>}>
             <TeacherDashboard embedded={true} teacherName={currentUser?.name || '林國華 老師'} />
           </Suspense>
         </div>
@@ -250,13 +250,13 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 p-2 flex-1">
         
         {/* Banner Headers */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-cyan-500/30 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E7DFCF] pb-5">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="font-black text-white text-2xl md:text-3xl flex items-center gap-2">
+              <h1 className="font-black text-[#3E2723] text-2xl md:text-3xl flex items-center gap-2">
                 <span>{isTeacher ? '👨‍🏫' : '📊'}</span> {isTeacher ? '教學後台 (全班學習狀況概覽)' : '我的台語學習紀錄'}
               </h1>
-              <span className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-400 text-emerald-300 text-xs font-black animate-pulse">
+              <span className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-400 text-[#4E9B5D] text-xs font-black animate-pulse">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                 實時同步中 {lastSyncTime}
               </span>
@@ -280,14 +280,14 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+              className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:bg-[#3E8552] active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
             >
               <PlusCircle className="w-4 h-4" /> 新增測驗紀錄
             </button>
 
             <button
               onClick={loadRecords}
-              className={`p-2 rounded-xl text-cyan-300 border border-cyan-500/40 bg-cyan-950/60 hover:bg-cyan-900/80 cursor-pointer transition-all ${isSyncing ? 'animate-spin' : ''}`}
+              className={`p-2 rounded-xl text-[#8A8378] border border-[#E7DFCF] bg-[#F5F0E4]/60 hover:bg-[#F1ECE0]/80 cursor-pointer transition-all ${isSyncing ? 'animate-spin' : ''}`}
               title="重新載入"
             >
               <RefreshCw className="w-4 h-4" />
@@ -305,13 +305,13 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
         </div>
 
         {/* --- 分頁切換列 (Tab Bar) --- */}
-        <div className="flex items-center gap-3 border-b border-cyan-500/30 pb-3">
+        <div className="flex items-center gap-3 border-b border-[#E7DFCF] pb-3">
           <button
             onClick={() => setActiveTab('stats')}
             className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'stats'
                 ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md scale-102'
-                : 'bg-[#071322] border border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/50'
+                : 'bg-[#FFFDF9] border border-[#E7DFCF] text-cyan-200 hover:bg-[#F1ECE0]/50'
             }`}
           >
             <BarChart2 className="w-4 h-4" />
@@ -323,14 +323,14 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
             className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'vocab'
                 ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 shadow-md scale-102'
-                : 'bg-[#071322] border border-amber-500/30 text-amber-200 hover:bg-amber-900/50'
+                : 'bg-[#FFFDF9] border border-amber-500/30 text-amber-200 hover:bg-amber-900/50'
             }`}
           >
             <Bookmark className="w-4 h-4 fill-amber-300" />
             <span>📖 我的單字本</span>
             <span
               className={`px-2 py-0.5 rounded-full text-xs font-black ${
-                activeTab === 'vocab' ? 'bg-slate-950 text-amber-300' : 'bg-amber-500/20 text-amber-300'
+                activeTab === 'vocab' ? 'bg-slate-950 text-[#E4772E]' : 'bg-amber-500/20 text-[#E4772E]'
               }`}
             >
               {favorites.length}
@@ -341,10 +341,10 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
         {activeTab === 'vocab' ? (
           <div className="flex flex-col gap-6">
             {/* 頂部功能與搜尋區域 */}
-            <div className="bg-[#071322] border-2 border-amber-400/50 rounded-3xl p-5 md:p-6 shadow-[0_0_20px_rgba(217,119,6,0.15)] flex flex-col gap-4">
+            <div className="bg-[#FFFDF9] border-2 border-amber-400/50 rounded-3xl p-5 md:p-6 shadow-[0_0_20px_rgba(217,119,6,0.15)] flex flex-col gap-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h2 className="font-black text-white text-xl md:text-2xl flex items-center gap-2">
+                  <h2 className="font-black text-[#3E2723] text-xl md:text-2xl flex items-center gap-2">
                     <BookOpen className="w-6 h-6 text-amber-400" />
                     我的台語詞彙單字本
                   </h2>
@@ -359,7 +359,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                       <button
                         onClick={handleAutoPlayAll}
                         disabled={isAutoPlaying || filteredFavorites.length === 0}
-                        className={`px-4 py-2 rounded-xl text-xs md:text-sm font-black text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 hover:brightness-110 transition-all flex items-center gap-1.5 cursor-pointer shadow-md ${
+                        className={`px-4 py-2 rounded-xl text-xs md:text-sm font-black text-slate-950 bg-gradient-to-r from-amber-400 to-orange-400 hover:bg-[#3E8552] transition-all flex items-center gap-1.5 cursor-pointer shadow-md ${
                           isAutoPlaying ? 'animate-pulse opacity-80' : ''
                         }`}
                       >
@@ -381,20 +381,20 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
               {/* 搜尋列與分類標籤 */}
               {favorites.length > 0 && (
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 pt-3 border-t border-cyan-500/20">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 pt-3 border-t border-[#EFE8D8]">
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-[#8A8378] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={vocabSearch}
                       onChange={(e) => setVocabSearch(e.target.value)}
                       placeholder="搜尋漢字、台羅拼音或華語釋義..."
-                      className="w-full bg-[#030b17] border border-cyan-500/30 rounded-xl pl-10 pr-8 py-2 text-sm font-bold text-white placeholder-cyan-500/50 focus:outline-none focus:border-amber-400"
+                      className="w-full bg-[#FFFDF9] border border-[#E7DFCF] rounded-xl pl-10 pr-8 py-2 text-sm font-bold text-[#3E2723] placeholder-cyan-500/50 focus:outline-none focus:border-amber-400"
                     />
                     {vocabSearch && (
                       <button
                         onClick={() => setVocabSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400 text-xs font-black hover:text-white"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8378] text-xs font-black hover:text-[#3E2723]"
                       >
                         ✕
                       </button>
@@ -409,7 +409,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                         className={`px-3 py-1.5 rounded-lg text-xs font-black shrink-0 transition-all cursor-pointer ${
                           selectedVocabCategory === cat
                             ? 'bg-amber-400 text-slate-950 font-black shadow-sm'
-                            : 'bg-cyan-950/80 text-cyan-200 border border-cyan-500/30 hover:bg-cyan-900/60'
+                            : 'bg-[#F5F0E4] text-cyan-200 border border-[#E7DFCF] hover:bg-[#F1ECE0]'
                         }`}
                       >
                         {cat}
@@ -435,12 +435,12 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                       className={`relative p-5 rounded-3xl bg-[#08182B] border-2 transition-all cursor-pointer flex flex-col justify-between group hover:-translate-y-1 ${
                         isPlaying
                           ? 'border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.3)] bg-[#0C223C]'
-                          : 'border-cyan-500/30 hover:border-amber-400/70 hover:shadow-lg'
+                          : 'border-[#E7DFCF] hover:border-amber-400/70 hover:shadow-lg'
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/30 text-cyan-300 text-[11px] font-black">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#F5F0E4] border border-[#E7DFCF] text-[#8A8378] text-[11px] font-black">
                             {item.category || '拼音單字'}
                           </span>
                           <button
@@ -452,14 +452,14 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                           </button>
                         </div>
 
-                        <div className="text-3xl font-black text-white mb-1 tracking-wide flex items-center gap-2">
+                        <div className="text-3xl font-black text-[#3E2723] mb-1 tracking-wide flex items-center gap-2">
                           <span>{item.hanzi}</span>
                           {isPlaying && (
                             <span className="text-amber-400 text-xs font-bold animate-bounce">🔊 發音中</span>
                           )}
                         </div>
 
-                        <div className="text-sm font-mono font-black text-amber-300 bg-amber-950/40 border border-amber-500/30 px-3 py-1 rounded-xl w-fit mb-2">
+                        <div className="text-sm font-mono font-black text-[#E4772E] bg-amber-950/40 border border-amber-500/30 px-3 py-1 rounded-xl w-fit mb-2">
                           {item.tailo}
                         </div>
 
@@ -470,9 +470,9 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                         )}
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-cyan-500/20 flex items-center justify-between text-xs text-cyan-300/60 font-bold">
+                      <div className="mt-4 pt-3 border-t border-[#EFE8D8] flex items-center justify-between text-xs text-[#8A8378]/60 font-bold">
                         <span>點擊卡片聽發音</span>
-                        <div className="w-8 h-8 rounded-full bg-amber-400/20 group-hover:bg-amber-400 text-amber-300 group-hover:text-slate-950 flex items-center justify-center transition-all">
+                        <div className="w-8 h-8 rounded-full bg-amber-400/20 group-hover:bg-amber-400 text-[#E4772E] group-hover:text-slate-950 flex items-center justify-center transition-all">
                           <Volume2 className="w-4 h-4" />
                         </div>
                       </div>
@@ -481,7 +481,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 })}
               </div>
             ) : favorites.length > 0 ? (
-              <div className="text-center py-12 bg-[#071322] rounded-3xl border border-cyan-500/30 text-cyan-200">
+              <div className="text-center py-12 bg-[#FFFDF9] rounded-3xl border border-[#E7DFCF] text-cyan-200">
                 <p className="text-base font-bold mb-2">找不到符合「{vocabSearch}」的收藏單字</p>
                 <button
                   onClick={() => {
@@ -494,12 +494,12 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 </button>
               </div>
             ) : (
-              <div className="text-center py-16 px-6 bg-[#071322] rounded-3xl border-2 border-dashed border-cyan-500/30 flex flex-col items-center justify-center gap-4">
+              <div className="text-center py-16 px-6 bg-[#FFFDF9] rounded-3xl border-2 border-dashed border-[#E7DFCF] flex flex-col items-center justify-center gap-4">
                 <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-400/30 flex items-center justify-center text-4xl">
                   📖
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-white mb-2">單字本目前是空的唷！</h3>
+                  <h3 className="text-xl font-black text-[#3E2723] mb-2">單字本目前是空的唷！</h3>
                   <p className="text-cyan-200/80 text-sm font-bold max-w-md mx-auto">
                     前往『拼音學習』課程或各個『台語遊戲關卡』，點擊語詞旁邊的『收藏』按鈕，就能將喜歡或想要加強練習的單字收納在我的單字本！
                   </p>
@@ -507,13 +507,13 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 <div className="flex items-center gap-3 mt-2">
                   <button
                     onClick={() => onNavigate('phonics')}
-                    className="px-5 py-2.5 rounded-xl font-black text-xs md:text-sm bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 hover:brightness-110 transition-all cursor-pointer shadow-md"
+                    className="px-5 py-2.5 rounded-xl font-black text-xs md:text-sm bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 hover:bg-[#3E8552] transition-all cursor-pointer shadow-md"
                   >
                     前往『拼音學習』課程
                   </button>
                   <button
                     onClick={() => onNavigate('games')}
-                    className="px-5 py-2.5 rounded-xl font-black text-xs md:text-sm bg-cyan-950 text-cyan-200 border border-cyan-500/40 hover:bg-cyan-900 transition-all cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl font-black text-xs md:text-sm bg-[#F5F0E4] text-cyan-200 border border-[#E7DFCF] hover:bg-[#F1ECE0] transition-all cursor-pointer"
                   >
                     前往『台語遊戲集』
                   </button>
@@ -524,9 +524,9 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
         ) : (
           <>
             {/* --- 真實遊戲進度（progressStore，依實際遊玩紀錄自動更新） --- */}
-            <div className="bg-[#071322] border-2 border-amber-400/50 rounded-3xl p-5 md:p-6 shadow-[0_0_20px_rgba(217,119,6,0.15)] flex flex-col gap-4">
+            <div className="bg-[#FFFDF9] border-2 border-amber-400/50 rounded-3xl p-5 md:p-6 shadow-[0_0_20px_rgba(217,119,6,0.15)] flex flex-col gap-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="font-black text-white text-base md:text-lg flex items-center gap-2">
+            <h2 className="font-black text-[#3E2723] text-base md:text-lg flex items-center gap-2">
               <Flame className="w-5 h-5 text-amber-400" />
               我的真實學習進度
             </h2>
@@ -534,43 +534,43 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-[#030b17] border-2 border-amber-400/40 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-950 border border-amber-400 flex items-center justify-center text-amber-300 shrink-0">
+            <div className="p-4 rounded-2xl bg-[#FFFDF9] border-2 border-amber-400/40 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-amber-950 border border-amber-400 flex items-center justify-center text-[#E4772E] shrink-0">
                 <Flame className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-xs text-cyan-200 font-extrabold">連續學習天數</div>
-                <div className="text-2xl font-black text-white">{progress.streak.current} 天</div>
+                <div className="text-2xl font-black text-[#3E2723]">{progress.streak.current} 天</div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#030b17] border-2 border-cyan-400/40 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-300 shrink-0">
+            <div className="p-4 rounded-2xl bg-[#FFFDF9] border-2 border-[#D9CFB8]/40 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-[#F5F0E4] border border-[#D9CFB8] flex items-center justify-center text-[#8A8378] shrink-0">
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-xs text-cyan-200 font-extrabold">歷史最長連續</div>
-                <div className="text-2xl font-black text-white">{progress.streak.longest} 天</div>
+                <div className="text-2xl font-black text-[#3E2723]">{progress.streak.longest} 天</div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#030b17] border-2 border-emerald-400/40 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-400 flex items-center justify-center text-emerald-300 shrink-0">
+            <div className="p-4 rounded-2xl bg-[#FFFDF9] border-2 border-emerald-400/40 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[#4E9B5D] shrink-0">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-xs text-cyan-200 font-extrabold">關卡完成度</div>
-                <div className="text-2xl font-black text-white">{gamesPlayedCount} / {GAMES.length}</div>
+                <div className="text-2xl font-black text-[#3E2723]">{gamesPlayedCount} / {GAMES.length}</div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#030b17] border-2 border-purple-400/40 flex items-center gap-3">
+            <div className="p-4 rounded-2xl bg-[#FFFDF9] border-2 border-purple-400/40 flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-purple-950 border border-purple-400 flex items-center justify-center text-purple-300 shrink-0">
                 <Award className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-xs text-cyan-200 font-extrabold">已獲得徽章</div>
-                <div className="text-2xl font-black text-white">{earnedBadges.length} / {BADGES.length}</div>
+                <div className="text-2xl font-black text-[#3E2723]">{earnedBadges.length} / {BADGES.length}</div>
               </div>
             </div>
           </div>
@@ -584,7 +584,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                   title={b.desc}
                   className={`px-3 py-2 rounded-xl border-2 text-xs font-black flex items-center gap-1.5 transition-opacity ${
                     earned
-                      ? 'bg-amber-950/60 border-amber-400 text-amber-300'
+                      ? 'bg-amber-950/60 border-amber-400 text-[#E4772E]'
                       : 'bg-slate-900/60 border-slate-700 text-slate-500 opacity-50'
                   }`}
                 >
@@ -596,7 +596,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
           </div>
 
           {gamesPlayedCount === 0 && (
-            <div className="text-xs md:text-sm text-cyan-200/70 font-bold bg-cyan-950/40 border border-cyan-500/30 rounded-xl px-4 py-3">
+            <div className="text-xs md:text-sm text-cyan-200/70 font-bold bg-[#F5F0E4] border border-[#E7DFCF] rounded-xl px-4 py-3">
               💡 還沒有遊玩紀錄，去「互動遊戲」關卡打完一關試試看，這裡的數字會馬上更新！
             </div>
           )}
@@ -604,51 +604,51 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
         {/* --- Stats Dashboard --- */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-          <div className="p-4 md:p-6 rounded-2xl bg-[#071322] border-2 border-cyan-500/40 shadow-md flex items-center gap-4 hover:border-emerald-400 transition-colors">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-950 border-2 border-emerald-400 flex items-center justify-center text-emerald-300 shrink-0 shadow-sm">
+          <div className="p-4 md:p-6 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] shadow-md flex items-center gap-4 hover:border-emerald-400 transition-colors">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-950 border-2 border-emerald-400 flex items-center justify-center text-[#4E9B5D] shrink-0 shadow-sm">
               <Award className="w-7 h-7" />
             </div>
             <div>
               <div className="text-xs md:text-sm text-cyan-200 font-extrabold">獲得總星星</div>
-              <div className="text-2xl md:text-3xl font-black text-white mt-1">{totalStars} ★</div>
+              <div className="text-2xl md:text-3xl font-black text-[#3E2723] mt-1">{totalStars} ★</div>
             </div>
           </div>
 
-          <div className="p-4 md:p-6 rounded-2xl bg-[#071322] border-2 border-cyan-500/40 shadow-md flex items-center gap-4 hover:border-cyan-400 transition-colors">
-            <div className="w-14 h-14 rounded-2xl bg-cyan-950 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 shrink-0 shadow-sm">
+          <div className="p-4 md:p-6 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] shadow-md flex items-center gap-4 hover:border-[#D9CFB8] transition-colors">
+            <div className="w-14 h-14 rounded-2xl bg-[#F5F0E4] border-2 border-[#D9CFB8] flex items-center justify-center text-[#8A8378] shrink-0 shadow-sm">
               <TrendingUp className="w-7 h-7" />
             </div>
             <div>
               <div className="text-xs md:text-sm text-cyan-200 font-extrabold">平均答對率</div>
-              <div className="text-2xl md:text-3xl font-black text-white mt-1">{averageScore}%</div>
+              <div className="text-2xl md:text-3xl font-black text-[#3E2723] mt-1">{averageScore}%</div>
             </div>
           </div>
 
-          <div className="p-4 md:p-6 rounded-2xl bg-[#071322] border-2 border-cyan-500/40 shadow-md flex items-center gap-4 hover:border-amber-400 transition-colors">
-            <div className="w-14 h-14 rounded-2xl bg-amber-950 border-2 border-amber-400 flex items-center justify-center text-amber-300 shrink-0 shadow-sm">
+          <div className="p-4 md:p-6 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] shadow-md flex items-center gap-4 hover:border-amber-400 transition-colors">
+            <div className="w-14 h-14 rounded-2xl bg-amber-950 border-2 border-amber-400 flex items-center justify-center text-[#E4772E] shrink-0 shadow-sm">
               <Zap className="w-7 h-7" />
             </div>
             <div>
               <div className="text-xs md:text-sm text-cyan-200 font-extrabold">最高分紀錄</div>
-              <div className="text-2xl md:text-3xl font-black text-amber-300 mt-1">{maxScore} 分</div>
+              <div className="text-2xl md:text-3xl font-black text-[#E4772E] mt-1">{maxScore} 分</div>
             </div>
           </div>
 
-          <div className="p-4 md:p-6 rounded-2xl bg-[#071322] border-2 border-cyan-500/40 shadow-md flex items-center gap-4 hover:border-purple-400 transition-colors">
+          <div className="p-4 md:p-6 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] shadow-md flex items-center gap-4 hover:border-purple-400 transition-colors">
             <div className="w-14 h-14 rounded-2xl bg-purple-950 border-2 border-purple-400 flex items-center justify-center text-purple-300 shrink-0 shadow-sm">
               <Flame className="w-7 h-7" />
             </div>
             <div>
               <div className="text-xs md:text-sm text-cyan-200 font-extrabold">累計挑戰次數</div>
-              <div className="text-2xl md:text-3xl font-black text-white mt-1">{records.length} 次</div>
+              <div className="text-2xl md:text-3xl font-black text-[#3E2723] mt-1">{records.length} 次</div>
             </div>
           </div>
         </div>
 
         {/* --- Dynamic Visual Statistics Chart (新增統計圖) --- */}
-        <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl p-5 md:p-6 shadow-[0_0_20px_rgba(2,132,199,0.15)] flex flex-col gap-4">
+        <div className="bg-[#FFFDF9] border-2 border-[#E7DFCF] rounded-3xl p-5 md:p-6 shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="font-black text-white text-base md:text-lg flex items-center gap-2">
+            <h2 className="font-black text-[#3E2723] text-base md:text-lg flex items-center gap-2">
               <BarChart2 className="w-5 h-5 text-emerald-400" />
               學習成績表現與趨勢分析圖
             </h2>
@@ -665,7 +665,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
           ) : (
             <div className="flex flex-col gap-6">
               {/* SVG Line / Area Trend Chart */}
-              <div className="relative w-full bg-[#030b17] border border-cyan-500/30 rounded-2xl p-4 overflow-hidden">
+              <div className="relative w-full bg-[#FFFDF9] border border-[#E7DFCF] rounded-2xl p-4 overflow-hidden">
                 <div className="w-full overflow-x-auto">
                   <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-44 min-w-[500px]">
                     <defs>
@@ -788,32 +788,32 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
               {/* Category Breakdown Progress Bars */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-[#030b17] border border-cyan-500/20 rounded-2xl p-3.5">
+                <div className="bg-[#FFFDF9] border border-[#EFE8D8] rounded-2xl p-3.5">
                   <div className="flex justify-between items-center text-xs font-black mb-1.5">
                     <span className="text-cyan-200">🎮 遊戲闖關勝率</span>
                     <span className="text-emerald-400">92%</span>
                   </div>
-                  <div className="w-full bg-cyan-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+                  <div className="w-full bg-[#F5F0E4] rounded-full h-2.5 overflow-hidden border border-[#E7DFCF]">
                     <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full w-[92%]"></div>
                   </div>
                 </div>
 
-                <div className="bg-[#030b17] border border-cyan-500/20 rounded-2xl p-3.5">
+                <div className="bg-[#FFFDF9] border border-[#EFE8D8] rounded-2xl p-3.5">
                   <div className="flex justify-between items-center text-xs font-black mb-1.5">
                     <span className="text-cyan-200">🗣️ 拼音辨識準確率</span>
-                    <span className="text-cyan-300">88%</span>
+                    <span className="text-[#8A8378]">88%</span>
                   </div>
-                  <div className="w-full bg-cyan-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+                  <div className="w-full bg-[#F5F0E4] rounded-full h-2.5 overflow-hidden border border-[#E7DFCF]">
                     <div className="bg-gradient-to-r from-cyan-500 to-sky-400 h-full rounded-full w-[88%]"></div>
                   </div>
                 </div>
 
-                <div className="bg-[#030b17] border border-cyan-500/20 rounded-2xl p-3.5">
+                <div className="bg-[#FFFDF9] border border-[#EFE8D8] rounded-2xl p-3.5">
                   <div className="flex justify-between items-center text-xs font-black mb-1.5">
                     <span className="text-cyan-200">👂 聲調聽力達成度</span>
-                    <span className="text-amber-300">95%</span>
+                    <span className="text-[#E4772E]">95%</span>
                   </div>
-                  <div className="w-full bg-cyan-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+                  <div className="w-full bg-[#F5F0E4] rounded-full h-2.5 overflow-hidden border border-[#E7DFCF]">
                     <div className="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full w-[95%]"></div>
                   </div>
                 </div>
@@ -823,22 +823,22 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
         </div>
 
         {/* --- History Records Log --- */}
-        <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl p-6 shadow-[0_0_20px_rgba(2,132,199,0.15)] flex flex-col gap-4">
+        <div className="bg-[#FFFDF9] border-2 border-[#E7DFCF] rounded-3xl p-6 shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-black text-white text-lg flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-cyan-400" /> 歷史通關紀錄明細
+            <h2 className="font-black text-[#3E2723] text-lg flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#8A8378]" /> 歷史通關紀錄明細
             </h2>
             <span className="text-xs text-cyan-200/70 font-bold">共 {records.length} 筆紀錄</span>
           </div>
 
           {records.length === 0 ? (
-            <div className="py-12 flex flex-col items-center text-center gap-3 border-2 border-dashed border-cyan-500/20 rounded-2xl bg-[#030b17]">
+            <div className="py-12 flex flex-col items-center text-center gap-3 border-2 border-dashed border-[#EFE8D8] rounded-2xl bg-[#FFFDF9]">
               <span className="text-4xl">📭</span>
-              <div className="font-black text-white text-base">目前尚無挑戰與通關紀錄</div>
+              <div className="font-black text-[#3E2723] text-base">目前尚無挑戰與通關紀錄</div>
               <p className="text-xs md:text-sm text-cyan-200/70 max-w-xs font-bold">快去「互動遊戲」或是「拼音學習」中挑戰聽力測試吧！</p>
               <button
                 onClick={() => onNavigate('phonics')}
-                className="mt-3 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black text-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-md"
+                className="mt-3 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black text-sm hover:bg-[#3E8552] active:scale-95 transition-all cursor-pointer shadow-md"
               >
                 前往拼音學習 ❯
               </button>
@@ -847,7 +847,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-cyan-500/30 text-xs md:text-sm font-black text-cyan-300">
+                  <tr className="border-b border-[#E7DFCF] text-xs md:text-sm font-black text-[#8A8378]">
                     <th className="py-3 px-4">挑戰日期</th>
                     <th className="py-3 px-4">學習單元/遊戲名稱</th>
                     <th className="py-3 px-4 text-center">單次得分</th>
@@ -856,18 +856,18 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 </thead>
                 <tbody className="divide-y divide-cyan-500/20">
                   {records.map((record, index) => (
-                    <tr key={record.id || index} className="hover:bg-[#030b17] transition-colors text-xs md:text-sm text-cyan-100 font-bold">
+                    <tr key={record.id || index} className="hover:bg-[#FFFDF9] transition-colors text-xs md:text-sm text-[#5C5548] font-bold">
                       <td className="py-3 px-4 font-mono">{record.date}</td>
-                      <td className="py-3 px-4 font-black text-white text-sm md:text-base flex items-center gap-2">
+                      <td className="py-3 px-4 font-black text-[#3E2723] text-sm md:text-base flex items-center gap-2">
                         {record.gameName}
                         {record.category && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F0E4] text-[#8A8378] border border-[#E7DFCF]">
                             {record.category}
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center font-black font-mono text-emerald-400 text-sm md:text-base">{record.score} 分</td>
-                      <td className="py-3 px-4 text-center text-amber-300 text-sm md:text-base">
+                      <td className="py-3 px-4 text-center text-[#E4772E] text-sm md:text-base">
                         {'★'.repeat(record.stars)}
                         {'☆'.repeat(5 - record.stars)}
                       </td>
@@ -885,13 +885,13 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
       {/* --- Add New Test Record Modal --- */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80  p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#071322] border-2 border-cyan-400 rounded-3xl max-w-md w-full p-6 shadow-[0_0_30px_rgba(2,132,199,0.3)] relative text-white"
+            className="bg-[#FFFDF9] border-2 border-[#D9CFB8] rounded-3xl max-w-md w-full p-6 shadow-[0_0_30px_rgba(2,132,199,0.3)] relative text-[#3E2723]"
           >
-            <h3 className="font-black text-lg text-white mb-1 flex items-center gap-2">
+            <h3 className="font-black text-lg text-[#3E2723] mb-1 flex items-center gap-2">
               <PlusCircle className="w-5 h-5 text-emerald-400" />
               新增實時學習與測驗紀錄
             </h3>
@@ -899,18 +899,18 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
             <form onSubmit={handleAddSampleRecord} className="flex flex-col gap-4">
               <div>
-                <label className="text-xs font-extrabold text-cyan-300 mb-1 block">單元/測驗名稱</label>
+                <label className="text-xs font-extrabold text-[#8A8378] mb-1 block">單元/測驗名稱</label>
                 <input
                   type="text"
                   value={newGameName}
                   onChange={(e) => setNewGameName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#030b17] border border-cyan-500/40 text-white font-bold text-sm focus:border-cyan-300 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FFFDF9] border border-[#E7DFCF] text-[#3E2723] font-bold text-sm focus:border-cyan-300 outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-cyan-300 mb-1 flex justify-between">
+                <label className="text-xs font-extrabold text-[#8A8378] mb-1 flex justify-between">
                   <span>獲得分數 (0-100)</span>
                   <span className="text-emerald-400 font-mono font-black">{newScore} 分</span>
                 </label>
@@ -929,13 +929,13 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl bg-cyan-950 text-cyan-300 font-bold text-xs border border-cyan-500/30 hover:bg-cyan-900 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#F5F0E4] text-[#8A8378] font-bold text-xs border border-[#E7DFCF] hover:bg-[#F1ECE0] cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs hover:brightness-110 active:scale-95 cursor-pointer shadow-md flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs hover:bg-[#3E8552] active:scale-95 cursor-pointer shadow-md flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" /> 儲存紀錄
                 </button>

@@ -53,7 +53,7 @@ export function shuffled<T>(list: T[]): T[] {
 /** 共用的面板外框，每個分頁長得一致 */
 export function Panel({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-5 md:p-6 flex flex-col gap-5">
+    <div className="bg-[#FFFDF9] border-2 border-[#E7DFCF] rounded-3xl shadow-sm p-5 md:p-6 flex flex-col gap-5">
       {children}
     </div>
   );
@@ -106,7 +106,7 @@ export function ProjectionButton({ onClick, label = '投影模式' }: { onClick:
     <button
       onClick={onClick}
       data-sound="pop"
-      className="px-4 py-2.5 rounded-xl bg-cyan-950 border-2 border-cyan-500/50 text-cyan-100 hover:text-white hover:bg-cyan-900 font-black text-sm md:text-base transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+      className="px-4 py-2.5 rounded-xl bg-[#F5F0E4] border-2 border-[#E7DFCF] text-[#5C5548] hover:text-[#3E2723] hover:bg-[#F1ECE0] font-black text-sm md:text-base transition-all active:scale-95 cursor-pointer flex items-center gap-2"
     >
       <Maximize2 className="w-4 h-4" strokeWidth={2.5} />
       {label}
@@ -121,7 +121,7 @@ export function ProjectionStage({ onExit, children }: { onExit: () => void; chil
       <button
         onClick={onExit}
         aria-label="離開投影模式"
-        className="absolute top-4 right-4 md:top-6 md:right-6 p-3 rounded-2xl bg-cyan-950/80 border-2 border-cyan-500/50 text-cyan-200 hover:text-white hover:bg-cyan-900 transition-colors cursor-pointer z-10"
+        className="absolute top-4 right-4 md:top-6 md:right-6 p-3 rounded-2xl bg-[#F5F0E4] border-2 border-[#E7DFCF] text-cyan-200 hover:text-[#3E2723] hover:bg-[#F1ECE0] transition-colors cursor-pointer z-10"
       >
         <X className="w-6 h-6" strokeWidth={2.5} />
       </button>
@@ -166,7 +166,7 @@ export function RosterInput({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="font-black text-white text-base md:text-lg flex items-center gap-2">
+        <label className="font-black text-[#3E2723] text-base md:text-lg flex items-center gap-2">
           <span>班級名單</span>
           <span className="text-xs md:text-sm text-cyan-200 font-extrabold">
             一行一個名字，共 {count} 人
@@ -177,13 +177,13 @@ export function RosterInput({
           <button
             onClick={exportRoster}
             disabled={count === 0}
-            className="px-3 py-2 rounded-xl bg-cyan-950 border-2 border-cyan-500/50 text-cyan-100 hover:text-white hover:bg-cyan-900 font-black text-xs md:text-sm transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 py-2 rounded-xl bg-[#F5F0E4] border-2 border-[#E7DFCF] text-[#5C5548] hover:text-[#3E2723] hover:bg-[#F1ECE0] font-black text-xs md:text-sm transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             <Download className="w-4 h-4" strokeWidth={2.5} />
             匯出
           </button>
 
-          <label className="px-3 py-2 rounded-xl bg-cyan-950 border-2 border-cyan-500/50 text-cyan-100 hover:text-white hover:bg-cyan-900 font-black text-xs md:text-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5">
+          <label className="px-3 py-2 rounded-xl bg-[#F5F0E4] border-2 border-[#E7DFCF] text-[#5C5548] hover:text-[#3E2723] hover:bg-[#F1ECE0] font-black text-xs md:text-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5">
             <Upload className="w-4 h-4" strokeWidth={2.5} />
             匯入
             <input
@@ -204,7 +204,7 @@ export function RosterInput({
         onChange={(e) => onChange(e.target.value)}
         rows={5}
         placeholder={'王小明\n陳美玲\n林志豪'}
-        className="w-full px-4 py-3 rounded-2xl bg-[#030b17] border-2 border-cyan-500/40 focus:border-cyan-300 outline-hidden text-white font-black text-sm md:text-base placeholder:text-cyan-200/40 resize-y transition-colors"
+        className="w-full px-4 py-3 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] focus:border-cyan-300 outline-hidden text-[#3E2723] font-black text-sm md:text-base placeholder:text-cyan-200/40 resize-y transition-colors"
       />
     </div>
   );

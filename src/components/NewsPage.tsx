@@ -146,14 +146,14 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 p-2 flex-1">
         
         {/* Banner Headers */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-cyan-500/30 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E7DFCF] pb-5">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="font-black text-white text-2xl md:text-3xl flex items-center gap-2">
+              <h1 className="font-black text-[#3E2723] text-2xl md:text-3xl flex items-center gap-2">
                 <span>📢</span> 平台最新消息與活動公告
               </h1>
-              <span className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-950 border border-cyan-400 text-cyan-300 text-xs font-black">
-                <Zap className="w-3.5 h-3.5 text-amber-300" /> 系統自動更新中
+              <span className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#F5F0E4] border border-[#D9CFB8] text-[#8A8378] text-xs font-black">
+                <Zap className="w-3.5 h-3.5 text-[#E4772E]" /> 系統自動更新中
               </span>
             </div>
             <p className="text-cyan-200/80 text-sm md:text-base font-bold mt-1">
@@ -163,7 +163,7 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
 
           <button
             onClick={handleCheckUpdates}
-            className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 self-start cursor-pointer shadow-md ${isRefreshing ? 'opacity-80' : ''}`}
+            className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:bg-[#3E8552] active:scale-95 transition-all flex items-center gap-1.5 self-start cursor-pointer shadow-md ${isRefreshing ? 'opacity-80' : ''}`}
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             檢查網站最新更新
@@ -193,8 +193,8 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
               onClick={() => setActiveCategory(cat)}
               className={`px-5 py-2.5 rounded-xl text-sm md:text-base font-black whitespace-nowrap transition-all cursor-pointer ${
                 activeCategory === cat
-                  ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 shadow-md scale-102'
-                  : 'bg-[#071322] border-2 border-cyan-500/40 text-cyan-200 hover:text-white hover:bg-cyan-900/80'
+                  ? 'bg-[#4E9B5D] text-white shadow-md scale-102'
+                  : 'bg-[#FFFDF9] border-2 border-[#E7DFCF] text-cyan-200 hover:text-[#3E2723] hover:bg-[#F1ECE0]/80'
               }`}
             >
               {cat === '最新即時' ? '⚡ ' + cat : cat === '相關連結' ? '🔗 ' + cat : cat}
@@ -215,27 +215,27 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-5 md:p-6 rounded-2xl bg-[#071322] border-2 border-cyan-500/40 hover:border-cyan-300 hover:shadow-lg transition-all flex flex-col justify-between group gap-4"
+                  className="p-5 md:p-6 rounded-2xl bg-[#FFFDF9] border-2 border-[#E7DFCF] hover:border-[#4E9B5D] hover:shadow-lg transition-all flex flex-col justify-between group gap-4"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <span className="text-xs font-black px-3 py-1 rounded-full bg-cyan-950 text-cyan-200 border border-cyan-400/60">
+                      <span className="text-xs font-black px-3 py-1 rounded-full bg-[#F5F0E4] text-cyan-200 border border-[#E7DFCF]">
                         {link.tag}
                       </span>
-                      <ExternalLink className="w-5 h-5 text-cyan-300 group-hover:text-amber-300 transition-colors" />
+                      <ExternalLink className="w-5 h-5 text-[#8A8378] group-hover:text-[#E4772E] transition-colors" />
                     </div>
-                    <h3 className="font-black text-white text-lg md:text-xl group-hover:text-amber-300 transition-colors leading-snug">
+                    <h3 className="font-black text-[#3E2723] text-lg md:text-xl group-hover:text-[#E4772E] transition-colors leading-snug">
                       {link.title}
                     </h3>
-                    <p className="text-sm md:text-base text-cyan-100 font-bold mt-2.5 leading-relaxed">
+                    <p className="text-sm md:text-base text-[#5C5548] font-bold mt-2.5 leading-relaxed">
                       {link.desc}
                     </p>
                   </div>
-                  <div className="pt-2 border-t border-cyan-500/20 flex items-center justify-between">
-                    <span className="text-xs md:text-sm text-emerald-300 font-black inline-flex items-center gap-1.5 bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-400/40">
+                  <div className="pt-2 border-t border-[#EFE8D8] flex items-center justify-between">
+                    <span className="text-xs md:text-sm text-[#4E9B5D] font-black inline-flex items-center gap-1.5 bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-400/40">
                       立即前往網頁 ↗
                     </span>
-                    <span className="text-xs text-cyan-300/70 font-bold">點擊跳轉外部網站</span>
+                    <span className="text-xs text-[#8A8378]/70 font-bold">點擊跳轉外部網站</span>
                   </div>
                 </a>
               ))}
@@ -250,7 +250,7 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
             <div
               key={article.id}
               onClick={() => setSelectedArticle(article)}
-              className={`p-5 md:p-6 rounded-3xl bg-[#071322] border-2 ${article.isAutoGenerated ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.25)]' : 'border-cyan-500/50'} hover:border-cyan-300 shadow-lg cursor-pointer transition-all flex flex-col md:flex-row gap-5 items-start md:items-center justify-between group relative overflow-hidden`}
+              className={`p-5 md:p-6 rounded-3xl bg-[#FFFDF9] border-2 ${article.isAutoGenerated ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.25)]' : 'border-[#E7DFCF]'} hover:border-[#4E9B5D] shadow-lg cursor-pointer transition-all flex flex-col md:flex-row gap-5 items-start md:items-center justify-between group relative overflow-hidden`}
             >
               {article.isAutoGenerated && (
                 <div className="absolute top-0 right-0 bg-gradient-to-l from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs px-3.5 py-1 rounded-bl-xl tracking-wider shadow-xs">
@@ -259,28 +259,28 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
               )}
 
               <div className="flex items-start md:items-center gap-4 flex-1">
-                <div className="w-16 h-16 rounded-2xl bg-cyan-950/90 border-2 border-cyan-400 flex items-center justify-center text-3xl shrink-0 shadow-md">
+                <div className="w-16 h-16 rounded-2xl bg-[#F5F0E4] border-2 border-[#D9CFB8] flex items-center justify-center text-3xl shrink-0 shadow-md">
                   {article.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    <span className={`text-xs md:text-sm font-black px-3.5 py-1 rounded-full border ${article.isAutoGenerated ? 'bg-emerald-950 text-emerald-300 border-emerald-400' : 'bg-cyan-950 text-cyan-200 border-cyan-400/60'}`}>
+                    <span className={`text-xs md:text-sm font-black px-3.5 py-1 rounded-full border ${article.isAutoGenerated ? 'bg-emerald-950 text-[#4E9B5D] border-emerald-400' : 'bg-[#F5F0E4] text-cyan-200 border-[#E7DFCF]'}`}>
                       {article.category}
                     </span>
                     <span className="text-xs md:text-sm text-cyan-200 font-black flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4 text-cyan-300" /> {article.date}
+                      <Calendar className="w-4 h-4 text-[#8A8378]" /> {article.date}
                     </span>
                   </div>
-                  <h2 className="font-black text-white text-lg md:text-xl leading-snug group-hover:text-amber-300 transition-colors">
+                  <h2 className="font-black text-[#3E2723] text-lg md:text-xl leading-snug group-hover:text-[#E4772E] transition-colors">
                     {article.title}
                   </h2>
-                  <p className="text-sm md:text-base text-cyan-100 leading-relaxed mt-2 font-extrabold bg-cyan-950/40 p-3 rounded-xl border border-cyan-500/30">
+                  <p className="text-sm md:text-base text-[#5C5548] leading-relaxed mt-2 font-extrabold bg-[#F5F0E4] p-3 rounded-xl border border-[#E7DFCF]">
                     {article.summary}
                   </p>
                 </div>
               </div>
 
-              <span className="text-sm md:text-base font-black text-slate-950 flex items-center gap-1.5 shrink-0 self-end md:self-center bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-5 py-2.5 rounded-xl group-hover:brightness-110 transition-all cursor-pointer shadow-md">
+              <span className="text-sm md:text-base font-black text-slate-950 flex items-center gap-1.5 shrink-0 self-end md:self-center bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-5 py-2.5 rounded-xl group-hover:bg-[#3E8552] transition-all cursor-pointer shadow-md">
                 閱讀全文 ❯
               </span>
             </div>
@@ -292,42 +292,42 @@ export default function NewsPage({ onNavigate }: { onNavigate: (view: string) =>
       {/* --- Article Detail Popup Modal --- */}
       <AnimatePresence>
         {selectedArticle && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80  p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#071322] border-2 border-cyan-400 rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-[0_0_30px_rgba(2,132,199,0.3)] relative flex flex-col max-h-[90vh] overflow-hidden text-white"
+              className="bg-[#FFFDF9] border-2 border-[#D9CFB8] rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-[0_0_30px_rgba(2,132,199,0.3)] relative flex flex-col max-h-[90vh] overflow-hidden text-[#3E2723]"
             >
               {/* Close Button */}
               <button
                 onClick={() => setSelectedArticle(null)}
-                className="absolute top-5 right-5 w-10 h-10 rounded-full bg-cyan-950 border border-cyan-500/40 hover:border-cyan-400 flex items-center justify-center text-cyan-300 transition-colors cursor-pointer"
+                className="absolute top-5 right-5 w-10 h-10 rounded-full bg-[#F5F0E4] border border-[#E7DFCF] hover:border-[#D9CFB8] flex items-center justify-center text-[#8A8378] transition-colors cursor-pointer"
               >
                 <X className="w-6 h-6" />
               </button>
 
               <div className="overflow-y-auto pr-2 flex flex-col gap-4">
                 <div className="flex items-center gap-3 flex-wrap mt-2">
-                  <span className="text-xs font-black px-3 py-1 bg-emerald-950 text-emerald-300 rounded-full border border-emerald-400 flex items-center gap-1">
+                  <span className="text-xs font-black px-3 py-1 bg-emerald-950 text-[#4E9B5D] rounded-full border border-emerald-400 flex items-center gap-1">
                     <Bell className="w-3.5 h-3.5" />
                     {selectedArticle.category}
                   </span>
                   <span className="text-xs text-cyan-200/70 font-bold flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-cyan-400" /> {selectedArticle.date}
+                    <Calendar className="w-4 h-4 text-[#8A8378]" /> {selectedArticle.date}
                   </span>
                 </div>
 
-                <h2 className="font-black text-white text-xl md:text-2xl leading-snug pr-8">
+                <h2 className="font-black text-[#3E2723] text-xl md:text-2xl leading-snug pr-8">
                   {selectedArticle.title}
                 </h2>
 
-                <div className="border-t border-cyan-500/30 pt-4 text-sm md:text-base text-cyan-100 font-bold leading-relaxed whitespace-pre-line space-y-2 bg-cyan-950/30 p-4 rounded-2xl border border-cyan-500/20">
+                <div className="border-t border-[#E7DFCF] pt-4 text-sm md:text-base text-[#5C5548] font-bold leading-relaxed whitespace-pre-line space-y-2 bg-[#F7F2E7] p-4 rounded-2xl border border-[#EFE8D8]">
                   {selectedArticle.content}
                 </div>
 
-                <div className="p-4 bg-[#030b17] rounded-2xl border border-cyan-500/30 mt-4 flex items-center gap-2.5 text-xs md:text-sm text-cyan-300 font-black">
-                  <Sparkles className="w-5 h-5 shrink-0 text-amber-300" /> 泰宇台語學習網，陪伴您一同體驗語言之美！
+                <div className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#E7DFCF] mt-4 flex items-center gap-2.5 text-xs md:text-sm text-[#8A8378] font-black">
+                  <Sparkles className="w-5 h-5 shrink-0 text-[#E4772E]" /> 泰宇台語學習網，陪伴您一同體驗語言之美！
                 </div>
               </div>
             </motion.div>

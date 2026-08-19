@@ -10,28 +10,28 @@ const FEATURE_CARDS = [
     title: '拼音學習',
     desc: '跟著課本學發音，有真人錄音',
     button: '去學習',
-    accent: '#34d399',
+    accent: '#4E9B5D',
     img: 'images/home/feature-phonics.jpg',
   },
   {
     title: '互動遊戲',
     desc: '十款遊戲，邊玩邊記詞彙',
     button: '去遊戲',
-    accent: '#a78bfa',
+    accent: '#7E6BC4',
     img: 'images/home/feature-game.jpg',
   },
   {
     title: '動畫專區',
     desc: '教育部推薦的台語動畫',
     button: '去觀看',
-    accent: '#fbbf24',
+    accent: '#E4772E',
     img: 'images/home/feature-anime.jpg',
   },
   {
     title: '學習紀錄',
     desc: '看自己練到哪、通關幾關',
     button: '看記錄',
-    accent: '#38bdf8',
+    accent: '#3E7CB1',
     img: 'images/home/feature-record.jpg',
   },
 ];
@@ -45,12 +45,12 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
   };
 
   return (
-    <HubShell activeKey="home" onHome={() => onNavigate('home')}>
+    <HubShell activeKey="home" fitScreen onHome={() => onNavigate('home')}>
       {/* 首頁要「一個畫面看完」：桌機左右兩欄——左邊橫幅照原比例滿版（不裁切也
           不留白邊），右邊四大功能排成 2×2 的橫式小卡。手機才上下堆疊。 */}
       <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 min-h-0">
         {/* Hero banner：標題文字已經畫在插畫裡，這裡只留一顆真的按鈕 */}
-        <div className="relative lg:w-[60%] shrink-0 self-start rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(2,132,199,0.2)]">
+        <div className="relative lg:w-[50%] shrink-0 self-start lg:self-center rounded-3xl overflow-hidden border-2 border-[#E7DFCF] shadow-md">
           <button
             onClick={() => onNavigate('phonics', 'phonics_scheme')}
             aria-label="開始學習"
@@ -59,26 +59,26 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
             <img
               src={`${import.meta.env.BASE_URL}images/home/hero.jpg`}
               alt="歡迎來學台語！用遊戲、互動學習，快樂開口說台語！一起來探索台語的聲音與奧妙！"
-              className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
+              className="w-full h-auto max-h-full object-contain block transition-transform duration-500 group-hover:scale-[1.02]"
             />
           </button>
           <button
             onClick={() => onNavigate('phonics', 'phonics_scheme')}
             data-sound="pop"
-            className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-6 py-1.5 md:py-2.5 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-white font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
+            className="absolute right-[8%] bottom-[10%] px-4 sm:px-5 md:px-6 py-1.5 md:py-2.5 rounded-2xl bg-[#4E9B5D] hover:bg-[#3E8552] text-[#3E2723] font-black text-[11px] sm:text-sm md:text-base shadow-lg active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
           >
             開始學習 <span className="text-[9px] sm:text-xs">▶</span>
           </button>
         </div>
 
         {/* 四大功能：2×2 橫式小卡 */}
-        <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-3.5 md:p-4 flex flex-col gap-3 flex-1 min-h-0">
+        <div className="bg-[#FFFDF9] border-2 border-[#E7DFCF] rounded-3xl shadow-sm p-3.5 md:p-4 flex flex-col gap-3 flex-1 min-h-0">
           <div className="flex flex-wrap items-baseline gap-2 shrink-0">
-            <h2 className="font-black text-white text-lg md:text-xl tracking-wide">探索四大功能</h2>
-            <span className="font-black text-cyan-300 text-xs md:text-sm">點卡片就進去</span>
+            <h2 className="font-black text-[#3E2723] text-lg md:text-xl tracking-wide">探索四大功能</h2>
+            <span className="font-black text-[#8A8378] text-xs md:text-sm">點卡片就進去</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-rows-2 gap-3 flex-1 min-h-0">
             {FEATURE_CARDS.map(({ title: cardTitle, desc: cardDesc, button, accent, img }) => {
               const currentUser = (() => {
                 try {
@@ -99,7 +99,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
                   key={cardTitle}
                   onClick={() => handleFeatureClick(cardTitle)}
                   data-sound="pop"
-                  className="group text-left rounded-2xl p-3 flex items-center gap-3 min-h-0 bg-[#040e1c] border-2 transition-all hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer"
+                  className="group text-left rounded-2xl overflow-hidden flex flex-col min-h-0 bg-white border-2 transition-all hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer"
                   style={{ borderColor: `${accent}59` }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = accent;
@@ -110,21 +110,19 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  <div
-                    className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-xl overflow-hidden"
-                    style={{ border: `1px solid ${accent}59` }}
-                  >
+                  {/* 插畫吃掉卡片剩下的所有高度，文字排在圖下面（不疊在圖上） */}
+                  <div className="flex-1 min-h-0 overflow-hidden">
                     <img
                       src={`${import.meta.env.BASE_URL}${img}`}
                       alt=""
                       loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <h3 className="font-black text-white text-base md:text-lg tracking-wide">{title}</h3>
-                    <p className="text-[11px] md:text-xs text-cyan-100/85 font-bold leading-snug">
+                  <div className="shrink-0 px-3 py-2 flex flex-col gap-0.5">
+                    <h3 className="font-black text-[#3E2723] text-base md:text-lg tracking-wide">{title}</h3>
+                    <p className="text-[11px] md:text-xs text-[#6B6357] font-bold leading-snug">
                       {desc}
                     </p>
                     <span
@@ -140,11 +138,6 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
             })}
           </div>
 
-          <div className="shrink-0 flex flex-wrap items-center gap-2 text-xs md:text-sm font-black bg-cyan-950/50 px-3 py-2 rounded-xl border border-cyan-500/40">
-            <span>💡</span>
-            <span className="text-amber-300 shrink-0">學習小提醒：</span>
-            <span className="text-cyan-100">每天學習 15 分鐘，台語會越來越流利！</span>
-          </div>
         </div>
       </div>
     </HubShell>
