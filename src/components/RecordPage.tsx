@@ -261,7 +261,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 實時同步中 {lastSyncTime}
               </span>
             </div>
-            <p className="text-cyan-200/80 text-sm md:text-base font-bold mt-1">
+            <p className="text-[#8A8378]/80 text-sm md:text-base font-bold mt-1">
               {isTeacher
                 ? '即時分析班級學生學習狀況、通關答對率與成績報表數據'
                 : '即時統計您的作答成效、遊戲通關成績與學習趨勢圖表'}
@@ -311,7 +311,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
             className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'stats'
                 ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md scale-102'
-                : 'bg-[#FFFDF9] border border-[#E7DFCF] text-cyan-200 hover:bg-[#F1ECE0]/50'
+                : 'bg-[#FFFDF9] border border-[#E7DFCF] text-[#8A8378] hover:bg-[#F1ECE0]/50'
             }`}
           >
             <BarChart2 className="w-4 h-4" />
@@ -323,7 +323,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
             className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'vocab'
                 ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 shadow-md scale-102'
-                : 'bg-[#FFFDF9] border border-amber-500/30 text-amber-200 hover:bg-amber-900/50'
+                : 'bg-[#FFFDF9] border border-amber-500/30 text-[#8A8378] hover:bg-amber-900/50'
             }`}
           >
             <Bookmark className="w-4 h-4 fill-amber-300" />
@@ -348,7 +348,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                     <BookOpen className="w-6 h-6 text-amber-400" />
                     我的台語詞彙單字本
                   </h2>
-                  <p className="text-cyan-200/80 text-xs md:text-sm font-bold mt-1">
+                  <p className="text-[#8A8378]/80 text-xs md:text-sm font-bold mt-1">
                     這裡自動同步您在「拼音學習」與「互動遊戲」中點選『收藏』的單字，點擊卡片可即時朗讀台語發音。
                   </p>
                 </div>
@@ -409,7 +409,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                         className={`px-3 py-1.5 rounded-lg text-xs font-black shrink-0 transition-all cursor-pointer ${
                           selectedVocabCategory === cat
                             ? 'bg-amber-400 text-slate-950 font-black shadow-sm'
-                            : 'bg-[#F5F0E4] text-cyan-200 border border-[#E7DFCF] hover:bg-[#F1ECE0]'
+                            : 'bg-[#F5F0E4] text-[#8A8378] border border-[#E7DFCF] hover:bg-[#F1ECE0]'
                         }`}
                       >
                         {cat}
@@ -464,7 +464,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                         </div>
 
                         {item.mandarin && (
-                          <div className="text-xs font-bold text-cyan-200/80">
+                          <div className="text-xs font-bold text-[#8A8378]/80">
                             華語釋義：{item.mandarin}
                           </div>
                         )}
@@ -481,7 +481,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 })}
               </div>
             ) : favorites.length > 0 ? (
-              <div className="text-center py-12 bg-[#FFFDF9] rounded-3xl border border-[#E7DFCF] text-cyan-200">
+              <div className="text-center py-12 bg-[#FFFDF9] rounded-3xl border border-[#E7DFCF] text-[#8A8378]">
                 <p className="text-base font-bold mb-2">找不到符合「{vocabSearch}」的收藏單字</p>
                 <button
                   onClick={() => {
@@ -500,7 +500,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-[#3E2723] mb-2">單字本目前是空的唷！</h3>
-                  <p className="text-cyan-200/80 text-sm font-bold max-w-md mx-auto">
+                  <p className="text-[#8A8378]/80 text-sm font-bold max-w-md mx-auto">
                     前往『拼音學習』課程或各個『台語遊戲關卡』，點擊語詞旁邊的『收藏』按鈕，就能將喜歡或想要加強練習的單字收納在我的單字本！
                   </p>
                 </div>
@@ -513,7 +513,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                   </button>
                   <button
                     onClick={() => onNavigate('games')}
-                    className="px-5 py-2.5 rounded-xl font-black text-xs md:text-sm bg-[#F5F0E4] text-cyan-200 border border-[#E7DFCF] hover:bg-[#F1ECE0] transition-all cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl font-black text-xs md:text-sm bg-[#F5F0E4] text-[#8A8378] border border-[#E7DFCF] hover:bg-[#F1ECE0] transition-all cursor-pointer"
                   >
                     前往『台語遊戲集』
                   </button>
@@ -530,7 +530,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <Flame className="w-5 h-5 text-amber-400" />
               我的真實學習進度
             </h2>
-            <span className="text-xs font-bold text-cyan-200/70">遊戲關卡打完會自動更新，不用手動填寫</span>
+            <span className="text-xs font-bold text-[#8A8378]/70">遊戲關卡打完會自動更新，不用手動填寫</span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -539,7 +539,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 <Flame className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-xs text-cyan-200 font-extrabold">連續學習天數</div>
+                <div className="text-xs text-[#8A8378] font-extrabold">連續學習天數</div>
                 <div className="text-2xl font-black text-[#3E2723]">{progress.streak.current} 天</div>
               </div>
             </div>
@@ -549,7 +549,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-xs text-cyan-200 font-extrabold">歷史最長連續</div>
+                <div className="text-xs text-[#8A8378] font-extrabold">歷史最長連續</div>
                 <div className="text-2xl font-black text-[#3E2723]">{progress.streak.longest} 天</div>
               </div>
             </div>
@@ -559,7 +559,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-xs text-cyan-200 font-extrabold">關卡完成度</div>
+                <div className="text-xs text-[#8A8378] font-extrabold">關卡完成度</div>
                 <div className="text-2xl font-black text-[#3E2723]">{gamesPlayedCount} / {GAMES.length}</div>
               </div>
             </div>
@@ -569,7 +569,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
                 <Award className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-xs text-cyan-200 font-extrabold">已獲得徽章</div>
+                <div className="text-xs text-[#8A8378] font-extrabold">已獲得徽章</div>
                 <div className="text-2xl font-black text-[#3E2723]">{earnedBadges.length} / {BADGES.length}</div>
               </div>
             </div>
@@ -596,7 +596,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
           </div>
 
           {gamesPlayedCount === 0 && (
-            <div className="text-xs md:text-sm text-cyan-200/70 font-bold bg-[#F5F0E4] border border-[#E7DFCF] rounded-xl px-4 py-3">
+            <div className="text-xs md:text-sm text-[#8A8378]/70 font-bold bg-[#F5F0E4] border border-[#E7DFCF] rounded-xl px-4 py-3">
               💡 還沒有遊玩紀錄，去「互動遊戲」關卡打完一關試試看，這裡的數字會馬上更新！
             </div>
           )}
@@ -609,7 +609,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <Award className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs md:text-sm text-cyan-200 font-extrabold">獲得總星星</div>
+              <div className="text-xs md:text-sm text-[#8A8378] font-extrabold">獲得總星星</div>
               <div className="text-2xl md:text-3xl font-black text-[#3E2723] mt-1">{totalStars} ★</div>
             </div>
           </div>
@@ -619,7 +619,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <TrendingUp className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs md:text-sm text-cyan-200 font-extrabold">平均答對率</div>
+              <div className="text-xs md:text-sm text-[#8A8378] font-extrabold">平均答對率</div>
               <div className="text-2xl md:text-3xl font-black text-[#3E2723] mt-1">{averageScore}%</div>
             </div>
           </div>
@@ -629,7 +629,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <Zap className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs md:text-sm text-cyan-200 font-extrabold">最高分紀錄</div>
+              <div className="text-xs md:text-sm text-[#8A8378] font-extrabold">最高分紀錄</div>
               <div className="text-2xl md:text-3xl font-black text-[#E4772E] mt-1">{maxScore} 分</div>
             </div>
           </div>
@@ -639,7 +639,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <Flame className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs md:text-sm text-cyan-200 font-extrabold">累計挑戰次數</div>
+              <div className="text-xs md:text-sm text-[#8A8378] font-extrabold">累計挑戰次數</div>
               <div className="text-2xl md:text-3xl font-black text-[#3E2723] mt-1">{records.length} 次</div>
             </div>
           </div>
@@ -652,14 +652,14 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <BarChart2 className="w-5 h-5 text-emerald-400" />
               學習成績表現與趨勢分析圖
             </h2>
-            <div className="flex items-center gap-3 text-xs font-bold text-cyan-200/70">
+            <div className="flex items-center gap-3 text-xs font-bold text-[#8A8378]/70">
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>得分趨勢 (0-100)</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-cyan-400 inline-block"></span>歷次測驗</span>
             </div>
           </div>
 
           {records.length === 0 ? (
-            <div className="py-8 text-center text-cyan-200/60 text-sm font-bold">
+            <div className="py-8 text-center text-[#8A8378]/60 text-sm font-bold">
               尚無足夠數據繪製圖表，請進行幾次測驗或遊戲！
             </div>
           ) : (
@@ -790,7 +790,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-[#FFFDF9] border border-[#EFE8D8] rounded-2xl p-3.5">
                   <div className="flex justify-between items-center text-xs font-black mb-1.5">
-                    <span className="text-cyan-200">🎮 遊戲闖關勝率</span>
+                    <span className="text-[#8A8378]">🎮 遊戲闖關勝率</span>
                     <span className="text-emerald-400">92%</span>
                   </div>
                   <div className="w-full bg-[#F5F0E4] rounded-full h-2.5 overflow-hidden border border-[#E7DFCF]">
@@ -800,7 +800,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
                 <div className="bg-[#FFFDF9] border border-[#EFE8D8] rounded-2xl p-3.5">
                   <div className="flex justify-between items-center text-xs font-black mb-1.5">
-                    <span className="text-cyan-200">🗣️ 拼音辨識準確率</span>
+                    <span className="text-[#8A8378]">🗣️ 拼音辨識準確率</span>
                     <span className="text-[#8A8378]">88%</span>
                   </div>
                   <div className="w-full bg-[#F5F0E4] rounded-full h-2.5 overflow-hidden border border-[#E7DFCF]">
@@ -810,7 +810,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
 
                 <div className="bg-[#FFFDF9] border border-[#EFE8D8] rounded-2xl p-3.5">
                   <div className="flex justify-between items-center text-xs font-black mb-1.5">
-                    <span className="text-cyan-200">👂 聲調聽力達成度</span>
+                    <span className="text-[#8A8378]">👂 聲調聽力達成度</span>
                     <span className="text-[#E4772E]">95%</span>
                   </div>
                   <div className="w-full bg-[#F5F0E4] rounded-full h-2.5 overflow-hidden border border-[#E7DFCF]">
@@ -828,14 +828,14 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
             <h2 className="font-black text-[#3E2723] text-lg flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#8A8378]" /> 歷史通關紀錄明細
             </h2>
-            <span className="text-xs text-cyan-200/70 font-bold">共 {records.length} 筆紀錄</span>
+            <span className="text-xs text-[#8A8378]/70 font-bold">共 {records.length} 筆紀錄</span>
           </div>
 
           {records.length === 0 ? (
             <div className="py-12 flex flex-col items-center text-center gap-3 border-2 border-dashed border-[#EFE8D8] rounded-2xl bg-[#FFFDF9]">
               <span className="text-4xl">📭</span>
               <div className="font-black text-[#3E2723] text-base">目前尚無挑戰與通關紀錄</div>
-              <p className="text-xs md:text-sm text-cyan-200/70 max-w-xs font-bold">快去「互動遊戲」或是「拼音學習」中挑戰聽力測試吧！</p>
+              <p className="text-xs md:text-sm text-[#8A8378]/70 max-w-xs font-bold">快去「互動遊戲」或是「拼音學習」中挑戰聽力測試吧！</p>
               <button
                 onClick={() => onNavigate('phonics')}
                 className="mt-3 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black text-sm hover:bg-[#3E8552] active:scale-95 transition-all cursor-pointer shadow-md"
@@ -895,7 +895,7 @@ export default function RecordPage({ onNavigate }: { onNavigate: (view: string) 
               <PlusCircle className="w-5 h-5 text-emerald-400" />
               新增實時學習與測驗紀錄
             </h3>
-            <p className="text-xs text-cyan-200/70 font-bold mb-4">輸入您的練習成績，系統將同步更新動態圖表</p>
+            <p className="text-xs text-[#8A8378]/70 font-bold mb-4">輸入您的練習成績，系統將同步更新動態圖表</p>
 
             <form onSubmit={handleAddSampleRecord} className="flex flex-col gap-4">
               <div>
