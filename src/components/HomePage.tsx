@@ -1,37 +1,38 @@
 import { HubShell } from './games/GameShell';
+import { ArtPhonics, ArtGame, ArtAnime, ArtRecord } from './HomeFeatureArt';
 
-import {
-  heroFull,
-  featureIconPhonics,
-  featureIconGame,
-  featureIconTone,
-  featureIconRecord,
-} from '../assets/images/homepage';
+import { heroFull } from '../assets/images/homepage';
 
+// 四大功能卡片。插圖改成自己畫的向量圖（見 HomeFeatureArt.tsx），每張卡片
+// 有自己的主色，圖、標題、箭頭都吃同一個色，四張並排才看得出是一組的。
 const FEATURE_CARDS = [
   {
     title: '拼音學習',
-    desc: '從聲母韻母開始，打好台語發音基礎！',
+    desc: '照著課本一頁一頁學，聲母韻母、聲調變調都有真人錄音。',
     button: '去學習',
-    icon: featureIconPhonics,
+    accent: '#34d399',
+    Art: ArtPhonics,
   },
   {
     title: '互動遊戲',
-    desc: '玩遊戲學拼音，寓教於樂更有趣！',
+    desc: '十款遊戲邊玩邊記，把課本學到的拼音真的用出來。',
     button: '去遊戲',
-    icon: featureIconGame,
+    accent: '#a78bfa',
+    Art: ArtGame,
   },
   {
     title: '動畫專區',
-    desc: '觀看精彩台語動畫，輕鬆學習道地台語發音！',
+    desc: '教育部推薦的台語動畫片單，可依學齡挑，字幕能切漢字／羅馬字。',
     button: '去觀看',
-    icon: featureIconTone,
+    accent: '#fbbf24',
+    Art: ArtAnime,
   },
   {
     title: '學習紀錄',
-    desc: '記錄你的學習進度，見證成長',
+    desc: '看得到自己練到哪、通關幾關，進步都留著。',
     button: '看記錄',
-    icon: featureIconRecord,
+    accent: '#38bdf8',
+    Art: ArtRecord,
   },
 ];
 
@@ -62,13 +63,13 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
 
           {/* Feature Cards Container */}
           <div className="bg-[#071322] border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_20px_rgba(2,132,199,0.15)] p-5 md:p-6 flex flex-col gap-5">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🧪</span>
+            <div className="flex flex-wrap items-baseline gap-2">
               <h2 className="font-black text-white text-xl md:text-2xl tracking-wide">探索四大功能</h2>
+              <span className="font-black text-cyan-300 text-sm md:text-base">點卡片就進去，四個都跟課本接得起來</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-              {FEATURE_CARDS.map((card) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
+              {FEATURE_CARDS.map(({ title: cardTitle, desc: cardDesc, button, accent, Art }) => {
                 const currentUser = (() => {
                   try {
                     const stored = localStorage.getItem('tai_lo_user');
@@ -79,45 +80,53 @@ export default function HomePage({ onNavigate }: { onNavigate: (view: string, ta
                 })();
                 const isTeacher = currentUser?.role === 'teacher';
 
-                const title = (card.title === '學習紀錄' && isTeacher) ? '教學後台' : card.title;
-                const desc = (card.title === '學習紀錄' && isTeacher) ? '學生作答成效、通關率與教師班級管理' : card.desc;
-                const buttonText = (card.title === '學習紀錄' && isTeacher) ? '進入後台' : card.button;
+                const title = (cardTitle === '學習紀錄' && isTeacher) ? '教學後台' : cardTitle;
+                const desc = (cardTitle === '學習紀錄' && isTeacher) ? '學生作答成效、通關率與教師班級管理。' : cardDesc;
+                const buttonText = (cardTitle === '學習紀錄' && isTeacher) ? '進入後台' : button;
 
                 return (
-                  <div
-                    key={card.title}
-                    className="rounded-2xl bg-[#030b17] p-4 md:p-5 flex flex-col items-center text-center justify-between gap-3 border-2 border-cyan-500/40 hover:border-cyan-300 shadow-xl transition-all group hover:-translate-y-0.5"
+                  <button
+                    key={cardTitle}
+                    onClick={() => handleFeatureClick(cardTitle)}
+                    data-sound="pop"
+                    className="group text-left rounded-3xl p-4 md:p-5 flex flex-col gap-3.5 bg-[#040e1c] border-2 transition-all hover:-translate-y-1 active:scale-[0.99] cursor-pointer"
+                    style={{ borderColor: `${accent}59` }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = accent;
+                      e.currentTarget.style.boxShadow = `0 0 24px ${accent}40`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = `${accent}59`;
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
-                    {/* Card Icon Frame: clean light background so icons stand out completely */}
-                    <div className="w-full h-28 md:h-36 rounded-2xl bg-gradient-to-b from-[#fffefc] to-[#f5eedc] border border-amber-200/90 p-2.5 flex items-center justify-center overflow-hidden shadow-inner">
-                      <img
-                        src={card.icon}
-                        alt={title}
-                        className="max-w-full max-h-full h-auto w-auto object-contain group-hover:scale-105 transition-transform drop-shadow-sm"
-                      />
+                    {/* 插圖 */}
+                    <div
+                      className="w-full h-28 md:h-32 rounded-2xl flex items-center justify-center overflow-hidden"
+                      style={{
+                        background: `radial-gradient(120% 120% at 30% 15%, ${accent}2e, rgba(3,11,23,0) 72%), #030b17`,
+                        border: `1px solid ${accent}33`,
+                      }}
+                    >
+                      <div className="transition-transform group-hover:scale-110">
+                        <Art accent={accent} />
+                      </div>
                     </div>
 
-                    {/* Title */}
-                    <div className="font-black text-white text-base md:text-lg lg:text-xl flex items-center justify-center gap-1.5 tracking-wide mt-1">
-                      <span>{title}</span>
-                      <span className="text-amber-300 text-sm">🧪</span>
-                    </div>
+                    <h3 className="font-black text-white text-lg md:text-xl tracking-wide">{title}</h3>
 
-                    {/* Subtitle Description: High-contrast bright cyan/white text, larger font */}
-                    <p className="text-xs md:text-sm text-cyan-50 font-black leading-relaxed min-h-[3rem] flex items-center justify-center px-1">
+                    <p className="text-xs md:text-sm text-cyan-100/85 font-bold leading-relaxed flex-1">
                       {desc}
                     </p>
 
-                    {/* Action Button */}
-                    <button
-                      onClick={() => handleFeatureClick(card.title)}
-                      data-sound="pop"
-                      className="w-full py-2.5 md:py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm md:text-base hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                    <span
+                      className="font-black text-sm md:text-base flex items-center gap-1.5"
+                      style={{ color: accent }}
                     >
-                      <span>{buttonText}</span>
-                      <span className="text-xs font-bold">❯</span>
-                    </button>
-                  </div>
+                      {buttonText}
+                      <span className="text-xs transition-transform group-hover:translate-x-1">❯</span>
+                    </span>
+                  </button>
                 );
               })}
             </div>
