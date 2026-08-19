@@ -451,10 +451,97 @@ const QUESTION_BANK = [
   { id:17, category:"華語選台語", mandarinPrompt:"請找出「扇子」的台語說法。", keyword:"扇子",
     correct:{ hanji:"葵扇", tailo:"khuê-sìnn", audio:"audio/q17.mp3" },
     distractors:[ {hanji:"齒抿仔",tailo:"khí-bín-á"}, {hanji:"三輪車",tailo:"sann-lián-tshia"}, {hanji:"跋桮",tailo:"pua̍h-pue"} ],
-    explanation:"扇子的台語漢字是「葵扇」，說作 khuê-sìnn。" }
+    explanation:"扇子的台語漢字是「葵扇」，說作 khuê-sìnn。" },
 
-  // 這 17 個詞來自課本《臺灣台語會話讀本－旅行篇》第一篇（01 鹿港）單元詞彙頁，
-  // 2026-08-19 由使用者提供課本截圖核對過。若要擴充成 50 題，依照上面同樣的
+  { id:18, category:"華語選台語", mandarinPrompt:"請找出「奮起湖」的台語說法。", keyword:"奮起湖",
+    correct:{ hanji:"奮起湖", tailo:"Pùn-ki-ôo", audio:"audio/q18.mp3" },
+    distractors:[ {hanji:"賓館",tailo:"pin-kuán"}, {hanji:"桃城",tailo:"Thô-siânn"}, {hanji:"日出",tailo:"ji̍t-tshut"} ],
+    explanation:"奮起湖的台語說作 Pùn-ki-ôo。" },
+
+  { id:19, category:"華語選台語", mandarinPrompt:"請找出「日出」的台語說法。", keyword:"日出",
+    correct:{ hanji:"日出", tailo:"ji̍t-tshut", audio:"audio/q19.mp3" },
+    distractors:[ {hanji:"奮起湖",tailo:"Pùn-ki-ôo"}, {hanji:"火金蛄",tailo:"hué-kim-koo"}, {hanji:"賓館",tailo:"pin-kuán"} ],
+    explanation:"日出的台語說作 ji̍t-tshut。" },
+
+  { id:20, category:"華語選台語", mandarinPrompt:"請找出「賓館」的台語說法。", keyword:"賓館",
+    correct:{ hanji:"賓館", tailo:"pin-kuán", audio:"audio/q20.mp3" },
+    distractors:[ {hanji:"桃城",tailo:"Thô-siânn"}, {hanji:"奮起湖",tailo:"Pùn-ki-ôo"}, {hanji:"米糕",tailo:"bí-ko"} ],
+    explanation:"賓館的台語說作 pin-kuán。" },
+
+  { id:21, category:"華語選台語", mandarinPrompt:"請找出「洗愛玉」的台語說法。", keyword:"洗愛玉",
+    correct:{ hanji:"洗子仔", tailo:"sé-tsí-á", audio:"audio/q21.mp3" },
+    distractors:[ {hanji:"薁蕘",tailo:"ò-giô"}, {hanji:"米糕",tailo:"bí-ko"}, {hanji:"豆菜麵",tailo:"tāu-tshài-mī"} ],
+    explanation:"洗愛玉的台語漢字是「洗子仔」，說作 sé-tsí-á。" },
+
+  { id:22, category:"華語選台語", mandarinPrompt:"請找出「火雞肉飯」的台語說法。", keyword:"火雞肉飯",
+    correct:{ hanji:"火雞肉飯", tailo:"hué-ke-bah-pn̄g", audio:"audio/q22.mp3" },
+    distractors:[ {hanji:"米糕",tailo:"bí-ko"}, {hanji:"豆菜麵",tailo:"tāu-tshài-mī"}, {hanji:"狗母鍋魚頭",tailo:"káu-bó-ue-hî-thâu"} ],
+    explanation:"火雞肉飯的台語說作 hué-ke-bah-pn̄g。" },
+
+  { id:23, category:"華語選台語", mandarinPrompt:"請找出「撞上牆壁」的台語說法。", keyword:"撞上牆壁",
+    correct:{ hanji:"碰壁", tailo:"pōng-piah", audio:"audio/q23.mp3" },
+    distractors:[ {hanji:"驚人",tailo:"kiann--lâng"}, {hanji:"手電仔",tailo:"tshiú-tiān-á"}, {hanji:"手橐仔",tailo:"tshiú-lok-á"} ],
+    explanation:"撞上牆壁的台語漢字是「碰壁」，說作 pōng-piah。" },
+
+  { id:24, category:"華語選台語", mandarinPrompt:"請找出「可怕」的台語說法。", keyword:"可怕",
+    correct:{ hanji:"驚人", tailo:"kiann--lâng", audio:"audio/q24.mp3" },
+    distractors:[ {hanji:"碰壁",tailo:"pōng-piah"}, {hanji:"火金蛄",tailo:"hué-kim-koo"}, {hanji:"手電仔",tailo:"tshiú-tiān-á"} ],
+    explanation:"可怕的台語漢字是「驚人」，說作 kiann--lâng。" },
+
+  { id:25, category:"華語選台語", mandarinPrompt:"請找出「螢火蟲」的台語說法。", keyword:"螢火蟲",
+    correct:{ hanji:"火金蛄", tailo:"hué-kim-koo", audio:"audio/q25.mp3" },
+    distractors:[ {hanji:"手電仔",tailo:"tshiú-tiān-á"}, {hanji:"驚人",tailo:"kiann--lâng"}, {hanji:"日出",tailo:"ji̍t-tshut"} ],
+    explanation:"螢火蟲的台語漢字是「火金蛄」，說作 hué-kim-koo。" },
+
+  { id:26, category:"華語選台語", mandarinPrompt:"請找出「手電筒」的台語說法。", keyword:"手電筒",
+    correct:{ hanji:"手電仔", tailo:"tshiú-tiān-á", audio:"audio/q26.mp3" },
+    distractors:[ {hanji:"手橐仔",tailo:"tshiú-lok-á"}, {hanji:"碰壁",tailo:"pōng-piah"}, {hanji:"火金蛄",tailo:"hué-kim-koo"} ],
+    explanation:"手電筒的台語漢字是「手電仔」，說作 tshiú-tiān-á。" },
+
+  { id:27, category:"華語選台語", mandarinPrompt:"請找出「白醋」的台語說法。", keyword:"白醋",
+    correct:{ hanji:"白醋", tailo:"pe̍h-tshòo", audio:"audio/q27.mp3" },
+    distractors:[ {hanji:"豆菜麵",tailo:"tāu-tshài-mī"}, {hanji:"米糕",tailo:"bí-ko"}, {hanji:"薁蕘",tailo:"ò-giô"} ],
+    explanation:"白醋的台語說作 pe̍h-tshòo。" },
+
+  { id:28, category:"華語選台語", mandarinPrompt:"請找出「桃城」的台語說法。", keyword:"桃城",
+    correct:{ hanji:"桃城", tailo:"Thô-siânn", audio:"audio/q28.mp3" },
+    distractors:[ {hanji:"奮起湖",tailo:"Pùn-ki-ôo"}, {hanji:"賓館",tailo:"pin-kuán"}, {hanji:"火雞肉飯",tailo:"hué-ke-bah-pn̄g"} ],
+    explanation:"桃城的台語說作 Thô-siânn。" },
+
+  { id:29, category:"華語選台語", mandarinPrompt:"請找出「手套」的台語說法。", keyword:"手套",
+    correct:{ hanji:"手橐仔", tailo:"tshiú-lok-á", audio:"audio/q29.mp3" },
+    distractors:[ {hanji:"長䘼",tailo:"tn̂g-ńg"}, {hanji:"手電仔",tailo:"tshiú-tiān-á"}, {hanji:"碰壁",tailo:"pōng-piah"} ],
+    explanation:"手套的台語漢字是「手橐仔」，說作 tshiú-lok-á。" },
+
+  { id:30, category:"華語選台語", mandarinPrompt:"請找出「米糕」的台語說法。", keyword:"米糕",
+    correct:{ hanji:"米糕", tailo:"bí-ko", audio:"audio/q30.mp3" },
+    distractors:[ {hanji:"豆菜麵",tailo:"tāu-tshài-mī"}, {hanji:"火雞肉飯",tailo:"hué-ke-bah-pn̄g"}, {hanji:"狗母鍋魚頭",tailo:"káu-bó-ue-hî-thâu"} ],
+    explanation:"米糕的台語說作 bí-ko。" },
+
+  { id:31, category:"華語選台語", mandarinPrompt:"請找出「沙鍋魚頭」的台語說法。", keyword:"沙鍋魚頭",
+    correct:{ hanji:"狗母鍋魚頭", tailo:"káu-bó-ue-hî-thâu", audio:"audio/q31.mp3" },
+    distractors:[ {hanji:"火雞肉飯",tailo:"hué-ke-bah-pn̄g"}, {hanji:"米糕",tailo:"bí-ko"}, {hanji:"白醋",tailo:"pe̍h-tshòo"} ],
+    explanation:"沙鍋魚頭的台語漢字是「狗母鍋魚頭」，說作 káu-bó-ue-hî-thâu。" },
+
+  { id:32, category:"華語選台語", mandarinPrompt:"請找出「豆菜麵」的台語說法。", keyword:"豆菜麵",
+    correct:{ hanji:"豆菜麵", tailo:"tāu-tshài-mī", audio:"audio/q32.mp3" },
+    distractors:[ {hanji:"米糕",tailo:"bí-ko"}, {hanji:"火雞肉飯",tailo:"hué-ke-bah-pn̄g"}, {hanji:"薁蕘",tailo:"ò-giô"} ],
+    explanation:"豆菜麵的台語說作 tāu-tshài-mī。" },
+
+  { id:33, category:"華語選台語", mandarinPrompt:"請找出「愛玉」的台語說法。", keyword:"愛玉",
+    correct:{ hanji:"薁蕘", tailo:"ò-giô", audio:"audio/q33.mp3" },
+    distractors:[ {hanji:"洗子仔",tailo:"sé-tsí-á"}, {hanji:"白醋",tailo:"pe̍h-tshòo"}, {hanji:"豆菜麵",tailo:"tāu-tshài-mī"} ],
+    explanation:"愛玉的台語漢字是「薁蕘」，說作 ò-giô。" },
+
+  { id:34, category:"華語選台語", mandarinPrompt:"請找出「長袖」的台語說法。", keyword:"長袖",
+    correct:{ hanji:"長䘼", tailo:"tn̂g-ńg", audio:"audio/q34.mp3" },
+    distractors:[ {hanji:"手橐仔",tailo:"tshiú-lok-á"}, {hanji:"手電仔",tailo:"tshiú-tiān-á"}, {hanji:"驚人",tailo:"kiann--lâng"} ],
+    explanation:"長袖的台語漢字是「長䘼」，說作 tn̂g-ńg。" }
+
+  // id 1-17：課本《臺灣台語會話讀本－旅行篇》第一篇（01 鹿港）單元詞彙頁，17 詞。
+  // id 18-34：第二篇（02 阿里山）單元詞彙頁，17 詞（使用者原說 16 個，實際核對截圖
+  // 數出 17 個，已請使用者確認但尚未收到回覆是哪個算錯，先全數收錄）。
+  // 2026-08-19 由使用者提供課本截圖核對。若要繼續擴充其他單元，依照上面同樣的
   // 物件格式在此陣列中繼續新增 { id, category, mandarinPrompt, keyword, correct,
   // distractors, explanation } 即可，不需要更動下方任何遊戲邏輯程式碼。
 ];
