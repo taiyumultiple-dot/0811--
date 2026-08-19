@@ -901,7 +901,9 @@ function buildBricksForQuestion(q, qIdx){
   const cols = 6;
   const rows = 5;
   const marginX = 24, marginY = 70;
-  const gap = 6;
+  // 2026-08-19 使用者反應磚塊太密、瞄準正解常常順便撞到旁邊其他單字，
+  // 干擾正確率——把格子間距加大，且答案磚周圍留緩衝格（見下面 isAdjacent）。
+  const gap = 14;
   const brickW = (W - marginX*2 - gap*(cols-1)) / cols;
   const brickH = 36;
 
@@ -913,14 +915,27 @@ function buildBricksForQuestion(q, qIdx){
   }
   const shuffledCells = shuffle(cells);
 
-  const decoyCount = clamp(4 + Math.floor(qIdx/2), 4, 7);
-  const answerItems = [{ hanji:q.hanji, tailo:q.tailo, isCorrect:true }]
-    .concat(q.distractors.slice(0, decoyCount).map(d=>({ hanji:d.hanji, tailo:d.tailo, isCorrect:false })));
+  // 正解磚先選定一格，上下左右相鄰格保留成空格，其他磚塊都不會排進去，
+  // 讓球有空間單獨瞄準正解磚，不會一撞就順便碰到隔壁的干擾磚。
+  const correctCell = shuffledCells[0];
+  const isAdjacent = (cell) =>
+    (cell.r===correctCell.r && Math.abs(cell.c-correctCell.c)<=1) ||
+    (cell.c===correctCell.c && Math.abs(cell.r-correctCell.r)<=1);
+  const otherCells = shuffle(shuffledCells.slice(1).filter(cell => !isAdjacent(cell)));
+
+  const decoyCount = clamp(2 + Math.floor(qIdx/3), 2, 4);
+  const decoyItems = q.distractors.slice(0, decoyCount).map(d=>({ hanji:d.hanji, tailo:d.tailo, isCorrect:false }));
 
   const list = [];
+  list.push({
+    kind:'answer', x:correctCell.x, y:correctCell.y, w:brickW, h:brickH, alive:true,
+    hanji:q.hanji, tailo:q.tailo, isCorrect:true, flash:0, flashColor:null,
+    outline: ['#22e2f0','#b98bff','#ffd166','#3ddc84'][Math.floor(Math.random()*4)],
+  });
+
   let cellIdx = 0;
-  answerItems.forEach(item=>{
-    const cell = shuffledCells[cellIdx++];
+  decoyItems.forEach(item=>{
+    const cell = otherCells[cellIdx++];
     list.push({
       kind:'answer', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true,
       hanji:item.hanji, tailo:item.tailo, isCorrect:item.isCorrect, flash:0, flashColor:null,
@@ -930,22 +945,23 @@ function buildBricksForQuestion(q, qIdx){
 
   // 道具磚 2 顆
   const powerupCount = 2;
-  for(let i=0;i<powerupCount && cellIdx<shuffledCells.length;i++){
-    const cell = shuffledCells[cellIdx++];
+  for(let i=0;i<powerupCount && cellIdx<otherCells.length;i++){
+    const cell = otherCells[cellIdx++];
     const type = POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
     list.push({ kind:'powerup', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true, type, flash:0 });
   }
 
   // 危險磚 1~2 顆（骷髏，效果隨機，不算台語答錯）
   const dangerCount = qIdx >= 6 ? 2 : 1;
-  for(let i=0;i<dangerCount && cellIdx<shuffledCells.length;i++){
-    const cell = shuffledCells[cellIdx++];
+  for(let i=0;i<dangerCount && cellIdx<otherCells.length;i++){
+    const cell = otherCells[cellIdx++];
     list.push({ kind:'danger', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true, flash:0 });
   }
 
-  // 其餘填普通障礙磚，但保留最後幾格當作空格（避免磚塊塞滿導致球路太封閉）
-  const remaining = shuffledCells.slice(cellIdx);
-  const emptyCount = Math.max(3, Math.floor(remaining.length*0.25));
+  // 其餘填普通障礙磚，但保留接近一半當空格（原本只留 25%，磚塊塞太滿
+  // 是球容易誤撞相鄰磚塊的主因，留更多空格讓球路更寬鬆）
+  const remaining = otherCells.slice(cellIdx);
+  const emptyCount = Math.max(4, Math.ceil(remaining.length*0.5));
   const plainCells = remaining.slice(0, remaining.length - emptyCount);
   plainCells.forEach(cell=>{
     list.push({ kind:'plain', x:cell.x, y:cell.y, w:brickW, h:brickH, alive:true, flash:0 });
